@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AntBox HRMS — Sync Dashboard</title>
+  <style>
+    :root {
+      --purple: #7c3aed;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --border: #e4e4e7;
+      --text: #09090b;
+      --muted: #71717a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: #09090b;
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+    header p { font-size: 11px; color: #a1a1aa; margin-top: 2px; }
+    header .badge { background: var(--purple); color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .stat-val { font-size: 24px; font-weight: 800; color: var(--text); }
+    .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .card p { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 10px; border: none;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-primary { background: #09090b; color: white; }
+    .btn-primary:hover { background: #27272a; }
+    .btn-purple { background: var(--purple); color: white; }
+    .btn-purple:hover { background: #6d28d9; }
+    .btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { background: #f4f4f5; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .log {
+      background: #09090b; color: #d4d4d8;
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 11px; font-family: "Courier New", monospace;
+      min-height: 80px; max-height: 220px; overflow-y: auto;
+      white-space: pre-wrap; line-height: 1.6;
+    }
+    .log .ok { color: #4ade80; }
+    .log .err { color: #f87171; }
+    .log .info { color: #60a5fa; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 8px 10px; background: #f4f4f5; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+    td { padding: 8px 10px; border-bottom: 1px solid #f4f4f5; color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+    .tag-active { background: #dcfce7; color: #16a34a; }
+    .tag-onboarding { background: #e0f2fe; color: #0284c7; }
+    .tag-offboarding { background: #fee2e2; color: #dc2626; }
+    .tag-other { background: #f4f4f5; color: #71717a; }
+
+    #status-bar { padding: 10px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 12px; color: #15803d; margin-bottom: 16px; display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>AntBox HRMS</h1>
+      <p>Employee Master Tracker — Google Apps Script Sync Dashboard</p>
+    </div>
+    <span class="badge">v2.4</span>
+  </header>
+
+  <div class="container">
+    <div id="status-bar"></div>
+
+    <!-- Stats -->
+    <div class="grid" id="stats-grid">
+      <div class="stat"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total Employees</div></div>
+      <div class="stat"><div class="stat-val" id="stat-active">—</div><div class="stat-label">Active</div></div>
+      <div class="stat"><div class="stat-val" id="stat-onboarding">—</div><div class="stat-label">Onboarding</div></div>
+      <div class="stat"><div class="stat-val" id="stat-last-sync">—</div><div class="stat-label">Last Sync</div></div>
+    </div>
+
+    <!-- Sync Controls -->
+    <div class="card">
+      <h2>🔄 Sync Controls</h2>
+      <p>Pull data from your live HRMS and write to Google Sheets. Run a full sync or individual modules.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runSync('all')">⚡ Full Sync</button>
+        <button class="btn btn-outline" onclick="runSync('employees')">👥 Employees</button>
+        <button class="btn btn-outline" onclick="runSync('attendance')">🕐 Attendance</button>
+        <button class="btn btn-outline" onclick="runSync('reimbursements')">💸 Reimbursements</button>
+        <button class="btn btn-outline" onclick="runSync('separations')">🚪 Separations</button>
+        <button class="btn btn-purple" onclick="runSetup()">⚙️ Run Setup</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card">
+      <h2>📋 Sync Log</h2>
+      <p>Real-time output from the last sync operation.</p>
+      <div class="log" id="log">Waiting for sync…</div>
+    </div>
+
+    <!-- Employee Table -->
+    <div class="card">
+      <h2>👥 Employee Master</h2>
+      <p>Live preview of the last pulled employee data. Click Full Sync to refresh.</p>
+      <div style="overflow-x:auto;">
+        <table id="emp-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Email</th><th>Department</th>
+              <th>Designation</th><th>Type</th><th>Status</th><th>Joining</th>
+            </tr>
+          </thead>
+          <tbody id="emp-body">
+            <tr><td colspan="8" style="text-align:center;color:#a1a1aa;padding:24px">Run a sync to load data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function log(msg, type) {
+      var el = document.getElementById('log');
+      var ts = new Date().toLocaleTimeString();
+      var cls = type === 'ok' ? 'ok' : type === 'err' ? 'err' : 'info';
+      el.innerHTML += '<span class="' + cls + '">[' + ts + '] ' + msg + '</span>\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function showStatus(msg) {
+      var bar = document.getElementById('status-bar');
+      bar.textContent = msg;
+      bar.style.display = 'block';
+      setTimeout(function() { bar.style.display = 'none'; }, 4000);
+    }
+
+    function runSync(module) {
+      log('Starting sync: ' + module + '…', 'info');
+      google.script.run
+        .withSuccessHandler(function(result) {
+          log('✓ ' + (result || 'Done'), 'ok');
+          showStatus('Sync complete: ' + module);
+          if (module === 'all' || module === 'employees') loadEmployeePreview();
+        })
+        .withFailureHandler(function(err) {
+          log('✗ Error: ' + err.message, 'err');
+        })
+        .gasRunSync(module);
+    }
+
+    function runSetup() {
+      log('Running setup…', 'info');
+      google.script.run
+        .withSuccessHandler(function() { log('✓ Setup complete', 'ok'); })
+        .withFailureHandler(function(e) { log('✗ ' + e.message, 'err'); })
+        .onSetup();
+    }
+
+    function loadEmployeePreview() {
+      google.script.run
+        .withSuccessHandler(function(rows) {
+          var body = document.getElementById('emp-body');
+          if (!rows || rows.length === 0) {
+            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a1a1aa;padding:16px">No data</td></tr>';
+            return;
+          }
+          document.getElementById('stat-total').textContent = rows.length;
+          document.getElementById('stat-active').textContent = rows.filter(function(r) { return r[6] === 'ACTIVE'; }).length;
+          document.getElementById('stat-onboarding').textContent = rows.filter(function(r) { return r[6] === 'ONBOARDING'; }).length;
+          document.getElementById('stat-last-sync').textContent = new Date().toLocaleTimeString();
+
+          body.innerHTML = rows.map(function(r) {
+            var tagClass = r[6] === 'ACTIVE' ? 'tag-active' : r[6] === 'ONBOARDING' ? 'tag-onboarding' : r[6] === 'OFFBOARDING' ? 'tag-offboarding' : 'tag-other';
+            return '<tr>'
+              + '<td><code>' + r[0] + '</code></td>'
+              + '<td><strong>' + r[1] + '</strong></td>'
+              + '<td>' + r[2] + '</td>'
+              + '<td>' + r[3] + '</td>'
+              + '<td>' + r[4] + '</td>'
+              + '<td>' + r[5] + '</td>'
+              + '<td><span class="tag ' + tagClass + '">' + r[6] + '</span></td>'
+              + '<td>' + r[7] + '</td>'
+              + '</tr>';
+          }).join('');
+        })
+        .withFailureHandler(function() {})
+        .gasGetEmployeeRows();
+    }
+
+    // Auto-load on open
+    loadEmployeePreview();
+  </script>
+</body>
+</html>

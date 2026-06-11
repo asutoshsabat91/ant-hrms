@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AntBox HRMS
 
-## Getting Started
+Production-grade Human Resource Management System for [AntBox](https://theantbox.com) — Talent-Tech ecosystem bridging academia to SaaS careers.
 
-First, run the development server:
+## Stack
+
+- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
+- **Auth:** NextAuth.js v5 (credentials + Google OAuth)
+- **Database:** PostgreSQL via Supabase + Prisma ORM
+- **Deployment:** Vercel + Supabase
+
+## Quick start
 
 ```bash
+cd antbox-hrms
+cp .env.example .env.local
+# Add your Supabase DATABASE_URL and AUTH_SECRET
+
+npm install
+npx prisma generate
+npx prisma db push
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and sign in:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Email:** `admin@theantbox.com`
+- **Password:** `AntBox@2025`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+| Path | Purpose |
+|------|---------|
+| `app/(auth)/` | Login & registration |
+| `app/(dashboard)/` | HRMS modules (employees, onboarding, payroll, …) |
+| `prisma/schema.prisma` | Full data model |
+| `components/` | UI by domain |
+| `lib/` | Auth, Prisma, payroll engine, utilities |
 
-To learn more about Next.js, take a look at the following resources:
+## Implementation roadmap
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Sprint 1 (done):** Scaffold, Prisma schema, auth, layout, employees, dashboard
+- **Sprint 2:** Onboarding wizard, offboarding, notifications, IT ops
+- **Sprint 3:** Attendance, leave, calendar
+- **Sprint 4:** Payroll, payslip PDFs, document generation
+- **Sprint 5:** Grievances, reimbursements, reports, settings
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run db:seed      # Seed departments, admin, holidays
+npx prisma studio    # Database GUI
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built for AntBox — Bhubaneswar, Odisha | people@theantbox.com

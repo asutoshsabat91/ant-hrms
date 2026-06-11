@@ -1,0 +1,165 @@
+"use client";
+
+import { signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import { Search, LogOut, User } from "lucide-react";
+import { format } from "date-fns";
+import { useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { EmployeeProfileDrawer } from "@/components/layout/EmployeeProfileDrawer";
+import type { Role } from "@prisma/client";
+
+interface EmployeeProfile {
+  id: string;
+  employeeId: string;
+  gender?: string | null;
+  firstName: string;
+  lastName: string;
+  designation: string;
+  department: { name: string };
+  managerId?: string | null;
+  employmentType: string;
+  status: string;
+  joiningDate: Date;
+  phone?: string | null;
+  personalEmail?: string | null;
+  dateOfBirth?: Date | null;
+  bloodGroup?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  bankName?: string | null;
+  bankAccountNo?: string | null;
+  ifscCode?: string | null;
+  pan?: string | null;
+}
+
+interface TopbarProps {
+  user: { name?: string | null; email?: string | null; role: Role };
+  employee?: EmployeeProfile | null;
+}
+
+export function Topbar({ user, employee }: TopbarProps) {
+  const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const initials =
+    user.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "AB";
+
+  const getHeaderInfo = (path: string) => {
+    const todayStr = format(new Date(), "EEEE, d MMM yyyy");
+    if (path === "/") return { title: "Dashboard", description: todayStr };
+    if (path.startsWith("/employees")) return { title: "Employees", description: "Manage your team" };
+    if (path.startsWith("/onboarding")) return { title: "Onboarding", description: "Employee onboarding checklist and tasks" };
+    if (path.startsWith("/separation")) return { title: "Separation", description: "Resignation and notice period management" };
+    if (path.startsWith("/offboarding")) return { title: "Offboarding", description: "Employee offboarding checklist and tasks" };
+    if (path.startsWith("/attendance")) return { title: "Attendance", description: todayStr };
+    if (path.startsWith("/leave")) return { title: "Leave", description: "Plan time off without the chaos" };
+    if (path.startsWith("/payroll")) return { title: "Payroll", description: "Salary, slips & monthly cycles" };
+    if (path.startsWith("/documents")) return { title: "Documents", description: "Employee documents and files" };
+    if (path.startsWith("/portal")) return { title: "Portal", description: "Employee self-service portal" };
+    if (path.startsWith("/posh")) return { title: "POSH", description: "Confidential — your report goes directly to HR" };
+    if (path.startsWith("/calendar")) return { title: "Calendar", description: "Events, holidays, and schedules" };
+    if (path.startsWith("/reports")) return { title: "Reports", description: "Reports and analysis" };
+    if (path.startsWith("/settings")) return { title: "Settings", description: "Manage your account and workspace" };
+    if (path.startsWith("/notifications")) return { title: "Notifications", description: "System alerts and notifications" };
+    return { title: "AntBox HRMS", description: "Talent-Tech People Platform" };
+  };
+
+  const { title, description } = getHeaderInfo(pathname);
+
+  return (
+    <>
+      <header className="fixed left-64 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-white px-6">
+        <div>
+          <h1 className="text-base font-bold text-[var(--brand-secondary)] leading-tight">
+            {title}
+          </h1>
+          {description && (
+            <p className="text-xs text-[var(--neutral-400)] font-medium leading-none mt-0.5">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="relative hidden w-72 items-center gap-2 rounded-lg border border-[var(--border)] bg-zinc-50 px-3 py-1.5 md:flex">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
+            <input
+              type="search"
+              placeholder="Search employees, tickets..."
+              className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 text-zinc-900"
+            />
+            <kbd className="pointer-events-none inline-flex h-4.5 select-none items-center gap-0.5 rounded border bg-white px-1.5 font-mono text-[9px] font-medium text-zinc-400">
+              <span>⌘</span>K
+            </kbd>
+          </div>
+
+          <NotificationBell />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-3 outline-none">
+              <div className="hidden text-right md:block">
+                <p className="text-xs font-semibold text-zinc-900 leading-tight">
+                  {user.name}
+                  {employee?.employeeId && (
+                    <span className="ml-1.5 text-[10px] font-normal text-zinc-400">
+                      · {employee.employeeId}
+                    </span>
+                  )}
+                </p>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider leading-none mt-0.5">
+                  {user.role.replace("_", " ")}
+                </p>
+              </div>
+              <Avatar className="h-8 w-8 border border-zinc-200">
+                <AvatarFallback className="bg-[var(--brand-secondary)] text-white text-xs font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {employee && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => setDrawerOpen(true)}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  My Profile
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="text-[var(--danger)] cursor-pointer"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+
+      {employee && (
+        <EmployeeProfileDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          employee={employee}
+        />
+      )}
+    </>
+  );
+}
