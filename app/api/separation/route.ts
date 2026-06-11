@@ -38,8 +38,11 @@ export async function POST(req: Request) {
   const { reason } = await req.json();
   if (!reason?.trim()) return NextResponse.json({ error: "Reason is required" }, { status: 400 });
 
+  // Notice period depends on employment type
+  const noticeDays = employee.employmentType === "INTERN" ? 10 : 60;
+
   const separation = await prisma.separation.create({
-    data: { employeeId: employee.id, reason, status: "PENDING" },
+    data: { employeeId: employee.id, reason, status: "PENDING", noticeDays },
   });
 
   // Notify admins

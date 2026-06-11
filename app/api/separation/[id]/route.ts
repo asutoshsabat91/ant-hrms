@@ -38,19 +38,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   switch (action) {
     case "approve": {
       if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      const lastWorkingDate = addDays(new Date(), separation.noticeDays);
+      // Admin can pass a custom last working date (for full-time employees)
+      const customLwd = body.customLastWorkingDate ? new Date(body.customLastWorkingDate) : null;
+      const lastWorkingDate = customLwd ?? addDays(new Date(), separation.noticeDays);
       const updated = await prisma.separation.update({
         where: { id },
         data: { status: "APPROVED", approvedAt: new Date(), lastWorkingDate },
       });
 
       // Notify employee
+      const noticePeriodLabel = separation.noticeDays <= 10 ? "10-day notice period" : "60-day notice period";
       await prisma.notification.create({
         data: {
           userId: separation.employee.userId,
           type: "SEPARATION_UPDATE",
           title: "Resignation Approved",
-          body: `Your resignation has been approved. Your last working day is ${lastWorkingDate.toDateString()}.`,
+          body: `Your resignation has been approved. ${noticePeriodLabel} applies. Your last working day is ${lastWorkingDate.toDateString()}.`,
           link: "/separation",
         },
       });

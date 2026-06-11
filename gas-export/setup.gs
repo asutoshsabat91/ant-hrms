@@ -117,6 +117,18 @@ function _setupHolidaysSheet(ss) {
   }
 }
 
+function _setupOnboardingSheet(ss) {
+  var sheet = ss.getSheetByName("Onboarding") || ss.insertSheet("Onboarding");
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow([
+      "Employee ID","Name","Email","Department","Designation","Employment Type",
+      "Joining Date","Milestone 1: Docs","Milestone 2: Banking","Milestone 3: ID Form",
+      "Status","Profile Photo URL"
+    ]);
+    sheet.getRange(1,1,1,12).setFontWeight("bold").setBackground("#1a1a2e").setFontColor("white");
+  }
+}
+
 function _setupReimbursementsSheet(ss) {
   var sheet = ss.getSheetByName("Reimbursements");
   if (sheet.getLastRow() === 0) {

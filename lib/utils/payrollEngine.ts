@@ -46,8 +46,8 @@ export function calculatePayroll(
   const grossEarnings = earnedBasic + earnedHra + earnedSpecial;
   const lopDeduction = fullGross - grossEarnings;
 
-  // PF is 12% of actual earned basic salary
-  const pf = Math.round(earnedBasic * 0.12);
+  // No PF deduction per company policy
+  const pf = 0;
   
   // ESI is 0.75% of actual earned gross earnings, only if gross monthly <= 21000
   const esi = grossEarnings <= 21000 ? Math.round(grossEarnings * 0.0075) : 0;
@@ -75,11 +75,24 @@ export function calculatePayroll(
   };
 }
 
-export function breakdownFromCTC(ctc: number) {
-  const monthly = ctc / 12;
-  const basicSalary = Math.round(monthly * 0.4);
-  const hra = Math.round(basicSalary * 0.5);
-  const specialAllowance = Math.round(monthly - basicSalary - hra);
-  const pf = Math.round(basicSalary * 0.12);
-  return { basicSalary, hra, specialAllowance, pf, monthly };
+/**
+ * AntBox CTC Breakdown (company policy):
+ *   Basic = 50% of annual CTC ÷ 12   (monthly)
+ *   HRA   = 20% of annual CTC ÷ 12   (monthly)
+ *   Special Allowance = 30% of annual CTC ÷ 12  (monthly)
+ *   No PF deduction. Variables are awarded annually — not CTC-based.
+ *   Interns: full stipend = Basic only, no HRA, no Special Allowance.
+ */
+export function breakdownFromCTC(
+  ctc: number,
+  employmentType: "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN" = "FULL_TIME"
+) {
+  if (employmentType === "INTERN") {
+    const basicSalary = Math.round(ctc / 12);
+    return { basicSalary, hra: 0, specialAllowance: 0, pf: 0, monthly: basicSalary };
+  }
+  const basicSalary = Math.round(ctc * 0.50 / 12);
+  const hra = Math.round(ctc * 0.20 / 12);
+  const specialAllowance = Math.round(ctc * 0.30 / 12);
+  return { basicSalary, hra, specialAllowance, pf: 0, monthly: basicSalary + hra + specialAllowance };
 }

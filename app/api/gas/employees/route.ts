@@ -18,36 +18,46 @@ export async function GET(req: Request) {
     orderBy: { createdAt: "asc" },
   });
 
-  const rows = employees.map((e) => ({
-    employeeId: e.employeeId,
-    firstName: e.firstName,
-    lastName: e.lastName,
-    fullName: `${e.firstName} ${e.lastName}`,
-    email: e.email,
-    personalEmail: e.personalEmail ?? "",
-    phone: e.phone ?? "",
-    gender: e.gender ?? "",
-    dateOfBirth: e.dateOfBirth ? e.dateOfBirth.toISOString().slice(0, 10) : "",
-    bloodGroup: e.bloodGroup ?? "",
-    address: e.address ?? "",
-    city: e.city ?? "",
-    state: e.state ?? "",
-    pincode: e.pincode ?? "",
-    department: e.department.name,
-    designation: e.designation,
-    employmentType: e.employmentType,
-    status: e.status,
-    joiningDate: e.joiningDate.toISOString().slice(0, 10),
-    lastWorkingDate: e.lastWorkingDate ? e.lastWorkingDate.toISOString().slice(0, 10) : "",
-    ctc: e.ctc ?? "",
-    basicSalary: e.basicSalary ?? "",
-    hra: e.hra ?? "",
-    bankName: e.bankName ?? "",
-    bankAccountNo: e.bankAccountNo ?? "",
-    ifscCode: e.ifscCode ?? "",
-    pan: e.pan ?? "",
-    uan: e.uan ?? "",
-  }));
+  const rows = employees.map((e) => {
+    const basic = e.basicSalary ?? 0;
+    const hra = e.hra ?? 0;
+    const sa = e.specialAllowance ?? 0;
+    return {
+      employeeId: e.employeeId,
+      firstName: e.firstName,
+      lastName: e.lastName,
+      fullName: `${e.firstName} ${e.lastName}`,
+      email: e.email,
+      personalEmail: e.personalEmail ?? "",
+      phone: e.phone ?? "",
+      gender: e.gender ?? "",
+      dateOfBirth: e.dateOfBirth ? e.dateOfBirth.toISOString().slice(0, 10) : "",
+      bloodGroup: e.bloodGroup ?? "",
+      address: e.address ?? "",
+      city: e.city ?? "",
+      state: e.state ?? "",
+      pincode: e.pincode ?? "",
+      emergencyContact: e.emergencyContact ?? "",
+      emergencyPhone: e.emergencyPhone ?? "",
+      department: e.department.name,
+      designation: e.designation,
+      employmentType: e.employmentType,
+      status: e.status,
+      joiningDate: e.joiningDate.toISOString().slice(0, 10),
+      lastWorkingDate: e.lastWorkingDate ? e.lastWorkingDate.toISOString().slice(0, 10) : "",
+      ctc: e.ctc ?? "",
+      basicSalary: basic,
+      hra,
+      specialAllowance: sa,
+      monthlyGross: basic + hra + sa,
+      bankName: e.bankName ?? "",
+      bankAccountNo: e.bankAccountNo ?? "",
+      ifscCode: e.ifscCode ?? "",
+      pan: e.pan ?? "",
+      uan: e.uan ?? "",
+      profilePhoto: e.profilePhoto ? "YES" : "NO",
+    };
+  });
 
   return NextResponse.json({ employees: rows, count: rows.length, exportedAt: new Date().toISOString() });
 }

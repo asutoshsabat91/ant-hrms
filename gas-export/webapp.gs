@@ -67,25 +67,31 @@ function syncEmployees() {
   var sheet = ss.getSheetByName("Employees");
   if (!sheet) sheet = ss.insertSheet("Employees");
 
-  // Write headers
+  // Write headers — AntBox policy: Basic=50%, HRA=20%, SA=30% of CTC; no PF; Variable is annual
   var headers = [
-    "ID","Employee ID","First Name","Last Name","Full Name","Email","Personal Email",
-    "Phone","Gender","DOB","Blood Group","Address","City","State","Pincode",
+    "Employee ID","First Name","Last Name","Full Name","Email","Personal Email",
+    "Phone (+91)","Gender","DOB","Blood Group","Current Address","City","State","Pincode",
+    "Emergency Contact","Emergency Phone",
     "Department","Designation","Employment Type","Status","Joining Date","Last Working Date",
-    "CTC","Basic Salary","HRA","Bank Name","Account No","IFSC","PAN","UAN"
+    "Annual CTC","Basic Salary (50%)","HRA (20%)","Special Allowance (30%)","Monthly Gross",
+    "Bank Name","Account No","IFSC","PAN","UAN","Profile Photo"
   ];
   sheet.clearContents();
   sheet.appendRow(headers);
   sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#09090b").setFontColor("white");
 
   var rows = (data.employees || []).map(function(e) {
+    var monthly = (e.basicSalary || 0) + (e.hra || 0) + (e.specialAllowance || 0);
     return [
-      e.employeeId, e.employeeId, e.firstName, e.lastName, e.fullName,
+      e.employeeId, e.firstName, e.lastName, e.fullName,
       e.email, e.personalEmail, e.phone, e.gender, e.dateOfBirth,
       e.bloodGroup, e.address, e.city, e.state, e.pincode,
+      e.emergencyContact || "", e.emergencyPhone || "",
       e.department, e.designation, e.employmentType, e.status,
-      e.joiningDate, e.lastWorkingDate, e.ctc, e.basicSalary, e.hra,
+      e.joiningDate, e.lastWorkingDate,
+      e.ctc, e.basicSalary, e.hra, e.specialAllowance, monthly,
       e.bankName, e.bankAccountNo, e.ifscCode, e.pan, e.uan,
+      e.profilePhoto ? "YES" : "NO",
     ];
   });
 

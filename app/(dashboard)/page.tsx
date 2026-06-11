@@ -233,7 +233,7 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <ScrollReveal delayClass="reveal-delay-4" className="pt-2">
-        <QuickActions />
+        <QuickActions isAdmin={isAdmin} />
       </ScrollReveal>
     </div>
   );

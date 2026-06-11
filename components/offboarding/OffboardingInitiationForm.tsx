@@ -33,7 +33,7 @@ interface Props {
 export function OffboardingInitiationForm({ employees, defaultEmployeeId }: Props) {
   const [employeeId, setEmployeeId] = useState(defaultEmployeeId || employees[0]?.id || "");
   const [lastWorkingDate, setLastWorkingDate] = useState(new Date().toISOString().slice(0, 10));
-  const [exitInterviewDate, setExitInterviewDate] = useState(new Date().toISOString().slice(0, 10));
+  // Exit interview removed per requirements
   const [reason, setReason] = useState<typeof reasons[number]>(reasons[0]);
   const [notes, setNotes] = useState("");
   const [letters, setLetters] = useState<string[]>(["Relieving Letter", "Experience Letter"]);
@@ -52,7 +52,7 @@ export function OffboardingInitiationForm({ employees, defaultEmployeeId }: Prop
     const res = await fetch("/api/offboarding/initiate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId, lastWorkingDate, exitInterviewDate, reason, notes, issuesLetters: letters }),
+      body: JSON.stringify({ employeeId, lastWorkingDate, reason, notes, issuesLetters: letters }),
     });
     const data = await res.json();
     setMessage({ text: res.ok ? "Offboarding initiated successfully." : (data.error?.message || "Unable to initiate offboarding."), ok: res.ok });
@@ -99,16 +99,10 @@ export function OffboardingInitiationForm({ employees, defaultEmployeeId }: Prop
           </div>
         )}
 
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Last Working Date</Label>
-            <Input type="date" className="mt-1.5 text-sm" value={lastWorkingDate} onChange={(e) => setLastWorkingDate(e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Exit Interview</Label>
-            <Input type="date" className="mt-1.5 text-sm" value={exitInterviewDate} onChange={(e) => setExitInterviewDate(e.target.value)} />
-          </div>
+        {/* Last Working Date */}
+        <div>
+          <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Last Working Date</Label>
+          <Input type="date" className="mt-1.5 text-sm" value={lastWorkingDate} onChange={(e) => setLastWorkingDate(e.target.value)} />
         </div>
 
         {/* Reason */}

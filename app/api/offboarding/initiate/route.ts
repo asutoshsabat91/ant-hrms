@@ -17,7 +17,7 @@ const initiateSchema = z.object({
     "Other",
   ]),
   notes: z.string().optional(),
-  issuesLetters: z.array(z.enum(["Relieving Letter", "Experience Letter", "LOR"])),
+  issuesLetters: z.array(z.enum(["Internship Certificate", "Relieving Letter", "Experience Letter", "LOR"])),
 });
 
 export async function POST(req: Request) {

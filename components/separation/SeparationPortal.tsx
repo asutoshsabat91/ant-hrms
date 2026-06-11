@@ -56,6 +56,7 @@ export function SeparationPortal({ isAdmin, mySeparation: initial, allSeparation
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
+  const [customLwd, setCustomLwd] = useState<Record<string, string>>({});
 
   async function initiate() {
     if (!reason.trim()) { setError("Please provide a reason."); return; }
@@ -116,7 +117,9 @@ export function SeparationPortal({ isAdmin, mySeparation: initial, allSeparation
               <p className="text-sm font-bold text-zinc-900">Submit Resignation</p>
             </div>
             <p className="text-xs text-zinc-500">
-              Once submitted, your manager and HR will review your request. A 10-day notice period applies upon approval.
+              Once submitted, your manager and HR will review your request. A notice period applies upon approval —{" "}
+              <strong>10 days for interns</strong>, <strong>60 days for full-time employees</strong>.
+              Full-time employees: admin may grant a custom last working date.
             </p>
             <div>
               <label className="text-xs font-semibold text-zinc-600">Reason for Resignation</label>
@@ -198,7 +201,12 @@ export function SeparationPortal({ isAdmin, mySeparation: initial, allSeparation
                 <span className="ml-2 text-xs font-normal text-zinc-400">({sep.employee?.employeeId})</span>
               </p>
               <p className="text-xs text-zinc-500">{sep.employee?.designation} · {sep.employee?.department.name}</p>
-              <p className="text-xs text-zinc-400 mt-0.5">Submitted {format(new Date(sep.initiatedAt), "dd MMM yyyy")}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Submitted {format(new Date(sep.initiatedAt), "dd MMM yyyy")} ·{" "}
+                <span className={`font-semibold ${sep.noticeDays > 10 ? "text-amber-600" : "text-sky-600"}`}>
+                  {sep.noticeDays}-day notice
+                </span>
+              </p>
             </div>
             <StatusBadge status={sep.status} />
           </div>
@@ -217,12 +225,24 @@ export function SeparationPortal({ isAdmin, mySeparation: initial, allSeparation
           )}
 
           {sep.status === "PENDING" && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-end">
+              {/* For full-time employees: show custom LWD date picker */}
+              {sep.employee && !["INTERN"].includes(sep.noticeDays <= 10 ? "INTERN" : "FT") && sep.noticeDays > 10 && (
+                <div>
+                  <p className="text-[10px] text-zinc-400 mb-1">Custom Last Working Day <span className="text-zinc-300">(optional — defaults to {sep.noticeDays}d notice)</span></p>
+                  <input
+                    type="date"
+                    className="h-7 rounded-lg border border-zinc-200 px-2 text-xs"
+                    value={customLwd[sep.id] ?? ""}
+                    onChange={(e) => setCustomLwd((p) => ({ ...p, [sep.id]: e.target.value }))}
+                  />
+                </div>
+              )}
               <Button
                 size="sm"
                 className="h-7 text-xs bg-emerald-500 hover:bg-emerald-600 gap-1"
                 disabled={actionLoading === sep.id + "approve"}
-                onClick={() => adminAction(sep.id, "approve")}
+                onClick={() => adminAction(sep.id, "approve", customLwd[sep.id] ? { customLastWorkingDate: customLwd[sep.id] } : undefined)}
               >
                 <CheckCircle2 className="h-3 w-3" /> Approve
               </Button>
