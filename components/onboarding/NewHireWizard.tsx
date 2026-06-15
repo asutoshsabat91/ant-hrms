@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, CheckCircle2, Camera } from "lucide-react";
+import { Upload, CheckCircle2, Camera, Rocket } from "lucide-react";
 import Image from "next/image";
 
 const wizardSchema = z.object({
@@ -34,8 +34,8 @@ const wizardSchema = z.object({
   managerId: z.string().optional(),
   employmentType: z.enum(["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"]),
   joiningDate: z.string().min(1, "Required"),
-  ctc: z.number().min(0).optional(),
-  variablePay: z.number().min(0).optional(),
+  ctc: z.string().optional(),
+  variablePay: z.string().optional(),
   templateId: z.string().optional(),
 });
 
@@ -79,7 +79,6 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
 
   const {
     register,
-    handleSubmit,
     watch,
     trigger,
     setValue,
@@ -95,7 +94,8 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
     },
   });
 
-  const ctc = watch("ctc") || 0;
+  const ctcRaw = watch("ctc");
+  const ctc = parseFloat(ctcRaw ?? "0") || 0;
   const employmentType = watch("employmentType");
   const isIntern = employmentType === "INTERN";
 
@@ -129,14 +129,31 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
     if (isValid) setStep((s) => Math.min(5, s + 1));
   };
 
-  const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
+  // Explicit submit handler — called directly via onClick to avoid form nesting issues
+  const handleCreatePipeline = async () => {
     setErrorMessage(null);
+    // Validate all required fields first
+    const isValid = await trigger(["firstName", "lastName", "email", "designation", "departmentId", "joiningDate"]);
+    if (!isValid) {
+      const errList = Object.entries(errors)
+        .map(([k, v]) => `${k}: ${(v as { message?: string }).message ?? "invalid"}`)
+        .join(", ");
+      setErrorMessage(`Please fix these fields: ${errList || "Check required fields above"}`);
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
+      const values = getValues();
+      const hirePayload = {
+        ...values,
+        ctc: values.ctc ? parseFloat(values.ctc) || undefined : undefined,
+        variablePay: values.variablePay ? parseFloat(values.variablePay) || undefined : undefined,
+      };
       const res = await fetch("/api/onboarding/hire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(hirePayload),
       });
       const payload = await res.json();
       if (!res.ok) {
@@ -148,6 +165,8 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         id: payload.employee.employeeId,
         hireId: payload.employee.id,
       });
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -186,16 +205,16 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
+      <div className="space-y-6 mt-6">
 
         {/* ── STEP 1: PERSONAL ─────────────────────────────── */}
         {step === 1 && (
           <div className="space-y-6">
-            {/* Passport photo */}
+            {/* Passport photo — no onClick on div, use label instead */}
             <div className="flex items-start gap-5">
-              <div
-                className="relative flex h-24 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 hover:border-[var(--purple)]/40 hover:bg-[var(--purple)]/5 transition-all overflow-hidden"
-                onClick={() => photoInputRef.current?.click()}
+              <label
+                htmlFor="passport-photo-input"
+                className="relative flex h-24 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 hover:border-violet-400/60 hover:bg-violet-50 transition-all overflow-hidden"
               >
                 {photoPreview ? (
                   <Image src={photoPreview} alt="Passport photo" fill className="object-cover" />
@@ -205,16 +224,26 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
                     <span className="text-[9px] font-semibold text-zinc-400 text-center leading-tight">Passport<br/>Photo</span>
                   </div>
                 )}
-                <input ref={photoInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handlePhotoUpload} />
-              </div>
+                <input
+                  id="passport-photo-input"
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+              </label>
               <div className="flex-1">
                 <p className="text-xs font-bold text-zinc-700">Passport Size Photo <span className="text-rose-500">*</span></p>
                 <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
                   Required for compliance and ID card. Upload a clear face photo in JPG/PNG format (max 2MB). This is saved permanently in the company database.
                 </p>
-                <button type="button" onClick={() => photoInputRef.current?.click()} className="mt-2 flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-zinc-600 hover:border-[var(--purple)]/40 hover:text-[var(--purple)] transition-colors">
+                <label
+                  htmlFor="passport-photo-input"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-zinc-600 hover:border-violet-400/60 hover:text-violet-600 transition-colors cursor-pointer"
+                >
                   <Upload className="h-3 w-3" />{photoPreview ? "Change Photo" : "Upload Photo"}
-                </button>
+                </label>
               </div>
             </div>
 
@@ -341,7 +370,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
               <Input type="date" className={inputCls} {...register("joiningDate")} />
             </FieldGroup>
             <FieldGroup label={isIntern ? "Monthly Stipend (₹)" : "Annual CTC (₹)"}>
-              <Input type="number" step="1000" className={inputCls} {...register("ctc", { valueAsNumber: true })} placeholder={isIntern ? "15000" : "500000"} />
+              <Input type="number" step="1000" className={inputCls} {...register("ctc")} placeholder={isIntern ? "15000" : "500000"} />
             </FieldGroup>
           </div>
         )}
@@ -352,7 +381,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
             <div className="flex items-start gap-4 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
               <div className="flex-1">
                 <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{isIntern ? "Monthly Stipend (₹)" : "Annual CTC (₹)"}</Label>
-                <Input type="number" step="1000" className={inputCls + " mt-1"} {...register("ctc", { valueAsNumber: true })} />
+                <Input type="number" step="1000" className={inputCls + " mt-1"} {...register("ctc")} />
                 <p className="text-[10px] text-zinc-400 mt-1">
                   {isIntern ? "Full stipend is paid monthly. No HRA or Special Allowance for interns." : "Compensation is split as Basic (50%) + HRA (20%) + Special Allowance (30%) — paid monthly."}
                 </p>
@@ -401,7 +430,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
                     type="number"
                     step="1000"
                     className="mt-2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-900 outline-none w-full"
-                    {...register("variablePay", { valueAsNumber: true })}
+                    {...register("variablePay")}
                     placeholder="Annual variable (₹)"
                   />
                   <span className="text-[9px] text-violet-500 mt-1 block">Awarded annually — not CTC-based. Leave blank if not applicable.</span>
@@ -517,8 +546,14 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
                 Save & Next
               </Button>
             ) : !successData ? (
-              <Button type="submit" disabled={isSubmitting} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-2 disabled:opacity-50">
-                {isSubmitting ? "Creating pipeline…" : "🚀 Create Onboarding Pipeline"}
+              <Button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleCreatePipeline}
+                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-2 disabled:opacity-50 px-5 py-2.5"
+              >
+                <Rocket className="h-3.5 w-3.5" />
+                {isSubmitting ? "Creating pipeline…" : "Create Onboarding Pipeline"}
               </Button>
             ) : (
               <a href="/onboarding" className="inline-flex items-center gap-1 rounded-lg bg-zinc-950 text-white text-xs font-bold px-4 py-2 hover:bg-zinc-800 transition-all">
@@ -527,7 +562,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
             )}
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

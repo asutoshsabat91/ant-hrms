@@ -36,8 +36,14 @@ function MilestoneCard({
   const [open, setOpen] = useState(!done);
   return (
     <div className={`rounded-xl border transition-all ${done ? "border-emerald-200 bg-emerald-50/30" : locked ? "border-zinc-100 bg-zinc-50/50 opacity-60" : "border-zinc-200 bg-white shadow-sm"}`}>
-      <button type="button" onClick={() => !locked && setOpen((o) => !o)}
-        className="flex w-full items-center justify-between p-4 text-left" disabled={locked}>
+      {/* Header row — use div, not button, so admin action buttons inside don't nest */}
+      <div
+        role="button"
+        tabIndex={locked ? -1 : 0}
+        onClick={() => !locked && setOpen((o) => !o)}
+        onKeyDown={(e) => e.key === "Enter" && !locked && setOpen((o) => !o)}
+        className={`flex w-full items-center justify-between p-4 text-left ${!locked ? "cursor-pointer" : "cursor-not-allowed"}`}
+      >
         <div className="flex items-center gap-3">
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${done ? "bg-emerald-500 text-white" : locked ? "bg-zinc-200 text-zinc-400" : "bg-zinc-950 text-white"}`}>
             {done ? <CheckCircle2 className="h-4 w-4" /> : number}
@@ -52,11 +58,11 @@ function MilestoneCard({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {adminAction}
           {!locked && (open ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />)}
         </div>
-      </button>
+      </div>
       {open && !locked && <div className="border-t border-zinc-100 p-4">{children}</div>}
     </div>
   );

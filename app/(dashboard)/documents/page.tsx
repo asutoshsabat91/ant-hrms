@@ -1,42 +1,57 @@
 import { prisma } from "@/lib/prisma";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { DocumentManager } from "@/components/documents/DocumentManager";
+import { auth } from "@/auth";
+import { DocumentsHub } from "@/components/documents/DocumentsHub";
 
 export default async function DocumentsPage() {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "HR_ADMIN";
+
+  let currentEmployeeId: string | null = null;
+  if (!isAdmin && session?.user?.id) {
+    const emp = await prisma.employee.findFirst({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    currentEmployeeId = emp?.id ?? null;
+  }
+
   const [documents, employees] = await Promise.all([
     prisma.hRDocument.findMany({
-      include: { employee: { select: { id: true, firstName: true, lastName: true } } },
-      orderBy: { issuedDate: "desc" },
-      take: 50,
+      where: isAdmin ? {} : currentEmployeeId ? { employeeId: currentEmployeeId } : { id: "none" },
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true, employeeId: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
     }),
-    prisma.employee.findMany({
-      orderBy: { firstName: "asc" },
-      select: { id: true, firstName: true, lastName: true },
-    }),
+    isAdmin
+      ? prisma.employee.findMany({
+          orderBy: { firstName: "asc" },
+          select: { id: true, firstName: true, lastName: true, employeeId: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Documents"
-        description="Generate offer letters, certificates, LORs, and more"
-      />
-
-      <DocumentManager
-        documents={documents.map((document) => ({
-          id: document.id,
-          title: document.title,
-          type: document.type,
-          issuedDate: document.issuedDate.toISOString(),
-          description: (document.metadata as { notes?: string } | null)?.notes ?? null,
-          employee: {
-            id: document.employee.id,
-            firstName: document.employee.firstName,
-            lastName: document.employee.lastName,
-          },
-        }))}
-        employees={employees}
-      />
-    </div>
+    <DocumentsHub
+      isAdmin={isAdmin}
+      currentEmployeeId={currentEmployeeId}
+      documents={documents.map((d) => ({
+        id: d.id,
+        title: d.title,
+        type: d.type,
+        fileUrl: d.fileUrl,
+        issuedDate: d.issuedDate.toISOString(),
+        issuedBy: d.issuedBy,
+        metadata: d.metadata as Record<string, unknown> | null,
+        employee: {
+          id: d.employee.id,
+          firstName: d.employee.firstName,
+          lastName: d.employee.lastName,
+          employeeId: d.employee.employeeId,
+        },
+      }))}
+      employees={employees}
+    />
   );
 }
