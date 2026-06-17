@@ -7,9 +7,11 @@ import { z } from "zod";
 import type { TaskCategory } from "@prisma/client";
 
 const onboardingSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.string().email(),
+  mode: z.enum(["invite", "complete", "direct"]).optional(),
+  employeeDbId: z.string().optional(), // Used for complete mode
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
   phone: z.string().optional(),
   personalEmail: z.string().optional(),
   dateOfBirth: z.string().optional(),
@@ -52,6 +54,29 @@ const DEFAULT_TASKS: Array<{
   { title: "Complete POSH Training", category: "COMPLIANCE", assignedTo: "HR Admin", dueDaysFrom: 7, order: 12, isRequired: true },
 ];
 
+export async function GET() {
+  const session = await auth();
+  if (!session?.user || !["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Get pending hires who have filled personal details but not finished wizard setup
+  const pendingHires = await prisma.employee.findMany({
+    where: {
+      status: "ONBOARDING",
+      personalDetailsFilled: true,
+      onboardingWizardCompleted: false,
+    },
+    include: {
+      department: true,
+      manager: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return NextResponse.json(pendingHires);
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user || !["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
@@ -84,13 +109,169 @@ export async function POST(req: Request) {
   }
 
   try {
+    if (data.mode === "complete" && data.employeeDbId) {
+      // Complete onboarding wizard for an existing employee
+      const existingEmployee = await prisma.employee.findUnique({
+        where: { id: data.employeeDbId },
+        include: { user: true },
+      });
+
+      if (!existingEmployee) {
+        return NextResponse.json({ error: "Employee not found." }, { status: 404 });
+      }
+
+      const updated = await prisma.employee.update({
+        where: { id: data.employeeDbId },
+        data: {
+          designation: data.designation,
+          departmentId: data.departmentId,
+          managerId: data.managerId || undefined,
+          employmentType: data.employmentType,
+          joiningDate,
+          probationEnds: addDays(joiningDate, 90),
+          ctc: data.ctc,
+          basicSalary: compensation?.basicSalary,
+          hra: compensation?.hra,
+          specialAllowance: compensation?.specialAllowance,
+          onboardingWizardCompleted: true,
+        },
+        include: { department: true, manager: true },
+      });
+
+      // Update User role if employment type dictates it
+      await prisma.user.update({
+        where: { id: existingEmployee.userId },
+        data: {
+          role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
+        },
+      });
+
+      // Re-initialize tasks for this employee based on the final template details if they don't have tasks
+      const taskCount = await prisma.onboardingTask.count({ where: { employeeId: updated.id } });
+      if (taskCount === 0) {
+        await prisma.onboardingTask.createMany({
+          data: templateTasks.map((task) => ({
+            employeeId: updated.id,
+            title: task.title,
+            category: task.category,
+            assignedTo: task.assignedTo,
+            dueDate: task.dueDaysFrom >= 0
+              ? addDays(joiningDate, task.dueDaysFrom)
+              : subDays(joiningDate, Math.abs(task.dueDaysFrom)),
+            order: task.order,
+            isRequired: task.isRequired,
+          })),
+        });
+      }
+
+      // Notify employee that their job profile is updated
+      await prisma.notification.create({
+        data: {
+          userId: existingEmployee.userId,
+          type: "ONBOARDING_TASK" as const,
+          title: "Onboarding Wizard Setup Finalized",
+          body: "Your HR setup and salary structure have been finalized by the administrator.",
+          link: `/portal`,
+        },
+      });
+
+      return NextResponse.json({ employee: updated }, { status: 200 });
+    }
+
+    if (data.mode === "invite") {
+      // Onboarding initiation pipeline (Invite mode)
+      if (!data.firstName || !data.lastName || !data.email) {
+        return NextResponse.json({ error: "firstName, lastName and email are required for inviting an employee" }, { status: 400 });
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        const existingUser = await tx.user.findUnique({ where: { email: data.email!.toLowerCase() } });
+        if (existingUser) throw new Error(`User with email ${data.email} already exists.`);
+
+        const user = await tx.user.create({
+          data: {
+            email: data.email!.toLowerCase(),
+            role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
+            isActive: true,
+          },
+        });
+
+        const employee = await tx.employee.create({
+          data: {
+            userId: user.id,
+            firstName: data.firstName!,
+            lastName: data.lastName!,
+            email: data.email!.toLowerCase(),
+            employeeId,
+            designation: data.designation,
+            departmentId: data.departmentId,
+            managerId: data.managerId || undefined,
+            employmentType: data.employmentType,
+            status: "ONBOARDING",
+            joiningDate,
+            probationEnds: addDays(joiningDate, 90),
+            personalDetailsFilled: false,
+            onboardingWizardCompleted: false,
+          },
+          include: { department: true, manager: true },
+        });
+
+        // Pre-create onboarding tasks
+        await tx.onboardingTask.createMany({
+          data: templateTasks.map((task) => ({
+            employeeId: employee.id,
+            title: task.title,
+            category: task.category,
+            assignedTo: task.assignedTo,
+            dueDate: task.dueDaysFrom >= 0
+              ? addDays(joiningDate, task.dueDaysFrom)
+              : subDays(joiningDate, Math.abs(task.dueDaysFrom)),
+            order: task.order,
+            isRequired: task.isRequired,
+          })),
+        });
+
+        // Notify admins
+        const admins = await tx.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+        await tx.notification.createMany({
+          data: admins.map((a) => ({
+            userId: a.id,
+            type: "ONBOARDING_TASK" as const,
+            title: "New Hire Onboarding Invited",
+            body: `${data.firstName} ${data.lastName} (${employeeId}) invited to complete onboarding.`,
+            link: `/onboarding/${employee.id}`,
+          })),
+        });
+
+        // Notify employee
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            type: "ONBOARDING_TASK" as const,
+            title: "Welcome to AntBox! Fill in your details",
+            body: "Please click here to fill in your personal information and complete your onboarding.",
+            link: `/portal`,
+          },
+        });
+
+        return employee;
+      });
+
+      return NextResponse.json({ employee: result }, { status: 201 });
+    }
+
+    // Direct mode (default)
+    if (!data.firstName || !data.lastName || !data.email) {
+      return NextResponse.json({ error: "firstName, lastName and email are required" }, { status: 400 });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
-      const existingUser = await tx.user.findUnique({ where: { email: data.email.toLowerCase() } });
+      const existingUser = await tx.user.findUnique({ where: { email: data.email!.toLowerCase() } });
       if (existingUser) throw new Error(`User with email ${data.email} already exists.`);
 
       const user = await tx.user.create({
         data: {
-          email: data.email.toLowerCase(),
+          email: data.email!.toLowerCase(),
           role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
           isActive: true,
         },
@@ -99,15 +280,16 @@ export async function POST(req: Request) {
       const employee = await tx.employee.create({
         data: {
           userId: user.id,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email.toLowerCase(),
+          firstName: data.firstName!,
+          lastName: data.lastName!,
+          email: data.email!.toLowerCase(),
           personalEmail: data.personalEmail || undefined,
           phone: data.phone,
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
           gender: data.gender,
           bloodGroup: data.bloodGroup,
           address: data.currentAddress ?? data.address,
+          permanentAddress: data.permanentAddress,
           city: data.city,
           state: data.state ?? "Odisha",
           pincode: data.pincode,
@@ -127,6 +309,8 @@ export async function POST(req: Request) {
           hra: compensation?.hra,
           specialAllowance: compensation?.specialAllowance,
           pf: 0,
+          personalDetailsFilled: true,
+          onboardingWizardCompleted: true,
         },
         include: { department: true, manager: true },
       });
@@ -145,7 +329,7 @@ export async function POST(req: Request) {
         })),
       });
 
-      // Notify all admins
+      // Notify admins
       const admins = await tx.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
       await tx.notification.createMany({
         data: admins.map((a) => ({
@@ -157,7 +341,7 @@ export async function POST(req: Request) {
         })),
       });
 
-      // Notify the employee to complete documents (24hr reminder setup handled by daily cron)
+      // Notify the employee
       await tx.notification.create({
         data: {
           userId: user.id,

@@ -238,6 +238,9 @@ model Employee {
   emergencyContact String?
   emergencyPhone   String?
   profilePhoto     String?
+  personalDetailsFilled     Boolean        @default(false)
+  onboardingWizardCompleted Boolean        @default(false)
+  permanentAddress          String?
   employeeId       String         @unique
   designation      String
   department       Department     @relation(fields: [departmentId], references: [id])

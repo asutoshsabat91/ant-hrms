@@ -8,6 +8,8 @@ import {
   FileSpreadsheet,
   Printer,
   X,
+  Upload,
+  Camera,
 } from "lucide-react";
 import type { Employee, Department } from "@prisma/client";
 
@@ -19,8 +21,82 @@ interface PortalClientProps {
 
 export function PortalClient({ employee }: PortalClientProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "tax-declaration" | "hra" | "payslips" | "epf"
+    "overview" | "personal" | "tax-declaration" | "hra" | "payslips" | "epf"
   >("overview");
+
+  // Personal Info form states
+  const [firstName, setFirstName] = useState(employee.firstName || "");
+  const [lastName, setLastName] = useState(employee.lastName || "");
+  const [personalEmail, setPersonalEmail] = useState(employee.personalEmail || "");
+  const [phone, setPhone] = useState(employee.phone || "");
+  const [dateOfBirth, setDateOfBirth] = useState(employee.dateOfBirth ? new Date(employee.dateOfBirth).toISOString().slice(0, 10) : "");
+  const [gender, setGender] = useState(employee.gender || "");
+  const [bloodGroup, setBloodGroup] = useState(employee.bloodGroup || "");
+  const [currentAddress, setCurrentAddress] = useState(employee.address || "");
+  const [permanentAddress, setPermanentAddress] = useState((employee as unknown as { permanentAddress?: string | null }).permanentAddress || "");
+  const [city, setCity] = useState(employee.city || "");
+  const [state, setState] = useState(employee.state || "Odisha");
+  const [pincode, setPincode] = useState(employee.pincode || "");
+  const [emergencyContact, setEmergencyContact] = useState(employee.emergencyContact || "");
+  const [emergencyPhone, setEmergencyPhone] = useState(employee.emergencyPhone || "");
+  const [profilePhoto, setProfilePhoto] = useState(employee.profilePhoto || "");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(employee.profilePhoto || null);
+  const [sameAddress, setSameAddress] = useState(false);
+  const [personalSaving, setPersonalSaving] = useState(false);
+  const [personalMsg, setPersonalMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handlePersonalPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("Please upload a JPG/PNG image."); return; }
+    if (file.size > 2 * 1024 * 1024) { alert("Photo must be under 2MB."); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setPhotoPreview(base64);
+      setProfilePhoto(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  async function savePersonalInfo() {
+    setPersonalSaving(true);
+    setPersonalMsg(null);
+    try {
+      const res = await fetch("/api/onboarding/personal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeId: employee.id,
+          firstName,
+          lastName,
+          personalEmail,
+          phone,
+          dateOfBirth,
+          gender,
+          bloodGroup,
+          currentAddress,
+          permanentAddress: sameAddress ? currentAddress : permanentAddress,
+          city,
+          state,
+          pincode,
+          emergencyContact,
+          emergencyPhone,
+          profilePhoto,
+        }),
+      });
+      const data = await res.json();
+      setPersonalMsg({ ok: res.ok, text: res.ok ? "Personal details saved and submitted to HR!" : (data.error || "Failed to save details.") });
+      if (res.ok) {
+        setAlertMsg({ type: "success", text: "Personal details submitted successfully!" });
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch {
+      setPersonalMsg({ ok: false, text: "Something went wrong." });
+    } finally {
+      setPersonalSaving(false);
+    }
+  }
 
   // Load from LocalStorage or fallbacks
   const storageKey = `antbox_ess_${employee.id}`;
@@ -291,6 +367,16 @@ export function PortalClient({ employee }: PortalClientProps) {
           Overview
         </button>
         <button
+          onClick={() => setActiveTab("personal")}
+          className={`pb-3 border-b-2 transition-all duration-200 ${
+            activeTab === "personal"
+              ? "border-zinc-900 text-zinc-900"
+              : "border-transparent hover:text-zinc-600"
+          }`}
+        >
+          Personal
+        </button>
+        <button
           onClick={() => setActiveTab("tax-declaration")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "tax-declaration"
@@ -334,7 +420,259 @@ export function PortalClient({ employee }: PortalClientProps) {
 
       {/* Tab Contents */}
       <div className="space-y-6">
-        
+
+        {/* TAB 0.5: PERSONAL INFO */}
+        {activeTab === "personal" && (
+          <div className="rounded-xl border border-zinc-200 bg-white p-8 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-sm font-bold text-zinc-900">Personal Information</h3>
+              <p className="text-xs text-zinc-400 mt-1">
+                Please complete your personal profile details for company records.
+              </p>
+            </div>
+
+            {/* Passport Photo Upload */}
+            <div className="flex items-start gap-5 border-b border-zinc-100 pb-6">
+              <label
+                htmlFor="personal-photo-input"
+                className="relative flex h-24 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 hover:border-violet-400/60 hover:bg-violet-50 transition-all overflow-hidden"
+              >
+                {photoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoPreview} alt="Passport photo" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-1">
+                    <Camera className="h-5 w-5 text-zinc-400" />
+                    <span className="text-[9px] font-semibold text-zinc-400 text-center leading-tight">Passport<br/>Photo</span>
+                  </div>
+                )}
+                <input
+                  id="personal-photo-input"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={handlePersonalPhotoUpload}
+                />
+              </label>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-zinc-700">Passport Size Photo <span className="text-rose-500">*</span></p>
+                <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
+                  Required for identity card creation and compliance. Upload a clear face photo in JPG/PNG format (max 2MB).
+                </p>
+                <label
+                  htmlFor="personal-photo-input"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-zinc-600 hover:border-violet-400/60 hover:text-violet-600 transition-colors cursor-pointer"
+                >
+                  <Upload className="h-3 w-3" />{photoPreview ? "Change Photo" : "Upload Photo"}
+                </label>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">First Name *</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                  placeholder="Riya"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                  placeholder="Sharma"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Company Email</label>
+                <input
+                  type="email"
+                  disabled
+                  value={employee.email}
+                  className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs outline-none text-zinc-500 cursor-not-allowed font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Personal Email *</label>
+                <input
+                  type="email"
+                  value={personalEmail}
+                  onChange={(e) => setPersonalEmail(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                  placeholder="you@gmail.com"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Phone (+91)</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                  placeholder="9876543210"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Date of Birth</label>
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Gender</label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                >
+                  <option value="">Select</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="MALE">Male</option>
+                  <option value="OTHER">Non-binary / Other</option>
+                  <option value="PREFER_NOT">Prefer not to say</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Blood Group</label>
+                <select
+                  value={bloodGroup}
+                  onChange={(e) => setBloodGroup(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                >
+                  <option value="">Select</option>
+                  {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map((bg) => (
+                    <option key={bg} value={bg}>{bg}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Addresses */}
+            <div className="space-y-4 border-t border-zinc-100 pt-6">
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Current Address</label>
+                <textarea
+                  value={currentAddress}
+                  onChange={(e) => setCurrentAddress(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900 resize-none"
+                  placeholder="Flat/House No., Street, Area…"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="personalSameAddr"
+                  checked={sameAddress}
+                  onChange={(e) => {
+                    setSameAddress(e.target.checked);
+                    if (e.target.checked) setPermanentAddress(currentAddress);
+                  }}
+                  className="rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+                />
+                <label htmlFor="personalSameAddr" className="text-xs text-zinc-500 font-medium">Permanent address same as current</label>
+              </div>
+              {!sameAddress && (
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Permanent Address</label>
+                  <textarea
+                    value={permanentAddress}
+                    onChange={(e) => setPermanentAddress(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900 resize-none"
+                    placeholder="Permanent address…"
+                  />
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">City</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                    placeholder="Bhubaneswar"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">State</label>
+                  <input
+                    type="text"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                    placeholder="Odisha"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Pincode</label>
+                  <input
+                    type="text"
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                    placeholder="751001"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-4 space-y-4">
+              <p className="text-[10px] font-bold uppercase text-amber-800 tracking-wider">Emergency Contact</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Contact Name</label>
+                  <input
+                    type="text"
+                    value={emergencyContact}
+                    onChange={(e) => setEmergencyContact(e.target.value)}
+                    className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                    placeholder="Parent / Guardian name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={emergencyPhone}
+                    onChange={(e) => setEmergencyPhone(e.target.value)}
+                    className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs outline-none text-zinc-900"
+                    placeholder="9876543210"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {personalMsg && (
+              <div className={`flex items-center gap-2 rounded-lg p-3 text-xs ${personalMsg.ok ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                {personalMsg.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+                {personalMsg.text}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-4 border-t border-zinc-100">
+              <button
+                onClick={savePersonalInfo}
+                disabled={personalSaving}
+                className="rounded-lg bg-zinc-950 px-6 py-2.5 text-xs font-bold text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                {personalSaving ? "Saving details…" : "Submit Personal Details"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: OVERVIEW */}
         {activeTab === "overview" && (
           <div className="grid gap-6 md:grid-cols-3">

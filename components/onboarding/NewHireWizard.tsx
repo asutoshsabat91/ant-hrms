@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, CheckCircle2, Camera, Rocket } from "lucide-react";
+import { Upload, CheckCircle2, Camera, Rocket, Mail, RefreshCw } from "lucide-react";
 import Image from "next/image";
 
 const wizardSchema = z.object({
@@ -77,6 +77,12 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
   const [sameAddress, setSameAddress] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // Mode States
+  const [onboardingMode, setOnboardingMode] = useState<"direct" | "invite" | "resume">("direct");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingHires, setPendingHires] = useState<any[]>([]);
+  const [selectedPendingId, setSelectedPendingId] = useState<string>("");
+
   const {
     register,
     watch,
@@ -104,7 +110,87 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
     return breakdownFromCTC(ctc, employmentType as "FULL_TIME" | "PART_TIME" | "INTERN" | "CONTRACT");
   }, [ctc, employmentType]);
 
+  // Fetch pending hires
+  const fetchPending = async () => {
+    try {
+      const res = await fetch("/api/onboarding/hire");
+      if (res.ok) {
+        const data = await res.json();
+        setPendingHires(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch pending hires", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  const handleModeChange = (mode: "direct" | "invite" | "resume") => {
+    setOnboardingMode(mode);
+    setSelectedPendingId("");
+    setStep(1);
+    setErrorMessage(null);
+    setSuccessData(null);
+    setPhotoPreview(null);
+
+    // reset fields
+    setValue("firstName", "");
+    setValue("lastName", "");
+    setValue("email", "");
+    setValue("personalEmail", "");
+    setValue("phone", "");
+    setValue("dateOfBirth", "");
+    setValue("gender", "");
+    setValue("bloodGroup", "");
+    setValue("currentAddress", "");
+    setValue("permanentAddress", "");
+    setValue("city", "");
+    setValue("state", "Odisha");
+    setValue("pincode", "");
+    setValue("emergencyContact", "");
+    setValue("emergencyPhone", "");
+    setValue("profilePhoto", "");
+    setValue("designation", "");
+    setValue("ctc", "");
+    setValue("variablePay", "");
+  };
+
+  const handlePendingSelect = (id: string) => {
+    setSelectedPendingId(id);
+    setErrorMessage(null);
+    setSuccessData(null);
+    const hire = pendingHires.find((h) => h.id === id);
+    if (hire) {
+      setValue("firstName", hire.firstName || "");
+      setValue("lastName", hire.lastName || "");
+      setValue("email", hire.email || "");
+      setValue("personalEmail", hire.personalEmail || "");
+      setValue("phone", hire.phone || "");
+      setValue("dateOfBirth", hire.dateOfBirth ? new Date(hire.dateOfBirth).toISOString().slice(0, 10) : "");
+      setValue("gender", hire.gender || "");
+      setValue("bloodGroup", hire.bloodGroup || "");
+      setValue("currentAddress", hire.address || "");
+      setValue("permanentAddress", hire.permanentAddress || "");
+      setValue("city", hire.city || "");
+      setValue("state", hire.state || "Odisha");
+      setValue("pincode", hire.pincode || "");
+      setValue("emergencyContact", hire.emergencyContact || "");
+      setValue("emergencyPhone", hire.emergencyPhone || "");
+      setValue("profilePhoto", hire.profilePhoto || "");
+      setValue("designation", hire.designation || "");
+      setValue("departmentId", hire.departmentId || "");
+      setValue("managerId", hire.managerId || "");
+      setValue("employmentType", hire.employmentType || "INTERN");
+      setValue("joiningDate", hire.joiningDate ? new Date(hire.joiningDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
+
+      setPhotoPreview(hire.profilePhoto || null);
+    }
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onboardingMode === "resume") return; // Keep read-only in resume mode
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { alert("Please upload a JPG/PNG image."); return; }
@@ -129,10 +215,9 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
     if (isValid) setStep((s) => Math.min(5, s + 1));
   };
 
-  // Explicit submit handler — called directly via onClick to avoid form nesting issues
+  // Submit handler
   const handleCreatePipeline = async () => {
     setErrorMessage(null);
-    // Validate all required fields first
     const isValid = await trigger(["firstName", "lastName", "email", "designation", "departmentId", "joiningDate"]);
     if (!isValid) {
       const errList = Object.entries(errors)
@@ -147,6 +232,8 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
       const values = getValues();
       const hirePayload = {
         ...values,
+        mode: onboardingMode === "resume" ? "complete" : "direct",
+        employeeDbId: onboardingMode === "resume" ? selectedPendingId : undefined,
         ctc: values.ctc ? parseFloat(values.ctc) || undefined : undefined,
         variablePay: values.variablePay ? parseFloat(values.variablePay) || undefined : undefined,
       };
@@ -165,6 +252,9 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         id: payload.employee.employeeId,
         hireId: payload.employee.id,
       });
+
+      // Refresh list
+      fetchPending();
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -172,45 +262,234 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
     }
   };
 
-  const inputCls = "mt-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 placeholder:text-zinc-400 outline-none focus-visible:ring-zinc-950 shadow-sm w-full";
-  const selectCls = "mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 outline-none transition-all focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 shadow-sm";
+  // Invitation submit handler
+  const handleInviteEmployee = async () => {
+    setErrorMessage(null);
+    const isValid = await trigger(["firstName", "lastName", "email", "designation", "departmentId", "joiningDate"]);
+    if (!isValid) {
+      const errList = Object.entries(errors)
+        .map(([k, v]) => `${k}: ${(v as { message?: string }).message ?? "invalid"}`)
+        .join(", ");
+      setErrorMessage(`Please fix these fields: ${errList || "Check required fields above"}`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const values = getValues();
+      const hirePayload = {
+        ...values,
+        mode: "invite",
+      };
+      const res = await fetch("/api/onboarding/hire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hirePayload),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        setErrorMessage(typeof payload.error === "string" ? payload.error : JSON.stringify(payload.error));
+        return;
+      }
+      setSuccessData({
+        name: `${payload.employee.firstName} ${payload.employee.lastName}`,
+        id: payload.employee.employeeId,
+        hireId: payload.employee.id,
+      });
+
+      // Reset
+      fetchPending();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputCls = "mt-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 placeholder:text-zinc-400 outline-none focus-visible:ring-zinc-950 shadow-sm w-full disabled:bg-zinc-50 disabled:text-zinc-500";
+  const selectCls = "mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 outline-none transition-all focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 shadow-sm disabled:bg-zinc-50 disabled:text-zinc-500";
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-md">
-      {/* Step header */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+      {/* Onboarding Mode Selector */}
+      <div className="mb-6 p-4 rounded-2xl bg-zinc-50 border border-zinc-150 grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Onboarding Pipeline Mode</Label>
+          <select
+            value={onboardingMode}
+            onChange={(e) => handleModeChange(e.target.value as "direct" | "invite" | "resume")}
+            className="mt-1.5 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 outline-none focus:border-zinc-900"
+          >
+            <option value="direct">Direct Setup (Admin fills all details)</option>
+            <option value="invite">Invite Employee (Employee fills Personal details)</option>
+            <option value="resume">Resume Pending Setup (Employee details submitted)</option>
+          </select>
+        </div>
+
+        {onboardingMode === "resume" && (
           <div>
-            <h3 className="text-base font-bold text-zinc-950">New Hire Onboarding</h3>
-            <p className="text-xs text-zinc-400 mt-0.5">Add a new teammate and configure their workspace.</p>
+            <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
+              <span>Select Pending Hire</span>
+              <button onClick={fetchPending} className="text-[9px] text-zinc-400 font-bold uppercase hover:text-zinc-700 flex items-center gap-0.5">
+                <RefreshCw className="h-2.5 w-2.5" /> Refresh
+              </button>
+            </Label>
+            <select
+              value={selectedPendingId}
+              onChange={(e) => handlePendingSelect(e.target.value)}
+              className="mt-1.5 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 outline-none focus:border-zinc-900"
+            >
+              <option value="">Choose Employee...</option>
+              {pendingHires.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.firstName} {h.lastName} ({h.email})
+                </option>
+              ))}
+            </select>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-50 border border-zinc-100 px-3 py-1.5 rounded-full">
-            Step {step} of 5
-          </span>
-        </div>
-        <div className="relative mt-8 flex justify-between items-center px-2">
-          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-100 -translate-y-1/2 z-0" />
-          <div className="absolute top-1/2 left-0 h-0.5 bg-zinc-950 -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `${((step - 1) / 4) * 100}%` }} />
-          {STEPS.map((s) => {
-            const done = step > s.num; const active = step === s.num;
-            return (
-              <div key={s.num} className="relative z-10 flex flex-col items-center">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${done ? "bg-zinc-950 text-white" : active ? "bg-white border-2 border-zinc-950 text-zinc-950 scale-110 shadow-sm" : "bg-zinc-50 border border-zinc-200 text-zinc-400"}`}>
-                  {done ? "✓" : s.num}
-                </div>
-                <span className={`absolute top-8 text-[10px] font-bold whitespace-nowrap uppercase ${active ? "text-zinc-900" : "text-zinc-400"}`}>{s.label}</span>
-              </div>
-            );
-          })}
-        </div>
+        )}
       </div>
+
+      {/* Step header */}
+      {onboardingMode !== "invite" && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-zinc-950">New Hire Onboarding</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">Add a new teammate and configure their workspace.</p>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-50 border border-zinc-100 px-3 py-1.5 rounded-full">
+              Step {step} of 5
+            </span>
+          </div>
+          <div className="relative mt-8 flex justify-between items-center px-2">
+            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-100 -translate-y-1/2 z-0" />
+            <div className="absolute top-1/2 left-0 h-0.5 bg-zinc-950 -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `${((step - 1) / 4) * 100}%` }} />
+            {STEPS.map((s) => {
+              const done = step > s.num; const active = step === s.num;
+              return (
+                <div key={s.num} className="relative z-10 flex flex-col items-center">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${done ? "bg-zinc-950 text-white" : active ? "bg-white border-2 border-zinc-950 text-zinc-950 scale-110 shadow-sm" : "bg-zinc-50 border border-zinc-200 text-zinc-400"}`}>
+                    {done ? "✓" : s.num}
+                  </div>
+                  <span className={`absolute top-8 text-[10px] font-bold whitespace-nowrap uppercase ${active ? "text-zinc-900" : "text-zinc-400"}`}>{s.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {onboardingMode === "invite" && (
+        <div className="mb-6 border-b border-zinc-100 pb-4">
+          <h3 className="text-base font-bold text-zinc-950">Invite Employee to Onboarding</h3>
+          <p className="text-xs text-zinc-400 mt-0.5">Enter basic details to create an account. The employee will log in and fill their personal details.</p>
+        </div>
+      )}
 
       <div className="space-y-6 mt-6">
 
-        {/* ── STEP 1: PERSONAL ─────────────────────────────── */}
-        {step === 1 && (
+        {/* ── INVITATION FORM ──────────────────────────────── */}
+        {onboardingMode === "invite" && (
           <div className="space-y-6">
-            {/* Passport photo — no onClick on div, use label instead */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <FieldGroup label="First Name *">
+                <Input className={inputCls} {...register("firstName")} placeholder="Riya" />
+                {errors.firstName && <p className="mt-1 text-[10px] text-rose-600">{errors.firstName.message}</p>}
+              </FieldGroup>
+              <FieldGroup label="Last Name *">
+                <Input className={inputCls} {...register("lastName")} placeholder="Sharma" />
+                {errors.lastName && <p className="mt-1 text-[10px] text-rose-600">{errors.lastName.message}</p>}
+              </FieldGroup>
+              <FieldGroup label="Company Email *">
+                <Input type="email" className={inputCls} {...register("email")} placeholder="riya.sharma@theantbox.com" />
+                {errors.email && <p className="mt-1 text-[10px] text-rose-600">{errors.email.message}</p>}
+              </FieldGroup>
+              <FieldGroup label="Designation *">
+                <Input className={inputCls} {...register("designation")} placeholder="e.g. Software Engineer Intern" />
+                {errors.designation && <p className="mt-1 text-[10px] text-rose-600">{errors.designation.message}</p>}
+              </FieldGroup>
+              <FieldGroup label="Department *">
+                <select className={selectCls} {...register("departmentId")}>
+                  <option value="">Select department</option>
+                  {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+                {errors.departmentId && <p className="mt-1 text-[10px] text-rose-600">{errors.departmentId.message}</p>}
+              </FieldGroup>
+              <FieldGroup label="Manager">
+                <select className={selectCls} {...register("managerId")}>
+                  <option value="">No manager</option>
+                  {managers.map((m) => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}
+                </select>
+              </FieldGroup>
+              <FieldGroup label="Employment Type">
+                <select className={selectCls} {...register("employmentType")}>
+                  <option value="INTERN">Intern</option>
+                  <option value="FULL_TIME">Full-time</option>
+                  <option value="PART_TIME">Part-time</option>
+                  <option value="CONTRACT">Contract</option>
+                </select>
+              </FieldGroup>
+              <FieldGroup label="Joining Date *">
+                <Input type="date" className={inputCls} {...register("joiningDate")} />
+              </FieldGroup>
+              <FieldGroup label="Onboarding Template">
+                <select className={selectCls} {...register("templateId")}>
+                  {templates.length > 0
+                    ? templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)
+                    : <option value="">Default template (built-in)</option>
+                  }
+                </select>
+              </FieldGroup>
+            </div>
+
+            {successData && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <p className="font-bold text-emerald-800 text-sm">Employee Invited successfully!</p>
+                </div>
+                <p className="text-xs text-emerald-700">
+                  <strong>{successData.name}</strong> has been registered. An onboarding invitation has been triggered to their corporate email.
+                </p>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end border-t border-zinc-100 pt-6">
+              {!successData ? (
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleInviteEmployee}
+                  className="rounded-lg bg-zinc-950 text-white hover:bg-zinc-800 text-xs font-bold gap-2 disabled:opacity-50 px-6 py-2.5 flex items-center"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {isSubmitting ? "Inviting teammate..." : "Send Onboarding Invitation"}
+                </Button>
+              ) : (
+                <Button type="button" onClick={() => handleModeChange("invite")} className="rounded-lg bg-zinc-950 text-white text-xs font-bold px-4 py-2">
+                  Invite Another Hire
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 1: PERSONAL (DIRECT OR RESUME) ──────────── */}
+        {onboardingMode !== "invite" && step === 1 && (
+          <div className="space-y-6">
+            {onboardingMode === "resume" && !selectedPendingId && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-700">
+                Please select a pending employee from the dropdown above to resume setup.
+              </div>
+            )}
+
             <div className="flex items-start gap-5">
               <label
                 htmlFor="passport-photo-input"
@@ -230,17 +509,18 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
                   type="file"
                   accept="image/jpeg,image/png"
                   className="hidden"
+                  disabled={onboardingMode === "resume"}
                   onChange={handlePhotoUpload}
                 />
               </label>
               <div className="flex-1">
                 <p className="text-xs font-bold text-zinc-700">Passport Size Photo <span className="text-rose-500">*</span></p>
                 <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
-                  Required for compliance and ID card. Upload a clear face photo in JPG/PNG format (max 2MB). This is saved permanently in the company database.
+                  Required for compliance and ID card. Upload a clear face photo in JPG/PNG format (max 2MB).
                 </p>
                 <label
                   htmlFor="passport-photo-input"
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-zinc-600 hover:border-violet-400/60 hover:text-violet-600 transition-colors cursor-pointer"
+                  className={`mt-2 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-zinc-600 transition-colors ${onboardingMode === "resume" ? "opacity-50 cursor-not-allowed" : "hover:border-violet-400/60 hover:text-violet-600 cursor-pointer"}`}
                 >
                   <Upload className="h-3 w-3" />{photoPreview ? "Change Photo" : "Upload Photo"}
                 </label>
@@ -249,31 +529,31 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
 
             <div className="grid gap-4 md:grid-cols-2">
               <FieldGroup label="First Name *">
-                <Input className={inputCls} {...register("firstName")} placeholder="Riya" />
+                <Input disabled={onboardingMode === "resume"} className={inputCls} {...register("firstName")} placeholder="Riya" />
                 {errors.firstName && <p className="mt-1 text-[10px] text-rose-600">{errors.firstName.message}</p>}
               </FieldGroup>
               <FieldGroup label="Last Name *">
-                <Input className={inputCls} {...register("lastName")} placeholder="Sharma" />
+                <Input disabled={onboardingMode === "resume"} className={inputCls} {...register("lastName")} placeholder="Sharma" />
                 {errors.lastName && <p className="mt-1 text-[10px] text-rose-600">{errors.lastName.message}</p>}
               </FieldGroup>
               <FieldGroup label="Company Email *">
-                <Input type="email" className={inputCls} {...register("email")} placeholder="riya.sharma@theantbox.com" />
+                <Input disabled={onboardingMode === "resume"} type="email" className={inputCls} {...register("email")} placeholder="riya.sharma@theantbox.com" />
                 {errors.email && <p className="mt-1 text-[10px] text-rose-600">{errors.email.message}</p>}
               </FieldGroup>
               <FieldGroup label="Personal Email">
-                <Input type="email" className={inputCls} {...register("personalEmail")} placeholder="you@gmail.com" />
+                <Input disabled={onboardingMode === "resume"} type="email" className={inputCls} {...register("personalEmail")} placeholder="you@gmail.com" />
               </FieldGroup>
               <FieldGroup label="Phone (+91)">
                 <div className="flex mt-1">
                   <span className="flex items-center px-3 rounded-l-xl border border-r-0 border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600">+91</span>
-                  <Input className="rounded-l-none rounded-r-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus-visible:ring-zinc-950 shadow-sm flex-1 mt-0" {...register("phone")} placeholder="9876543210" />
+                  <Input disabled={onboardingMode === "resume"} className="rounded-l-none rounded-r-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus-visible:ring-zinc-950 shadow-sm flex-1 mt-0 disabled:bg-zinc-50" {...register("phone")} placeholder="9876543210" />
                 </div>
               </FieldGroup>
               <FieldGroup label="Date of Birth">
-                <Input type="date" className={inputCls} {...register("dateOfBirth")} />
+                <Input disabled={onboardingMode === "resume"} type="date" className={inputCls} {...register("dateOfBirth")} />
               </FieldGroup>
               <FieldGroup label="Gender">
-                <select className={selectCls} {...register("gender")}>
+                <select disabled={onboardingMode === "resume"} className={selectCls} {...register("gender")}>
                   <option value="">Select</option>
                   <option value="FEMALE">Female</option>
                   <option value="MALE">Male</option>
@@ -282,7 +562,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
                 </select>
               </FieldGroup>
               <FieldGroup label="Blood Group">
-                <select className={selectCls} {...register("bloodGroup")}>
+                <select disabled={onboardingMode === "resume"} className={selectCls} {...register("bloodGroup")}>
                   <option value="">Select</option>
                   {["A+","A-","B+","B-","O+","O-","AB+","AB-"].map((bg) => <option key={bg} value={bg}>{bg}</option>)}
                 </select>
@@ -292,30 +572,29 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
             {/* Addresses */}
             <div className="space-y-3">
               <FieldGroup label="Current Address">
-                <Textarea rows={2} className={inputCls + " resize-none"} {...register("currentAddress")} placeholder="Flat/House No., Street, Area…" />
+                <Textarea disabled={onboardingMode === "resume"} rows={2} className={inputCls + " resize-none"} {...register("currentAddress")} placeholder="Flat/House No., Street, Area…" />
               </FieldGroup>
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="sameAddr" checked={sameAddress} onChange={(e) => {
+                <input disabled={onboardingMode === "resume"} type="checkbox" id="sameAddr" checked={sameAddress} onChange={(e) => {
                   setSameAddress(e.target.checked);
                   if (e.target.checked) setValue("permanentAddress", getValues("currentAddress"));
-                }} className="rounded" />
+                }} className="rounded disabled:opacity-50" />
                 <label htmlFor="sameAddr" className="text-xs text-zinc-500 font-medium">Permanent address same as current</label>
               </div>
               {!sameAddress && (
                 <FieldGroup label="Permanent Address">
-                  <Textarea rows={2} className={inputCls + " resize-none"} {...register("permanentAddress")} placeholder="Permanent address…" />
+                  <Textarea disabled={onboardingMode === "resume"} rows={2} className={inputCls + " resize-none"} {...register("permanentAddress")} placeholder="Permanent address…" />
                 </FieldGroup>
               )}
               <div className="grid grid-cols-3 gap-3">
                 <FieldGroup label="City">
-                  <Input className={inputCls} {...register("city")} placeholder="Bhubaneswar" />
+                  <Input disabled={onboardingMode === "resume"} className={inputCls} {...register("city")} placeholder="Bhubaneswar" />
                 </FieldGroup>
                 <FieldGroup label="State">
-                  <Input className={inputCls} {...register("state")} placeholder="Odisha" />
+                  <Input disabled={onboardingMode === "resume"} className={inputCls} {...register("state")} placeholder="Odisha" />
                 </FieldGroup>
                 <FieldGroup label="Pincode">
-                  <Input className={inputCls} {...register("pincode")} placeholder="751001" />
-                  {errors.pincode && <p className="mt-1 text-[10px] text-rose-600">{errors.pincode.message}</p>}
+                  <Input disabled={onboardingMode === "resume"} className={inputCls} {...register("pincode")} placeholder="751001" />
                 </FieldGroup>
               </div>
             </div>
@@ -325,12 +604,12 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
               <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Emergency Contact</p>
               <div className="grid gap-3 md:grid-cols-2">
                 <FieldGroup label="Contact Name">
-                  <Input className={inputCls} {...register("emergencyContact")} placeholder="Parent / Guardian name" />
+                  <Input disabled={onboardingMode === "resume"} className={inputCls} {...register("emergencyContact")} placeholder="Parent / Guardian name" />
                 </FieldGroup>
                 <FieldGroup label="Contact Phone (+91)">
                   <div className="flex mt-1">
                     <span className="flex items-center px-3 rounded-l-xl border border-r-0 border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600">+91</span>
-                    <Input className="rounded-l-none rounded-r-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none shadow-sm flex-1 mt-0" {...register("emergencyPhone")} placeholder="9876543210" />
+                    <Input disabled={onboardingMode === "resume"} className="rounded-l-none rounded-r-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none shadow-sm flex-1 mt-0 disabled:bg-zinc-50" {...register("emergencyPhone")} placeholder="9876543210" />
                   </div>
                 </FieldGroup>
               </div>
@@ -339,7 +618,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         )}
 
         {/* ── STEP 2: JOB ROLE ─────────────────────────────── */}
-        {step === 2 && (
+        {onboardingMode !== "invite" && step === 2 && (
           <div className="grid gap-5 md:grid-cols-2">
             <FieldGroup label="Designation *">
               <Input className={inputCls} {...register("designation")} placeholder="e.g. Software Engineer Intern" />
@@ -376,7 +655,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         )}
 
         {/* ── STEP 3: SALARY ───────────────────────────────── */}
-        {step === 3 && (
+        {onboardingMode !== "invite" && step === 3 && (
           <div className="space-y-6">
             <div className="flex items-start gap-4 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
               <div className="flex-1">
@@ -445,7 +724,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         )}
 
         {/* ── STEP 4: WORKFLOW ─────────────────────────────── */}
-        {step === 4 && (
+        {onboardingMode !== "invite" && step === 4 && (
           <div className="space-y-4">
             <FieldGroup label="Onboarding Template">
               <select className={selectCls} {...register("templateId")}>
@@ -475,7 +754,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         )}
 
         {/* ── STEP 5: REVIEW ───────────────────────────────── */}
-        {step === 5 && (
+        {onboardingMode !== "invite" && step === 5 && (
           <div className="space-y-5">
             <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-6 space-y-4">
               <div className="flex items-center gap-4">
@@ -513,10 +792,10 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  <p className="font-bold text-emerald-800 text-sm">Onboarding pipeline initiated!</p>
+                  <p className="font-bold text-emerald-800 text-sm">Onboarding setup completed!</p>
                 </div>
                 <p className="text-xs text-emerald-700">
-                  <strong>{successData.name}</strong> ({successData.id}) has been added to the onboarding hub.
+                  <strong>{successData.name}</strong> ({successData.id}) workspace configuration has been completed.
                 </p>
                 <a href={`/onboarding/${successData.hireId}`} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 underline">
                   View onboarding checklist →
@@ -532,36 +811,43 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
         )}
 
         {/* Navigation */}
-        <div className="mt-8 flex items-center justify-between border-t border-zinc-100 pt-6">
-          <div>
-            {step > 1 && !successData && (
-              <Button type="button" variant="outline" className="text-xs font-bold" onClick={() => setStep((s) => Math.max(1, s - 1))}>
-                Back
-              </Button>
-            )}
+        {onboardingMode !== "invite" && (
+          <div className="mt-8 flex items-center justify-between border-t border-zinc-100 pt-6">
+            <div>
+              {step > 1 && !successData && (
+                <Button type="button" variant="outline" className="text-xs font-bold" onClick={() => setStep((s) => Math.max(1, s - 1))}>
+                  Back
+                </Button>
+              )}
+            </div>
+            <div>
+              {step < 5 ? (
+                <Button
+                  type="button"
+                  disabled={onboardingMode === "resume" && !selectedPendingId}
+                  className="rounded-lg bg-zinc-950 text-white text-xs font-bold hover:-translate-y-0.5 transition-all disabled:opacity-50"
+                  onClick={handleNext}
+                >
+                  Save & Next
+                </Button>
+              ) : !successData ? (
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleCreatePipeline}
+                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-2 disabled:opacity-50 px-5 py-2.5"
+                >
+                  <Rocket className="h-3.5 w-3.5" />
+                  {isSubmitting ? "Completing setup…" : "Complete Onboarding Setup"}
+                </Button>
+              ) : (
+                <a href="/onboarding" className="inline-flex items-center gap-1 rounded-lg bg-zinc-950 text-white text-xs font-bold px-4 py-2 hover:bg-zinc-800 transition-all">
+                  Back to Onboarding Hub →
+                </a>
+              )}
+            </div>
           </div>
-          <div>
-            {step < 5 ? (
-              <Button type="button" className="rounded-lg bg-zinc-950 text-white text-xs font-bold hover:-translate-y-0.5 transition-all" onClick={handleNext}>
-                Save & Next
-              </Button>
-            ) : !successData ? (
-              <Button
-                type="button"
-                disabled={isSubmitting}
-                onClick={handleCreatePipeline}
-                className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-2 disabled:opacity-50 px-5 py-2.5"
-              >
-                <Rocket className="h-3.5 w-3.5" />
-                {isSubmitting ? "Creating pipeline…" : "Create Onboarding Pipeline"}
-              </Button>
-            ) : (
-              <a href="/onboarding" className="inline-flex items-center gap-1 rounded-lg bg-zinc-950 text-white text-xs font-bold px-4 py-2 hover:bg-zinc-800 transition-all">
-                Back to Onboarding Hub →
-              </a>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
