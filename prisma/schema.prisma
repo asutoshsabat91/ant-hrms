@@ -646,3 +646,10 @@ model CompanyEvent {
   createdBy   String
   createdAt   DateTime  @default(now())
 }
+
+model OfficeConfig {
+  id      String   @id @default(cuid())
+  lat     Float    @default(20.352346)
+  lon     Float    @default(85.816088)
+  radiusM Int      @default(200)
+}

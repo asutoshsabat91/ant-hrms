@@ -12,9 +12,31 @@ export default async function SettingsPage() {
   });
 
   const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
-  const officeLat = parseFloat(process.env.OFFICE_LAT ?? "20.2961");
-  const officeLon = parseFloat(process.env.OFFICE_LON ?? "85.8245");
-  const officeRadius = parseInt(process.env.OFFICE_RADIUS_M ?? "200");
+  let officeLat = 20.352346;
+  let officeLon = 85.816088;
+  let officeRadius = 200;
+
+  try {
+    const config = await prisma.officeConfig.findFirst();
+    if (config) {
+      officeLat = config.lat;
+      officeLon = config.lon;
+      officeRadius = config.radiusM;
+    } else {
+      const dbConfig = await prisma.officeConfig.create({
+        data: {
+          lat: parseFloat(process.env.OFFICE_LAT ?? "20.352346"),
+          lon: parseFloat(process.env.OFFICE_LON ?? "85.816088"),
+          radiusM: parseInt(process.env.OFFICE_RADIUS_M ?? "200"),
+        },
+      });
+      officeLat = dbConfig.lat;
+      officeLon = dbConfig.lon;
+      officeRadius = dbConfig.radiusM;
+    }
+  } catch {
+    // DB not ready or connection failed fallback
+  }
 
   return (
     <div className="space-y-6">
