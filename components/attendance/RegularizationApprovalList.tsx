@@ -33,6 +33,67 @@ export function RegularizationApprovalList({ initialRequests }: Props) {
   const [requests, setRequests] = useState<RegularizationRequest[]>(initialRequests);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === requests.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(requests.map((r) => r.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  };
+
+  const handleBulkAction = async (action: "approve" | "reject") => {
+    if (selectedIds.length === 0) return;
+    setBulkProcessing(true);
+    setMessage(null);
+
+    let comment = "";
+    if (action === "reject") {
+      const reason = prompt(`Please enter a rejection comment for the ${selectedIds.length} selected requests (required):`);
+      if (reason === null) {
+        setBulkProcessing(false);
+        return;
+      }
+      if (!reason.trim()) {
+        setMessage({ text: "Rejection comment is compulsory.", ok: false });
+        setBulkProcessing(false);
+        return;
+      }
+      comment = reason;
+    }
+
+    try {
+      const res = await fetch("/api/attendance/regularize", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds, action, comment }),
+      });
+      const data = await res.json();
+      setMessage({
+        text: res.ok
+          ? `Successfully ${action === "approve" ? "approved" : "rejected"} ${data.count} request(s)!`
+          : data.error || "Failed to process bulk request.",
+        ok: res.ok,
+      });
+      if (res.ok) {
+        setRequests((current) => current.filter((r) => !selectedIds.includes(r.id)));
+        setSelectedIds([]);
+        setTimeout(() => window.location.reload(), 1200);
+      }
+    } catch {
+      setMessage({ text: "Network error occurred.", ok: false });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   const handleAction = async (id: string, action: "approve" | "reject") => {
     setProcessingId(id);
@@ -99,6 +160,53 @@ export function RegularizationApprovalList({ initialRequests }: Props) {
         </div>
       )}
 
+      {/* Bulk Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-3.5 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <input
+            type="checkbox"
+            checked={requests.length > 0 && selectedIds.length === requests.length}
+            onChange={toggleSelectAll}
+            className="rounded border-zinc-300 h-4.5 w-4.5 text-zinc-950 focus:ring-zinc-900 cursor-pointer"
+          />
+          <div>
+            <span className="text-xs font-bold text-zinc-800">Select All Pending ({requests.length})</span>
+            {selectedIds.length > 0 && (
+              <span className="text-[10px] text-zinc-950 font-extrabold ml-2 bg-zinc-200 px-2 py-0.5 rounded-full">
+                {selectedIds.length} selected
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 justify-end">
+          <button
+            onClick={() => handleBulkAction("reject")}
+            disabled={bulkProcessing || selectedIds.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors disabled:opacity-40 shadow-sm"
+          >
+            {bulkProcessing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <X className="h-3.5 w-3.5" />
+            )}
+            <span>Bulk Reject</span>
+          </button>
+          <button
+            onClick={() => handleBulkAction("approve")}
+            disabled={bulkProcessing || selectedIds.length === 0}
+            className="flex items-center gap-1.5 rounded-lg bg-zinc-950 px-4 py-1.5 text-xs font-bold text-white hover:bg-zinc-800 transition-colors disabled:opacity-40 shadow-sm"
+          >
+            {bulkProcessing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            )}
+            <span>Bulk Approve</span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         {requests.map((req) => {
           const name = `${req.employee.firstName} ${req.employee.lastName}`;
@@ -112,13 +220,24 @@ export function RegularizationApprovalList({ initialRequests }: Props) {
           const timeIn = req.clockIn ? format(new Date(req.clockIn), "hh:mm a") : "—";
           const timeOut = req.clockOut ? format(new Date(req.clockOut), "hh:mm a") : "—";
 
+          const isSelected = selectedIds.includes(req.id);
           return (
             <div
               key={req.id}
-              className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4 hover:border-zinc-300 transition-all"
+              className={`rounded-2xl border p-5 shadow-sm space-y-4 transition-all duration-200 ${
+                isSelected 
+                  ? "border-zinc-950 bg-zinc-50 ring-1 ring-zinc-950/10" 
+                  : "border-zinc-200 bg-white hover:border-zinc-300"
+              }`}
             >
               {/* Request User Header */}
               <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleSelect(req.id)}
+                  className="rounded border-zinc-300 h-4.5 w-4.5 text-zinc-950 focus:ring-zinc-900 cursor-pointer mr-1"
+                />
                 <Avatar className="h-9 w-9 border border-zinc-100">
                   <AvatarFallback className="bg-zinc-100 text-zinc-800 text-xs font-bold">
                     {initials}

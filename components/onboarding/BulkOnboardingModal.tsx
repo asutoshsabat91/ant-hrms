@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Trash2, X, Users, Send, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { Plus, Trash2, X, Users, Send, CheckCircle2, Loader2, Sparkles, Download, Upload } from "lucide-react";
 
 interface Department {
   id: string;
@@ -76,6 +76,106 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
     setRows((current) =>
       current.map((row, i) => (i === index ? { ...row, [field]: value } : row))
     );
+  };
+
+  const downloadCSVTemplate = () => {
+    const headers = ["First Name", "Last Name", "Company Email", "Designation", "Department", "Joining Date (YYYY-MM-DD)"];
+    
+    const sampleRows = [
+      ["Riya", "Sharma", "riya@antbox.com", "Developer Intern", departments[0]?.name || "Data Analytics", new Date().toISOString().slice(0, 10)],
+      ["Adarsh", "Mohanty", "adarsh@antbox.com", "Software Engineer", departments[0]?.name || "Data Analytics", new Date().toISOString().slice(0, 10)]
+    ];
+    
+    // Add BOM marker \uFEFF to make Excel open the file properly with UTF-8 encoding
+    const csvContent = "\uFEFF" + [headers.join(","), ...sampleRows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "mass_onboarding_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      if (lines.length <= 1) {
+        setMessage({ text: "The CSV file is empty or only contains headers.", ok: false });
+        return;
+      }
+
+      // Simple CSV line parser respecting quotes for items containing commas
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result.map(val => {
+          if (val.startsWith('"') && val.endsWith('"')) {
+            return val.slice(1, -1).replace(/""/g, '"');
+          }
+          return val;
+        });
+      };
+
+      const importedRows = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        if (values.length < 5) continue; // Skip incomplete lines
+
+        const firstName = values[0] || "";
+        const lastName = values[1] || "";
+        const email = values[2] || "";
+        const designation = values[3] || "";
+        const deptName = values[4] || "";
+        const joiningDate = values[5] || new Date().toISOString().slice(0, 10);
+
+        const matchedDept = departments.find(
+          (d) => d.name.toLowerCase() === deptName.toLowerCase()
+        ) || departments[0];
+
+        importedRows.push({
+          firstName,
+          lastName,
+          email,
+          designation,
+          departmentId: matchedDept?.id || "",
+          joiningDate,
+          employmentType: "FULL_TIME",
+        });
+      }
+
+      if (importedRows.length > 0) {
+        setRows(importedRows);
+        setMessage({ text: `Successfully imported ${importedRows.length} hire(s) from CSV!`, ok: true });
+      } else {
+        setMessage({ text: "No valid rows found in the CSV file.", ok: false });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   const handleBulkInvite = async () => {
@@ -342,14 +442,33 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                     </table>
                   </div>
 
-                  <div className="flex justify-start">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={addRow}
-                      className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+                      className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm"
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Plus className="h-3.5 w-3.5 text-zinc-500" />
                       Add Row
                     </button>
+
+                    <button
+                      onClick={downloadCSVTemplate}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm animate-pulse hover:animate-none"
+                    >
+                      <Download className="h-3.5 w-3.5 text-emerald-600" />
+                      Download Excel/CSV Template
+                    </button>
+
+                    <label className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm cursor-pointer">
+                      <Upload className="h-3.5 w-3.5 text-blue-600" />
+                      <span>Import Excel/CSV</span>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        onChange={handleCSVImport}
+                      />
+                    </label>
                   </div>
                 </div>
               )}
