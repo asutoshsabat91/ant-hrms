@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Trash2, X, Users, Send, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 
 interface Department {
@@ -25,10 +26,15 @@ interface BulkOnboardingModalProps {
 }
 
 export function BulkOnboardingModal({ departments, employees }: BulkOnboardingModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"invite" | "banking">("invite");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Bulk Invite Form State
   const [rows, setRows] = useState([
@@ -182,8 +188,8 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
         Mass Onboarding
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      {isOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="relative flex h-[85vh] w-[95vw] max-w-5xl flex-col rounded-3xl border border-[var(--border)] bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-950 px-6 py-4 text-white">
@@ -249,16 +255,16 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
               {activeTab === "invite" && (
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-                    <table className="w-full border-collapse text-left text-xs">
+                    <table className="w-full border-collapse text-left text-xs table-fixed min-w-[900px]">
                       <thead className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                         <tr>
-                          <th className="px-4 py-3">First Name *</th>
-                          <th className="px-4 py-3">Last Name *</th>
-                          <th className="px-4 py-3">Company Email *</th>
-                          <th className="px-4 py-3">Designation *</th>
-                          <th className="px-4 py-3">Department *</th>
-                          <th className="px-4 py-3">Joining Date *</th>
-                          <th className="px-4 py-3 text-center">Action</th>
+                          <th className="px-3 py-3 w-[14%]">First Name *</th>
+                          <th className="px-3 py-3 w-[14%]">Last Name *</th>
+                          <th className="px-3 py-3 w-[22%]">Company Email *</th>
+                          <th className="px-3 py-3 w-[18%]">Designation *</th>
+                          <th className="px-3 py-3 w-[16%]">Department *</th>
+                          <th className="px-3 py-3 w-[12%]">Joining Date *</th>
+                          <th className="px-3 py-3 w-[4%] text-center">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100">
@@ -316,7 +322,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                             <td className="p-2">
                               <input
                                 type="date"
-                                className="w-full rounded-lg border border-zinc-200 px-2 py-1 outline-none focus:border-zinc-900"
+                                className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 outline-none focus:border-zinc-900"
                                 value={row.joiningDate}
                                 onChange={(e) => updateRow(index, "joiningDate", e.target.value)}
                               />
@@ -352,10 +358,10 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
               {activeTab === "banking" && (
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-                    <table className="w-full border-collapse text-left text-xs">
+                    <table className="w-full border-collapse text-left text-xs table-fixed min-w-[900px]">
                       <thead className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                         <tr>
-                          <th className="px-6 py-3 w-10 text-center">
+                          <th className="px-4 py-3 w-[5%] text-center">
                             <input
                               type="checkbox"
                               checked={
@@ -366,12 +372,12 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                               className="rounded border-zinc-300"
                             />
                           </th>
-                          <th className="px-6 py-3">Employee ID</th>
-                          <th className="px-6 py-3">Name</th>
-                          <th className="px-6 py-3">Designation</th>
-                          <th className="px-6 py-3">Department</th>
-                          <th className="px-6 py-3">Joining Date</th>
-                          <th className="px-6 py-3">Banking State</th>
+                          <th className="px-4 py-3 w-[15%]">Employee ID</th>
+                          <th className="px-4 py-3 w-[20%]">Name</th>
+                          <th className="px-4 py-3 w-[20%]">Designation</th>
+                          <th className="px-4 py-3 w-[15%]">Department</th>
+                          <th className="px-4 py-3 w-[13%]">Joining Date</th>
+                          <th className="px-4 py-3 w-[12%]">Banking State</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100">
@@ -483,7 +489,8 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
