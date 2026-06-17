@@ -18,6 +18,8 @@ const initiateSchema = z.object({
   ]),
   notes: z.string().optional(),
   issuesLetters: z.array(z.enum(["Internship Certificate", "Relieving Letter", "Experience Letter", "LOR"])),
+  okToRehire: z.boolean().optional(),
+  rehireComment: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { employeeId, lastWorkingDate, exitInterviewDate, reason, notes, issuesLetters } = parsed.data;
+  const { employeeId, lastWorkingDate, exitInterviewDate, reason, notes, issuesLetters, okToRehire, rehireComment } = parsed.data;
   const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
   if (!employee) {
     return NextResponse.json({ error: "Employee not found" }, { status: 404 });
@@ -47,6 +49,8 @@ export async function POST(req: Request) {
       data: {
         status: "OFFBOARDING",
         lastWorkingDate: lastDay,
+        okToRehire,
+        rehireComment,
       },
     });
 

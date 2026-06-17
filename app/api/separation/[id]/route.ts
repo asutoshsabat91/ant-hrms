@@ -9,6 +9,7 @@ const OFFBOARDING_TASKS = [
   { title: "Device / Asset Return", category: "ASSET" as const, order: 3 },
   { title: "Exit Interview", category: "COMPLIANCE" as const, order: 4 },
   { title: "Full & Final Settlement", category: "FINANCE" as const, order: 5 },
+  { title: "Settle FNF", category: "FINANCE" as const, order: 6 },
 ];
 
 const OFFBOARDING_DOCUMENTS = [
@@ -107,6 +108,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           category: t.category,
           order: t.order,
           status: "PENDING" as const,
+          dueDate: t.title === "Settle FNF" ? addDays(separation.lastWorkingDate ?? new Date(), 45) : null,
         })),
         skipDuplicates: true,
       });

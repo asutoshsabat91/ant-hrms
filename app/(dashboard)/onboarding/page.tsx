@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OnboardingHub } from "@/components/onboarding/OnboardingHub";
 import { NewHireWizard } from "@/components/onboarding/NewHireWizard";
+import { BulkOnboardingModal } from "@/components/onboarding/BulkOnboardingModal";
 
 export default async function OnboardingPage() {
   const [employees, departments, managers, templates] = await Promise.all([
@@ -31,6 +32,26 @@ export default async function OnboardingPage() {
       <PageHeader
         title="Onboarding"
         description="Manage new hire pipelines, launch onboarding, and track milestone progress."
+        action={
+          <BulkOnboardingModal
+            departments={departments}
+            employees={employees.map((employee) => ({
+              id: employee.id,
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              designation: employee.designation,
+              employeeId: employee.employeeId,
+              joiningDate: employee.joiningDate.toISOString(),
+              department: { name: employee.department.name },
+              onboardingTasks: employee.onboardingTasks.map((task) => ({
+                id: task.id,
+                title: task.title,
+                category: task.category,
+                status: task.status,
+              })),
+            }))}
+          />
+        }
       />
 
       <OnboardingHub

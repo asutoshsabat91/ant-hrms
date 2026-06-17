@@ -151,6 +151,7 @@ enum NotificationType {
   SEPARATION_REQUEST
   SEPARATION_UPDATE
   POSH_REPORT
+  ATTENDANCE_REGULARIZATION
   SYSTEM
 }
 
@@ -280,6 +281,9 @@ model Employee {
   itTasks          ITTask[]
   poshReports      POSHReport[]
   separation       Separation?
+  okToRehire       Boolean?
+  rehireComment    String?
+  regularizationRequests RegularizationRequest[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 }
@@ -652,4 +656,28 @@ model OfficeConfig {
   lat     Float    @default(20.352346)
   lon     Float    @default(85.816088)
   radiusM Int      @default(200)
+}
+
+enum RegularizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RegularizationRequest {
+  id           String               @id @default(cuid())
+  employeeId   String
+  employee     Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date         DateTime             @db.Date
+  type         String               // "CLOCK_IN", "CLOCK_OUT", "BOTH", "REMOTE", "LEAVE"
+  clockIn      DateTime?
+  clockOut     DateTime?
+  reason       String
+  status       RegularizationStatus @default(PENDING)
+  approverId   String?
+  approvedAt   DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@unique([employeeId, date])
 }

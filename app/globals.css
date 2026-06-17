@@ -21,10 +21,10 @@
     --font-sans: var(--font-sans);
   }
   :root {
-    /* AntBox brand monochrome theme */
-    --brand-primary: #18181b;
-    --brand-secondary: #09090b;
-    --brand-accent: #27272a;
+    /* AntBox brand purple theme */
+    --brand-primary: #7c3aed;
+    --brand-secondary: #5b21b6;
+    --brand-accent: #a78bfa;
     --neutral-50: #fafafa;
     --neutral-100: #f4f4f5;
     --neutral-200: #e4e4e7;
@@ -37,27 +37,27 @@
     --info: #06b6d4;
     
     /* AntBox Brand Purple */
-    --purple: #8e43ac;
-    --purple-light: rgba(142, 67, 172, 0.08);
-    --purple-mid: rgba(142, 67, 172, 0.15);
+    --purple: #7c3aed;
+    --purple-light: rgba(124, 58, 237, 0.08);
+    --purple-mid: rgba(124, 58, 237, 0.15);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     
-    --sidebar-bg: #f4f4f5;
-    --sidebar-active: #ffffff;
-    --sidebar-text: #52525b;
-    --sidebar-active-text: #18181b;
+    --sidebar-bg: #09090b;
+    --sidebar-active: #27272a;
+    --sidebar-text: #a1a1aa;
+    --sidebar-active-text: #ffffff;
     
     --card-bg: #ffffff;
     --card-border: #e4e4e7;
     --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
 
-    --background: #fafafa;
+    --background: #fdfcff;
     --foreground: #09090b;
     --card: #ffffff;
     --card-foreground: #09090b;
     --popover: #ffffff;
     --popover-foreground: #09090b;
-    --primary: #18181b;
+    --primary: #7c3aed;
     --primary-foreground: #ffffff;
     --secondary: #f4f4f5;
     --secondary-foreground: #18181b;
@@ -68,17 +68,17 @@
     --destructive: #ef4444;
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #18181b;
+    --ring: #7c3aed;
     --radius: 0.75rem;
     
-    --sidebar: #f4f4f5;
-    --sidebar-foreground: #52525b;
-    --sidebar-primary: #18181b;
+    --sidebar: #09090b;
+    --sidebar-foreground: #a1a1aa;
+    --sidebar-primary: #7c3aed;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #ffffff;
-    --sidebar-accent-foreground: #18181b;
-    --sidebar-border: #e4e4e7;
-    --sidebar-ring: #18181b;
+    --sidebar-accent: #27272a;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #27272a;
+    --sidebar-ring: #7c3aed;
   }
   .dark {
     --background: #09090b;

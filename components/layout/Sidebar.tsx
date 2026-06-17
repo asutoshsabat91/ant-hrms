@@ -78,8 +78,8 @@ export function Sidebar({ role, gender }: SidebarProps) {
   return (
     <aside className="flex h-full w-full flex-col bg-[var(--sidebar-bg)]">
       {/* Brand Logo Header */}
-      <div className="flex h-16 items-center border-b border-[var(--border)] px-6 bg-white justify-start">
-        <Image src="/logo.png" alt="AntBox Logo" width={110} height={28} className="object-contain" />
+      <div className="flex h-16 items-center border-b border-[var(--border)] px-6 bg-transparent justify-start">
+        <Image src="/logo.png" alt="AntBox Logo" width={110} height={28} className="object-contain brightness-0 invert" />
       </div>
 
       {/* Section Header */}
@@ -102,8 +102,8 @@ export function Sidebar({ role, gender }: SidebarProps) {
               className={cn(
                 "group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 ease-[var(--ease-out-expo)] border border-transparent",
                 active
-                  ? "bg-white text-[var(--sidebar-active-text)] border-[var(--border)] border-l-[3px] border-l-[var(--purple)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05),0_0_12px_rgba(142,67,172,0.02)]"
-                  : "text-[var(--sidebar-text)] hover:bg-zinc-200/30 hover:text-zinc-950 hover:translate-x-1"
+                  ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-text)] border-[var(--border)] border-l-[3px] border-l-[var(--purple)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.5),0_0_12px_rgba(124,58,237,0.1)]"
+                  : "text-[var(--sidebar-text)] hover:bg-zinc-800/50 hover:text-zinc-100 hover:translate-x-1"
               )}
             >
               <div className="flex items-center gap-3">
@@ -125,7 +125,7 @@ export function Sidebar({ role, gender }: SidebarProps) {
       <div className="border-t border-[var(--border)] p-4 space-y-3">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--sidebar-text)] hover:bg-zinc-200/50 hover:text-[var(--sidebar-active-text)] transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--sidebar-text)] hover:bg-zinc-800/50 hover:text-zinc-100 transition-colors"
         >
           <LogOut className="h-4 w-4 shrink-0" />
           <span>Sign out</span>

@@ -36,6 +36,8 @@ export function OffboardingInitiationForm({ employees, defaultEmployeeId }: Prop
   // Exit interview removed per requirements
   const [reason, setReason] = useState<typeof reasons[number]>(reasons[0]);
   const [notes, setNotes] = useState("");
+  const [okToRehire, setOkToRehire] = useState<"YES" | "NO">("YES");
+  const [rehireComment, setRehireComment] = useState("");
   const [letters, setLetters] = useState<string[]>(["Relieving Letter", "Experience Letter"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -47,12 +49,24 @@ export function OffboardingInitiationForm({ employees, defaultEmployeeId }: Prop
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (okToRehire === "NO" && !rehireComment.trim()) {
+      setMessage({ text: "Please enter a comment explaining why this employee is not eligible for re-hire.", ok: false });
+      return;
+    }
     setIsSubmitting(true);
     setMessage(null);
     const res = await fetch("/api/offboarding/initiate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId, lastWorkingDate, reason, notes, issuesLetters: letters }),
+      body: JSON.stringify({
+        employeeId,
+        lastWorkingDate,
+        reason,
+        notes,
+        issuesLetters: letters,
+        okToRehire: okToRehire === "YES",
+        rehireComment: okToRehire === "NO" ? rehireComment : "",
+      }),
     });
     const data = await res.json();
     setMessage({ text: res.ok ? "Offboarding initiated successfully." : (data.error?.message || "Unable to initiate offboarding."), ok: res.ok });
@@ -127,6 +141,34 @@ export function OffboardingInitiationForm({ employees, defaultEmployeeId }: Prop
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
+        </div>
+
+        {/* Ok to Re-Hire */}
+        <div className="space-y-3">
+          <div>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Ok to Re-Hire *</Label>
+            <select
+              className="mt-1.5 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-850 outline-none transition focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900"
+              value={okToRehire}
+              onChange={(e) => setOkToRehire(e.target.value as "YES" | "NO")}
+            >
+              <option value="YES">Yes</option>
+              <option value="NO">No</option>
+            </select>
+          </div>
+
+          {okToRehire === "NO" && (
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Reason for No Re-Hire *</Label>
+              <Textarea
+                rows={2}
+                className="mt-1.5 text-sm resize-none border-rose-200 focus:border-rose-500 focus:ring-rose-500"
+                placeholder="Compulsory comment explaining why the employee is not eligible for re-hire..."
+                value={rehireComment}
+                onChange={(e) => setRehireComment(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Documents */}

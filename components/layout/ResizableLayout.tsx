@@ -56,7 +56,15 @@ export function ResizableLayout({
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[var(--background)]">
+    <div className="relative min-h-screen bg-[var(--background)] overflow-x-hidden">
+      {/* Interactive Mesh Gradients */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/4 -right-1/4 w-[1000px] h-[1000px] rounded-full bg-gradient-to-bl from-[var(--purple-mid)] via-[var(--purple-light)] to-transparent blur-3xl opacity-60 animate-slow-spin mix-blend-multiply" />
+        <div className="absolute -bottom-1/4 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-tr from-[var(--brand-accent)] via-[var(--purple-light)] to-transparent blur-3xl opacity-40 animate-slow-spin-reverse mix-blend-multiply" />
+        {/* Cyber Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(124,58,237,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(124,58,237,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_10%,transparent_100%)]" />
+      </div>
+
       {/* Sidebar container with dynamic width */}
       <div 
         className="fixed left-0 top-0 z-40 h-screen border-r border-[var(--border)] bg-[var(--sidebar-bg)] select-none"
@@ -81,7 +89,7 @@ export function ResizableLayout({
         style={{ marginLeft: `${width}px` }}
       >
         <div 
-          className="fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-white px-6"
+          className="fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-white/80 backdrop-blur-md px-6"
           style={{ left: `${width}px` }}
         >
           {topbar}

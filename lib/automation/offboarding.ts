@@ -14,9 +14,10 @@ const defaultTasks: Array<{
   { title: "Confirm device return", category: "ASSET", assignedTo: "IT Admin", dueOffset: 1, order: 3 },
   { title: "Complete exit interview", category: "ORIENTATION", assignedTo: "HR", dueOffset: -2, order: 4 },
   { title: "Settle pending reimbursements", category: "FINANCE", assignedTo: "Finance", dueOffset: 0, order: 5 },
-  { title: "Generate relieving letter", category: "DOCUMENTATION", assignedTo: "HR", dueOffset: 0, order: 6 },
-  { title: "Generate experience letter", category: "DOCUMENTATION", assignedTo: "HR", dueOffset: 0, order: 7 },
-  { title: "Update employee status to ALUMNI", category: "COMPLIANCE", assignedTo: "HR", dueOffset: 1, order: 8 },
+  { title: "Settle FNF", category: "FINANCE", assignedTo: "Finance", dueOffset: 45, order: 6 },
+  { title: "Generate relieving letter", category: "DOCUMENTATION", assignedTo: "HR", dueOffset: 0, order: 7 },
+  { title: "Generate experience letter", category: "DOCUMENTATION", assignedTo: "HR", dueOffset: 0, order: 8 },
+  { title: "Update employee status to ALUMNI", category: "COMPLIANCE", assignedTo: "HR", dueOffset: 1, order: 9 },
 ];
 
 export async function createOffboardingChecklist(
@@ -58,7 +59,7 @@ export async function createOffboardingChecklist(
       category: "ORIENTATION",
       assignedTo: "HR",
       dueDate: exitInterviewDate,
-      order: 9,
+      order: 10,
     });
   }
 

@@ -1,7 +1,9 @@
-import { Download } from "lucide-react";
+import { Download, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { getAttendanceOverview } from "@/lib/attendance";
 import { AttendancePageClient } from "@/components/attendance/AttendancePageClient";
+import { RegularizationApprovalList } from "@/components/attendance/RegularizationApprovalList";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 function formatTime(value: Date | string | null) {
@@ -37,10 +39,49 @@ export default async function AttendancePage() {
 
   const { weeklyRecords } = await getAttendanceOverview();
 
+  // Load pending regularization requests for Admin
+  const pendingRequests = isAdminOrManager
+    ? await prisma.regularizationRequest.findMany({
+        where: { status: "PENDING" },
+        include: {
+          employee: {
+            select: { id: true, firstName: true, lastName: true, employeeId: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+
+  const serializedRequests = pendingRequests.map((r) => ({
+    ...r,
+    date: r.date.toISOString(),
+    clockIn: r.clockIn ? r.clockIn.toISOString() : null,
+    clockOut: r.clockOut ? r.clockOut.toISOString() : null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    approvedAt: r.approvedAt ? r.approvedAt.toISOString() : null,
+  }));
+
   return (
     <div className="space-y-6">
       {/* Client Punch Controls and personal stats */}
       <AttendancePageClient />
+
+      {/* Admin Regularization Approvals Dashboard */}
+      {isAdminOrManager && (
+        <div className="space-y-4 pt-6 border-t border-zinc-150">
+          <div>
+            <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-violet-500" />
+              Pending Regularization Requests
+            </h3>
+            <p className="text-xs text-zinc-400 font-medium mt-0.5">
+              Approve or reject manual attendance adjustment applications from teammates.
+            </p>
+          </div>
+          <RegularizationApprovalList initialRequests={serializedRequests} />
+        </div>
+      )}
 
       {/* Admin Team Attendance table */}
       {isAdminOrManager && (
@@ -51,7 +92,7 @@ export default async function AttendancePage() {
                 Team attendance management
               </h3>
               <p className="text-xs text-zinc-400 font-medium mt-0.5">
-                Weekly attendance records with first punch, latest punch, total hours, and status.
+                Weekly attendance logs showing work duration cycle and total effective hours.
               </p>
             </div>
             <a
@@ -71,17 +112,15 @@ export default async function AttendancePage() {
                   <tr>
                     <th scope="col" className="px-6 py-4">Employee</th>
                     <th scope="col" className="px-6 py-4">Date</th>
-                    <th scope="col" className="px-6 py-4">First punch</th>
-                    <th scope="col" className="px-6 py-4">Latest punch</th>
-                    <th scope="col" className="px-6 py-4">Punches</th>
-                    <th scope="col" className="px-6 py-4">Total</th>
+                    <th scope="col" className="px-6 py-4">Work Duration Cycle / Log Timeline</th>
+                    <th scope="col" className="px-6 py-4">Total Effective</th>
                     <th scope="col" className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {weeklyRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-10 text-center text-zinc-400">
+                      <td colSpan={5} className="px-6 py-10 text-center text-zinc-400">
                         No team attendance records found.
                       </td>
                     </tr>
@@ -91,6 +130,11 @@ export default async function AttendancePage() {
                       const lastPunch = record.punches.at(-1);
                       const name = `${record.employee.firstName} ${record.employee.lastName}`;
                       const initials = `${record.employee.firstName[0]}${record.employee.lastName[0]}`;
+                      
+                      const cyclesCount = record.punches.length > 0 
+                        ? Math.floor(record.punches.filter(p => p.punchType === "IN").length)
+                        : 0;
+
                       return (
                         <tr key={record.id} className="hover:bg-zinc-50/50 transition-colors">
                           <td className="px-6 py-4">
@@ -107,26 +151,36 @@ export default async function AttendancePage() {
                             {formatWorkDate(record.workDate)}
                           </td>
                           <td className="px-6 py-4 text-xs font-medium text-zinc-900">
-                            {formatTime(firstPunch?.punchedAt ?? record.checkIn)}
+                            {cyclesCount > 0 ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-zinc-900">
+                                  {cyclesCount} work cycle{cyclesCount === 1 ? "" : "s"} completed
+                                </span>
+                                <span className="text-[10px] text-zinc-400 font-semibold">
+                                  Clock Times: {formatTime(firstPunch?.punchedAt ?? record.checkIn)} — {formatTime(lastPunch?.punchedAt ?? record.checkOut)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-zinc-400">—</span>
+                            )}
                           </td>
-                          <td className="px-6 py-4 text-xs font-medium text-zinc-900">
-                            {formatTime(lastPunch?.punchedAt ?? record.checkOut)}
-                          </td>
-                          <td className="px-6 py-4 text-xs font-medium text-zinc-900">
-                            {record.punches.length}
-                          </td>
-                          <td className="px-6 py-4 text-xs font-medium text-zinc-900">
+                          <td className="px-6 py-4 text-xs font-bold text-zinc-900">
                             {formatHours(record.totalHours)}
                           </td>
                           <td className="px-6 py-4">
                             {record.status === "PRESENT" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                                <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 Present
                               </span>
+                            ) : record.status === "INCOMPLETE" ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-1 text-[10px] font-bold text-amber-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                Incomplete
+                              </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                                <span className="h-1 w-1 rounded-full bg-amber-500" />
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 border border-zinc-200 px-2.5 py-1 text-[10px] font-bold text-zinc-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400" />
                                 {record.status}
                               </span>
                             )}
