@@ -1,10 +1,10 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Search, LogOut, User } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -49,7 +49,85 @@ interface TopbarProps {
 
 export function Topbar({ user, employee }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ type: "page" | "employee"; name: string; href: string }[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [employees, setEmployees] = useState<{ id: string; firstName: string; lastName: string; designation: string; email: string }[]>([]);
+  const [hasFetchedEmployees, setHasFetchedEmployees] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const fetchEmployeesIfNeeded = async () => {
+    if (hasFetchedEmployees) return;
+    try {
+      const res = await fetch("/api/employees");
+      if (res.ok) {
+        const data = await res.json();
+        setEmployees(data);
+        setHasFetchedEmployees(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch employees for search", err);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    fetchEmployeesIfNeeded();
+
+    const pages = [
+      { name: "Dashboard 📊", href: "/" },
+      { name: "Employees 👥", href: "/employees" },
+      { name: "Onboarding 🚀", href: "/onboarding" },
+      { name: "Separation 🚪", href: "/separation" },
+      { name: "Offboarding 🧹", href: "/offboarding" },
+      { name: "Attendance ⏰", href: "/attendance" },
+      { name: "Leave 🌴", href: "/leave" },
+      { name: "Payroll 💰", href: "/payroll" },
+      { name: "Documents 📂", href: "/documents" },
+      { name: "Portal 💼", href: "/portal" },
+      { name: "POSH 🛡️", href: "/posh" },
+      { name: "Calendar 📅", href: "/calendar" },
+      { name: "Reports 📈", href: "/reports" },
+      { name: "Settings ⚙️", href: "/settings" },
+    ];
+
+    const matchedPages = pages
+      .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+      .map((p) => ({ type: "page" as const, name: p.name, href: p.href }));
+
+    const matchedEmployees = employees
+      .filter((emp) =>
+        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(query.toLowerCase()) ||
+        emp.designation.toLowerCase().includes(query.toLowerCase()) ||
+        emp.email.toLowerCase().includes(query.toLowerCase())
+      )
+      .map((emp) => ({
+        type: "employee" as const,
+        name: `${emp.firstName} ${emp.lastName} (${emp.designation})`,
+        href: `/employees/${emp.id}`,
+      }));
+
+    setSearchResults([...matchedPages, ...matchedEmployees]);
+    setShowResults(true);
+  };
 
   const initials =
     user.name
@@ -61,7 +139,7 @@ export function Topbar({ user, employee }: TopbarProps) {
 
   const getHeaderInfo = (path: string) => {
     const todayStr = format(new Date(), "EEEE, d MMM yyyy");
-    if (path === "/") return { title: "Dashboard", description: todayStr };
+    if (path === "/") return { title: "Dashboard", description: "" };
     if (path.startsWith("/employees")) return { title: "Employees", description: "Manage your team" };
     if (path.startsWith("/onboarding")) return { title: "Onboarding", description: "Employee onboarding checklist and tasks" };
     if (path.startsWith("/separation")) return { title: "Separation", description: "Resignation and notice period management" };
@@ -83,7 +161,7 @@ export function Topbar({ user, employee }: TopbarProps) {
 
   return (
     <>
-      <header className="fixed left-64 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-white px-6">
+      <header className="flex w-full h-full items-center justify-between bg-white">
         <div>
           <h1 className="text-base font-bold text-[var(--brand-secondary)] leading-tight">
             {title}
@@ -96,16 +174,47 @@ export function Topbar({ user, employee }: TopbarProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative hidden w-72 items-center gap-2 rounded-lg border border-[var(--border)] bg-zinc-50 px-3 py-1.5 md:flex">
+          <div ref={dropdownRef} className="relative hidden w-72 items-center gap-2 rounded-lg border border-[var(--border)] bg-zinc-50 px-3 py-1.5 md:flex focus-within:border-[var(--purple)] focus-within:ring-1 focus-within:ring-[var(--purple)] transition-all duration-200">
             <Search className="h-3.5 w-3.5 text-zinc-400" />
             <input
               type="search"
-              placeholder="Search employees, tickets..."
+              placeholder="Search Anything..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => {
+                fetchEmployeesIfNeeded();
+                if (searchQuery.trim()) setShowResults(true);
+              }}
               className="flex-1 bg-transparent text-xs outline-none placeholder:text-zinc-400 text-zinc-900"
             />
             <kbd className="pointer-events-none inline-flex h-4.5 select-none items-center gap-0.5 rounded border bg-white px-1.5 font-mono text-[9px] font-medium text-zinc-400">
               <span>⌘</span>K
             </kbd>
+            {showResults && searchResults.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-lg border border-[var(--border)] bg-white p-1.5 shadow-lg z-50">
+                {searchResults.map((result, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      router.push(result.href);
+                      setShowResults(false);
+                      setSearchQuery("");
+                    }}
+                    className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs text-zinc-700 hover:bg-[var(--neutral-100)] hover:text-zinc-950 transition-colors"
+                  >
+                    <span>{result.name}</span>
+                    <span className="text-[9px] uppercase font-bold text-zinc-400">
+                      {result.type}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {showResults && searchResults.length === 0 && searchQuery.trim() && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 rounded-lg border border-[var(--border)] bg-white p-3 text-center text-xs text-zinc-400 shadow-lg z-50">
+                No matches found
+              </div>
+            )}
           </div>
 
           <NotificationBell />
@@ -113,16 +222,11 @@ export function Topbar({ user, employee }: TopbarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-3 outline-none">
               <div className="hidden text-right md:block">
-                <p className="text-xs font-semibold text-zinc-900 leading-tight">
+                <p className="text-xs font-bold text-zinc-900 leading-tight">
                   {user.name}
-                  {employee?.employeeId && (
-                    <span className="ml-1.5 text-[10px] font-normal text-zinc-400">
-                      · {employee.employeeId}
-                    </span>
-                  )}
                 </p>
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider leading-none mt-0.5">
-                  {user.role.replace("_", " ")}
+                <p className="text-[10px] font-bold text-[var(--purple)] uppercase tracking-wider leading-none mt-0.5">
+                  {user.role === "SUPER_ADMIN" ? "Super Admin" : user.role.replace("_", " ")}
                 </p>
               </div>
               <Avatar className="h-8 w-8 border border-zinc-200">

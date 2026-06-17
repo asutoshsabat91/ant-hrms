@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { EmployeeTable } from "@/components/employees/EmployeeTable";
+import { EmployeeDirectoryClient } from "@/components/employees/EmployeeDirectoryClient";
 
 import type { Employee, Department } from "@prisma/client";
 
@@ -18,8 +18,6 @@ export default async function EmployeesPage() {
   } catch {
     // DB offline fallback
   }
-
-  const count = employees.length || 8;
 
   return (
     <div className="space-y-6">
@@ -46,32 +44,8 @@ export default async function EmployeesPage() {
         </Link>
       </div>
 
-      {/* Filters & Results Row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
-        <div className="flex flex-1 items-center gap-3 max-w-md">
-          {/* Search Box */}
-          <div className="relative flex-1 flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-400">
-            <Search className="h-3.5 w-3.5 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search by name, role, department..."
-              className="bg-transparent text-xs outline-none placeholder:text-zinc-400 text-zinc-900 flex-1"
-            />
-          </div>
-          {/* Filter Button */}
-          <button className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-50">
-            <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-500" />
-            Filters
-          </button>
-        </div>
-        
-        <span className="text-xs text-zinc-400 font-medium">
-          {count} results
-        </span>
-      </div>
-
-      {/* Table */}
-      <EmployeeTable employees={employees} />
+      {/* Directory with search and filters */}
+      <EmployeeDirectoryClient employees={employees} />
     </div>
   );
 }

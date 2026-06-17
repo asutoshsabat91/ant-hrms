@@ -1,0 +1,254 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .italic-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+}
+
+@layer base {
+  .theme {
+    --font-heading: var(--font-sans);
+    --font-sans: var(--font-sans);
+  }
+  :root {
+    /* AntBox brand monochrome theme */
+    --brand-primary: #18181b;
+    --brand-secondary: #09090b;
+    --brand-accent: #27272a;
+    --neutral-50: #fafafa;
+    --neutral-100: #f4f4f5;
+    --neutral-200: #e4e4e7;
+    --neutral-400: #a1a1aa;
+    --neutral-600: #52525b;
+    --neutral-900: #18181b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #06b6d4;
+    
+    /* AntBox Brand Purple */
+    --purple: #8e43ac;
+    --purple-light: rgba(142, 67, 172, 0.08);
+    --purple-mid: rgba(142, 67, 172, 0.15);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    
+    --sidebar-bg: #f4f4f5;
+    --sidebar-active: #ffffff;
+    --sidebar-text: #52525b;
+    --sidebar-active-text: #18181b;
+    
+    --card-bg: #ffffff;
+    --card-border: #e4e4e7;
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+
+    --background: #fafafa;
+    --foreground: #09090b;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+    --primary: #18181b;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #18181b;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+    --destructive: #ef4444;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #18181b;
+    --radius: 0.75rem;
+    
+    --sidebar: #f4f4f5;
+    --sidebar-foreground: #52525b;
+    --sidebar-primary: #18181b;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #ffffff;
+    --sidebar-accent-foreground: #18181b;
+    --sidebar-border: #e4e4e7;
+    --sidebar-ring: #18181b;
+  }
+  .dark {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #18181b;
+    --card-foreground: #fafafa;
+    --popover: #18181b;
+    --popover-foreground: #fafafa;
+    --primary: #fafafa;
+    --primary-foreground: #18181b;
+    --secondary: #27272a;
+    --secondary-foreground: #fafafa;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+    --destructive: #ef4444;
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #fafafa;
+    --sidebar: #18181b;
+    --sidebar-foreground: #a1a1aa;
+    --sidebar-primary: #fafafa;
+    --sidebar-primary-foreground: #18181b;
+    --sidebar-accent: #27272a;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #27272a;
+    --sidebar-ring: #fafafa;
+  }
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif;
+  }
+}
+
+/* react-big-calendar overrides to match clean monochrome aesthetics */
+.rbc-toolbar button {
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0.375rem !important;
+  background-color: transparent !important;
+  padding: 0.375rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+  cursor: pointer !important;
+}
+
+.rbc-toolbar button:hover {
+  background-color: var(--neutral-100) !important;
+  border-color: var(--neutral-400) !important;
+}
+
+.rbc-toolbar button:active, .rbc-toolbar button.rbc-active {
+  background-color: var(--brand-primary) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--brand-primary) !important;
+  box-shadow: none !important;
+}
+
+.rbc-toolbar {
+  margin-bottom: 1.5rem !important;
+  gap: 0.5rem !important;
+}
+
+.rbc-month-view, .rbc-time-view {
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* ─── AntBox Corporate Animations & Custom Utilities ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px) scale(0.98);
+  transition: opacity 1s var(--ease-out-expo), transform 1s var(--ease-out-expo);
+  will-change: transform, opacity;
+}
+
+.reveal.visible, .reveal.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.reveal-delay-1 { transition-delay: 100ms; }
+.reveal-delay-2 { transition-delay: 200ms; }
+.reveal-delay-3 { transition-delay: 300ms; }
+.reveal-delay-4 { transition-delay: 400ms; }
+.reveal-delay-5 { transition-delay: 500ms; }
+
+@keyframes slowSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slowSpinReverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-slow-spin {
+  animation: slowSpin 24s linear infinite;
+}
+
+.animate-slow-spin-reverse {
+  animation: slowSpinReverse 24s linear infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-blink {
+  animation: blink 2s ease-in-out infinite;
+}
+
+/* ─── Global Section & Component Interactivity ─── */
+/* Clean timing transitions for all standard card elements across the application */
+.rounded-xl.border,
+.rounded-2xl.border,
+[data-slot="card"] {
+  transition: all 0.5s var(--ease-out-expo);
+}
+
+.rounded-xl.border:hover,
+.rounded-2xl.border:hover,
+[data-slot="card"]:hover {
+  transform: translateY(-4px) scale(1.005);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.02), 0 0 20px var(--purple-light);
+  border-color: rgba(142, 67, 172, 0.15) !important;
+}
+
+/* Enhances button actions globally */
+button,
+[data-slot="button"] {
+  transition: all 0.3s var(--ease-out-expo) !important;
+}
+
+button:hover:not(:disabled),
+[data-slot="button"]:hover:not(:disabled) {
+  transform: translateY(-1.5px) scale(1.02);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.03), 0 0 12px var(--purple-light);
+}
+
+button:active:not(:disabled),
+[data-slot="button"]:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Clean sliding translation on table rows */
+table tbody tr {
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+table tbody tr:hover {
+  background-color: var(--neutral-50) !important;
+  transform: translateX(3px);
+}

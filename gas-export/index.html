@@ -1,291 +1,798 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AntBox HRMS — Sync Dashboard</title>
-  <style>
-    :root {
-      --purple: #7c3aed;
-      --bg: #fafafa;
-      --card: #ffffff;
-      --border: #e4e4e7;
-      --text: #09090b;
-      --muted: #71717a;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-    header {
-      background: #09090b; color: white;
-      padding: 14px 24px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    header h1 { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
-    header p  { font-size: 11px; color: #a1a1aa; margin-top: 2px; }
-    .badge { background: var(--purple); color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
-
-    .container { max-width: 1040px; margin: 0 auto; padding: 24px 16px; }
-
-    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-    .stat-val   { font-size: 26px; font-weight: 800; }
-    .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px; }
-
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-    .card h2 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-    .card p  { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
-
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: 9px; border: none;
-      font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
-    }
-    .btn-primary { background: #09090b; color: white; }
-    .btn-primary:hover { background: #27272a; }
-    .btn-purple  { background: var(--purple); color: white; }
-    .btn-purple:hover  { background: #6d28d9; }
-    .btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
-    .btn-outline:hover { background: #f4f4f5; }
-    .btn:disabled { opacity: .45; cursor: not-allowed; }
-    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    .log {
-      background: #09090b; color: #d4d4d8;
-      border-radius: 10px; padding: 14px 16px;
-      font-size: 11px; font-family: "Courier New", monospace;
-      min-height: 80px; max-height: 200px; overflow-y: auto;
-      white-space: pre-wrap; line-height: 1.6;
-    }
-    .log .ok   { color: #4ade80; }
-    .log .err  { color: #f87171; }
-    .log .info { color: #60a5fa; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { text-align: left; padding: 8px 10px; background: #f4f4f5; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--border); }
-    td { padding: 8px 10px; border-bottom: 1px solid #f4f4f5; }
-    tr:last-child td { border-bottom: none; }
-    .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
-    .tag-active      { background: #dcfce7; color: #16a34a; }
-    .tag-onboarding  { background: #e0f2fe; color: #0284c7; }
-    .tag-offboarding { background: #fee2e2; color: #dc2626; }
-    .tag-other       { background: #f4f4f5; color: #71717a; }
-    .tag-done        { background: #dcfce7; color: #16a34a; }
-    .tag-pending     { background: #fef3c7; color: #b45309; }
-
-    #status-bar { padding: 10px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 12px; color: #15803d; margin-bottom: 16px; display: none; }
-
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tab { padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--muted); transition: all .15s; }
-    .tab.active { background: #09090b; color: white; border-color: #09090b; }
-
-    code { font-family: "Courier New", monospace; font-size: 11px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AntBox HRMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f8f8f8;--sidebar:#0f0f0f;--white:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--green:#16a34a;--red:#dc2626;--blue:#2563eb;--purple:#7c3aed;--radius:12px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+#sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--sidebar);display:flex;flex-direction:column;z-index:100}
+.logo-wrap{padding:20px 18px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:10px}
+.logo-box{width:34px;height:34px;background:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:10px;color:#000;letter-spacing:-1px;flex-shrink:0}
+.logo-text{color:#fff;font-size:15px;font-weight:600}
+.nav-section{padding:14px 18px 4px;font-size:10px;font-weight:600;color:#3d3d3d;letter-spacing:.08em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:#9ca3af;cursor:pointer;font-size:13px;font-weight:500;transition:color .15s,background .15s;position:relative}
+.nav-item:hover{color:#fff;background:#1a1a1a}
+.nav-item.active{color:#fff}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#fff;border-radius:0 2px 2px 0}
+.nav-item .ni{width:16px;font-size:13px;text-align:center}
+.sidebar-foot{margin-top:auto;padding:14px 18px;border-top:1px solid #1a1a1a}
+.sidebar-user{color:#777;font-size:11px;line-height:1.6}
+#topbar{position:fixed;top:0;left:220px;right:0;height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:99}
+.tb-left h2{font-size:16px;font-weight:700}
+.tb-left p{font-size:12px;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:12px}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px;width:220px}
+.search-wrap input{border:none;background:none;font-size:13px;outline:none;width:100%;color:var(--text)}
+.notif-btn{position:relative;width:36px;height:36px;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px}
+.notif-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;display:none}
+.user-chip{display:flex;align-items:center;gap:9px;padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer}
+.user-av{width:28px;height:28px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.user-nm{font-size:12px;font-weight:600}
+.user-rl{font-size:10px;color:var(--muted)}
+#main{margin-left:220px;margin-top:60px;padding:28px;min-height:calc(100vh - 60px)}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.card-sm{padding:14px 16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.stat-val{font-size:30px;font-weight:800;color:var(--text)}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:5px}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+.ph h1{font-size:22px;font-weight:700}
+.ph p{font-size:13px;color:var(--muted);margin-top:2px}
+.ph-actions{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
+.btn-primary{background:#111;color:#fff}.btn-primary:hover{background:#333}
+.btn-secondary{background:#fff;color:#111;border:1px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+.btn-success{background:#dcfce7;color:#15803d}
+.btn-danger{background:#fee2e2;color:#dc2626}
+.btn-sm{padding:5px 10px;font-size:12px}
+.tw{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;background:#fff}
+thead th{background:#fafafa;padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+tbody td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafafa}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:#f3f4f6;color:#374151}
+.bgn{background:#dcfce7;color:#15803d}
+.bgr{background:#fee2e2;color:#dc2626}
+.bgb{background:#dbeafe;color:#1d4ed8}
+.bgy{background:#fef9c3;color:#854d0e}
+.bgp{background:#f3e8ff;color:#6b21a8}
+.fgg{display:flex;flex-direction:column;gap:5px}
+.fgg label{font-size:12px;font-weight:600}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg-full{grid-column:1/-1}
+input,select,textarea{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:#111}
+textarea{resize:vertical;min-height:70px}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.mh{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mh h3{font-size:15px;font-weight:700}
+.mclose{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)}
+.mb{padding:22px}
+.mf{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.progress{height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden}
+.pbar{height:100%;background:#111;border-radius:3px;transition:width .3s}
+.pbar-g{background:#16a34a}
+.pbar-b{background:#2563eb}
+.emp-av{width:36px;height:36px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.clock-card{background:linear-gradient(135deg,#0f0f0f,#1f1f1f);border-radius:var(--radius);padding:22px;color:#fff}
+.clock-time{font-size:38px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.clock-btn{width:100%;padding:12px;border-radius:8px;border:none;font-size:14px;font-weight:700;cursor:pointer;margin-top:14px;transition:all .2s}
+.btn-in{background:#22c55e;color:#fff}
+.btn-out{background:#f97316;color:#fff}
+.tabs{display:flex;gap:2px;background:#f3f4f6;border-radius:8px;padding:3px;margin-bottom:18px;width:fit-content}
+.tab{padding:7px 16px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s}
+.tab.active{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cal-hdr{display:grid;grid-template-columns:repeat(7,1fr);background:#fafafa}
+.cal-dh{padding:8px;text-align:center;font-size:11px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-cell{min-height:82px;padding:6px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:#fff}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-num{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:3px}
+.today-cell .cal-num{background:#111;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700}
+.cal-evt{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notif-panel{position:fixed;top:60px;right:0;width:330px;height:calc(100vh - 60px);background:#fff;border-left:1px solid var(--border);z-index:150;transform:translateX(100%);transition:transform .2s;overflow-y:auto}
+.notif-panel.open{transform:translateX(0)}
+.notif-ph{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.notif-item{padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer}
+.notif-item:hover{background:var(--bg)}
+.notif-item.unread{border-left:3px solid var(--blue)}
+.ni-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.ni-msg{font-size:12px;color:var(--muted)}
+.spinner{width:20px;height:20px;border:2px solid #e5e7eb;border-top-color:#111;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pg-load{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;gap:10px;color:var(--muted);font-size:13px}
+#toast-cnt{position:fixed;bottom:22px;right:22px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:11px 16px;border-radius:9px;font-size:13px;font-weight:500;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.15);animation:si .2s ease;display:flex;align-items:center;gap:8px;min-width:260px}
+.ts{background:#111}.te{background:#dc2626}.ti{background:#2563eb}
+@keyframes si{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .ei{font-size:38px;margin-bottom:10px}
+.empty h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:5px}
+.empty p{font-size:13px}
+.pr-hero{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;align-items:center;gap:18px;margin-bottom:18px}
+.pr-av{width:68px;height:68px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
+.pr-nm{font-size:20px;font-weight:700}
+.pr-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.info-row2{padding:10px 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:start}
+.ir-lbl{font-size:12px;font-weight:600;color:var(--muted)}
+.ir-val{font-size:13px}
+.payslip{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ps-hdr{background:#111;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center}
+.pay-row{display:flex;justify-content:space-between;align-items:center;padding:10px 22px;border-bottom:1px solid var(--border)}
+.pay-row:last-child{border-bottom:none}
+.pay-total{background:#f9fafb;font-weight:700}
+.pay-net{background:#111;color:#fff;font-size:15px;font-weight:700}
+.task-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fff}
+.tchk{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}
+.tchk.done{background:#111;border-color:#111;color:#fff;font-size:10px}
+</style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>AntBox HRMS</h1>
-      <p>Employee Master Tracker — Google Apps Script Sync Dashboard</p>
-    </div>
-    <span class="badge">v3.0</span>
-  </header>
 
-  <div class="container">
-    <div id="status-bar"></div>
+<nav id="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-box">ānt</div>
+    <div class="logo-text">antbox</div>
+  </div>
+  <div style="overflow-y:auto;flex:1">
+    <div class="nav-section">Workspace</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="go('dashboard')"><span class="ni">⊞</span>Dashboard</div>
+    <div class="nav-item" id="nav-employees" onclick="go('employees')"><span class="ni">👥</span>Employees</div>
+    <div class="nav-item" id="nav-onboarding" onclick="go('onboarding')"><span class="ni">🚀</span>Onboarding</div>
+    <div class="nav-item" id="nav-separation" onclick="go('separation')"><span class="ni">📤</span>Separation</div>
+    <div class="nav-item" id="nav-offboarding" onclick="go('offboarding')"><span class="ni">🔄</span>Offboarding</div>
+    <div class="nav-section">People</div>
+    <div class="nav-item" id="nav-attendance" onclick="go('attendance')"><span class="ni">🕐</span>Attendance</div>
+    <div class="nav-item" id="nav-leave" onclick="go('leave')"><span class="ni">🌴</span>Leave</div>
+    <div class="nav-item" id="nav-payroll" onclick="go('payroll')"><span class="ni">💰</span>Payroll</div>
+    <div class="nav-item" id="nav-documents" onclick="go('documents')"><span class="ni">📄</span>Documents</div>
+    <div class="nav-item" id="nav-reimbursements" onclick="go('reimbursements')"><span class="ni">🧾</span>Reimbursements</div>
+    <div class="nav-section">More</div>
+    <div class="nav-item" id="nav-calendar" onclick="go('calendar')"><span class="ni">📅</span>Calendar</div>
+    <div class="nav-item" id="nav-reports" onclick="go('reports')"><span class="ni">📊</span>Reports</div>
+    <div class="nav-item" id="nav-settings" onclick="go('settings')"><span class="ni">⚙️</span>Settings</div>
+  </div>
+  <div class="sidebar-foot">
+    <div class="sidebar-user" id="sb-user">Loading...</div>
+    <div class="nav-item" id="nav-portal" onclick="go('portal')" style="padding:8px 0;margin-top:6px"><span class="ni">👤</span>My Portal</div>
+  </div>
+</nav>
 
-    <!-- Stats -->
-    <div class="grid-4" id="stats-grid">
-      <div class="stat"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total Employees</div></div>
-      <div class="stat"><div class="stat-val" id="stat-active">—</div><div class="stat-label">Active</div></div>
-      <div class="stat"><div class="stat-val" id="stat-onboarding">—</div><div class="stat-label">Onboarding</div></div>
-      <div class="stat"><div class="stat-val" id="stat-ob-done" style="color:#16a34a">—</div><div class="stat-label">Onboarding Complete</div></div>
-      <div class="stat"><div class="stat-val" id="stat-last-sync">—</div><div class="stat-label">Last Sync</div></div>
-    </div>
-
-    <!-- Sync Controls -->
-    <div class="card">
-      <h2>🔄 Sync Controls</h2>
-      <p>Pull live data from your HRMS and write to Google Sheets.</p>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="runSync('all')">⚡ Full Sync</button>
-        <button class="btn btn-outline" onclick="runSync('employees')">👥 Employees</button>
-        <button class="btn btn-outline" onclick="runSync('onboarding')">🎯 Onboarding</button>
-        <button class="btn btn-outline" onclick="runSync('attendance')">🕐 Attendance</button>
-        <button class="btn btn-outline" onclick="runSync('leave')">🏖️ Leave</button>
-        <button class="btn btn-outline" onclick="runSync('reimbursements')">💸 Reimbursements</button>
-        <button class="btn btn-outline" onclick="runSync('separations')">🚪 Separations</button>
-        <button class="btn btn-outline" onclick="runSync('documents')">📄 Documents</button>
-        <button class="btn btn-purple" onclick="runSetup()">⚙️ Setup</button>
-      </div>
-    </div>
-
-    <!-- Log -->
-    <div class="card">
-      <h2>📋 Sync Log</h2>
-      <p>Real-time output from last sync operation.</p>
-      <div class="log" id="log">Waiting for sync…</div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs">
-      <div class="tab active" onclick="showTab('employees')">👥 Employees</div>
-      <div class="tab" onclick="showTab('onboarding')">🎯 Onboarding</div>
-    </div>
-
-    <!-- Employee Table -->
-    <div id="tab-employees" class="card">
-      <h2>👥 Employee Master</h2>
-      <p>Live preview. Run Full Sync or Employees sync to refresh.</p>
-      <div style="overflow-x:auto;">
-        <table id="emp-table">
-          <thead>
-            <tr><th>ID</th><th>Name</th><th>Email</th><th>Department</th><th>Designation</th><th>Type</th><th>Status</th><th>Joining</th></tr>
-          </thead>
-          <tbody id="emp-body">
-            <tr><td colspan="8" style="text-align:center;color:#a1a1aa;padding:24px">Run a sync to load data</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Onboarding Table -->
-    <div id="tab-onboarding" class="card" style="display:none">
-      <h2>🎯 Onboarding Progress</h2>
-      <p>Employees currently in onboarding and their milestone status.</p>
-      <div style="overflow-x:auto;">
-        <table id="ob-table">
-          <thead>
-            <tr><th>ID</th><th>Name</th><th>Dept</th><th>Joining</th><th>Docs</th><th>Banking</th><th>ID Form</th><th>Progress</th></tr>
-          </thead>
-          <tbody id="ob-body">
-            <tr><td colspan="8" style="text-align:center;color:#a1a1aa;padding:24px">Run Onboarding sync to load</td></tr>
-          </tbody>
-        </table>
-      </div>
+<div id="topbar">
+  <div class="tb-left"><h2 id="pg-title">Dashboard</h2><p id="pg-date"></p></div>
+  <div class="tb-right">
+    <div class="search-wrap"><span>🔍</span><input type="text" placeholder="Search employees..." id="gsearch" oninput="gSearch(this.value)"/></div>
+    <div class="notif-btn" onclick="toggleNotif()">🔔<span class="notif-badge" id="nb">0</span></div>
+    <div class="user-chip" onclick="go('portal')">
+      <div class="user-av" id="tb-av">?</div>
+      <div><div class="user-nm" id="tb-nm">Loading</div><div class="user-rl" id="tb-rl">—</div></div>
     </div>
   </div>
+</div>
 
-  <script>
-    var currentTab = 'employees';
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-ph"><strong style="font-size:14px">Notifications</strong><button class="btn btn-sm btn-secondary" onclick="markRead()">Mark all read</button></div>
+  <div id="notif-list"><div class="pg-load"><div class="spinner"></div></div></div>
+</div>
 
-    function showTab(tab) {
-      currentTab = tab;
-      document.getElementById('tab-employees').style.display  = tab === 'employees'  ? '' : 'none';
-      document.getElementById('tab-onboarding').style.display = tab === 'onboarding' ? '' : 'none';
-      document.querySelectorAll('.tab').forEach(function(el) {
-        el.classList.toggle('active', el.textContent.toLowerCase().includes(tab));
-      });
-    }
+<div id="main"><div class="pg-load"><div class="spinner"></div><span>Loading AntBox HRMS...</span></div></div>
 
-    function log(msg, type) {
-      var el  = document.getElementById('log');
-      var ts  = new Date().toLocaleTimeString();
-      var cls = type === 'ok' ? 'ok' : type === 'err' ? 'err' : 'info';
-      el.innerHTML += '<span class="' + cls + '">[' + ts + '] ' + msg + '</span>\n';
-      el.scrollTop  = el.scrollHeight;
-    }
+<div class="modal-ov" id="mov"><div class="modal" id="mbox"><div class="mh"><h3 id="mt">—</h3><button class="mclose" onclick="cM()">✕</button></div><div class="mb" id="mbody"></div><div class="mf" id="mfoot"></div></div></div>
+<div id="toast-cnt"></div>
 
-    function showStatus(msg) {
-      var bar = document.getElementById('status-bar');
-      bar.textContent  = msg;
-      bar.style.display = 'block';
-      setTimeout(function() { bar.style.display = 'none'; }, 4000);
-    }
+<script>
+var S={user:null,page:'dashboard',cal:{m:new Date().getMonth()+1,y:new Date().getFullYear()},leaveTab:'my',attTab:'my',payTab:'runs',repTab:'headcount'};
+var TITLES={dashboard:'Dashboard',employees:'Employees',onboarding:'Onboarding',separation:'Separation',offboarding:'Offboarding',attendance:'Attendance',leave:'Leave Management',payroll:'Payroll',documents:'Documents',reimbursements:'Reimbursements',calendar:'Calendar',reports:'Reports',settings:'Settings',portal:'My Portal'};
 
-    function setButtons(disabled) {
-      document.querySelectorAll('.btn').forEach(function(b) { b.disabled = disabled; });
-    }
+window.onload=function(){
+  document.getElementById('pg-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  loadDash();
+};
 
-    function runSync(module) {
-      log('Starting sync: ' + module + '…', 'info');
-      setButtons(true);
-      google.script.run
-        .withSuccessHandler(function(result) {
-          log('✓ ' + (result || 'Done'), 'ok');
-          showStatus('Sync complete: ' + module);
-          setButtons(false);
-          if (module === 'all' || module === 'employees') loadEmployeePreview();
-          if (module === 'all' || module === 'onboarding') loadOnboardingPreview();
-        })
-        .withFailureHandler(function(err) {
-          log('✗ Error: ' + err.message, 'err');
-          setButtons(false);
-        })
-        .gasRunSync(module);
-    }
+function isA(){return S.user&&['SUPER_ADMIN','HR_ADMIN'].indexOf(S.user.role)>-1;}
+function isM(){return S.user&&['SUPER_ADMIN','HR_ADMIN','MANAGER'].indexOf(S.user.role)>-1;}
 
-    function runSetup() {
-      log('Running setup…', 'info');
-      setButtons(true);
-      google.script.run
-        .withSuccessHandler(function() { log('✓ Setup complete', 'ok'); setButtons(false); })
-        .withFailureHandler(function(e) { log('✗ ' + e.message, 'err'); setButtons(false); })
-        .onSetup();
-    }
+function go(p){
+  S.page=p;
+  document.querySelectorAll('.nav-item').forEach(function(e){e.classList.remove('active');});
+  var n=document.getElementById('nav-'+p);if(n)n.classList.add('active');
+  document.getElementById('pg-title').textContent=TITLES[p]||p;
+  C('<div class="pg-load"><div class="spinner"></div></div>');
+  if(p==='dashboard')loadDash();
+  else if(p==='employees')loadEmps();
+  else if(p==='onboarding')loadOB();
+  else if(p==='separation')loadSep();
+  else if(p==='offboarding')loadOff();
+  else if(p==='attendance')loadAtt();
+  else if(p==='leave')loadLeave();
+  else if(p==='payroll')loadPay();
+  else if(p==='documents')loadDocs();
+  else if(p==='reimbursements')loadRmb();
+  else if(p==='calendar')loadCal();
+  else if(p==='reports')loadRep();
+  else if(p==='settings')loadSet();
+  else if(p==='portal')loadPortal();
+}
 
-    function loadEmployeePreview() {
-      google.script.run
-        .withSuccessHandler(function(rows) {
-          var body = document.getElementById('emp-body');
-          if (!rows || rows.length === 0) {
-            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a1a1aa;padding:16px">No data — run a sync first</td></tr>';
-            return;
-          }
-          document.getElementById('stat-total').textContent      = rows.length;
-          document.getElementById('stat-active').textContent     = rows.filter(function(r) { return r[6] === 'ACTIVE'; }).length;
-          document.getElementById('stat-onboarding').textContent = rows.filter(function(r) { return r[6] === 'ONBOARDING'; }).length;
-          document.getElementById('stat-last-sync').textContent  = new Date().toLocaleTimeString();
+// ── DASHBOARD ──────────────────────────────────────────────
+function loadDash(){google.script.run.withSuccessHandler(renderDash).withFailureHandler(err).getDashboardData();}
+function renderDash(d){
+  S.user=d.user;setUser(d.user);loadNotifs();
+  var s=d.stats;
+  var balH=d.myBalances.map(function(b){
+    var p=b.allocated>0?Math.round(b.used/b.allocated*100):0;
+    return '<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:500">'+b.name+'</span><span style="font-size:12px;color:var(--muted)">'+b.remaining+' / '+b.allocated+' left</span></div><div class="progress"><div class="pbar pbar-b" style="width:'+p+'%"></div></div></div>';
+  }).join('');
+  var holH=d.upcomingHolidays.length?d.upcomingHolidays.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">'+h.name+'</span><span style="font-size:12px;color:var(--muted)">'+fd(h.date)+'</span></div>';}).join(''):'<p style="color:var(--muted);font-size:13px">No upcoming holidays</p>';
+  var ck=d.myToday?'<div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.6)">Today: In '+d.myToday.firstIn+(d.myToday.lastOut?' → Out '+d.myToday.lastOut:' (still in)')+'</div>':'';
+  C(
+  '<div class="grid4">'+sc('👥','Total Employees',s.total,'+'+s.onboarding+' onboarding')+sc('✅','Present Today',s.todayPresent,s.attendanceRate+'% attendance')+sc('🌴','Pending Leave',s.pendingLeave,'Awaiting approval')+sc('🚀','Onboarding',s.onboarding,s.offboarding+' offboarding')+'</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 330px;gap:18px">'+
+    '<div>'+
+      '<div class="clock-card">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+          '<div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px;letter-spacing:.06em">ATTENDANCE</div><div class="clock-time" id="lc">--:--:--</div></div>'+
+          '<div style="text-align:right;font-size:12px;color:rgba(255,255,255,.5)">'+d.today+'</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:rgba(255,255,255,.5)"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block"></span>Requires GPS · 200m of AntBox Bhubaneswar office</div>'+
+        '<button class="clock-btn btn-in" id="ck-btn" onclick="doClock()">→ Clock In</button>'+
+        ck+
+      '</div>'+
+      '<div class="card" style="margin-top:16px"><div style="font-size:13px;font-weight:700;margin-bottom:14px">Leave Balances</div>'+balH+'</div>'+
+    '</div>'+
+    '<div>'+
+      '<div class="card" style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;margin-bottom:11px">Upcoming Holidays</div>'+holH+'</div>'+
+      '<div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:11px">Quick Actions</div>'+
+        '<div style="display:flex;flex-direction:column;gap:8px">'+
+          '<button class="btn btn-secondary" style="justify-content:flex-start" onclick="openApplyLeave()">🌴 Apply for Leave</button>'+
+          '<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go(\'reimbursements\')">🧾 Submit Expense Claim</button>'+
+          (isA()?'<button class="btn btn-secondary" style="justify-content:flex-start" onclick="openAddEmp()">➕ Add Employee</button>':'')+
+          (isA()?'<button class="btn btn-secondary" style="justify-content:flex-start" onclick="openNewOB()">🚀 New Onboarding</button>':'')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>');
+  startClock();
+  if(d.myToday&&!d.myToday.lastOut){var b=document.getElementById('ck-btn');if(b){b.textContent='→ Clock Out';b.className='clock-btn btn-out';}}
+}
+function sc(ic,lbl,val,sub){return '<div class="stat-card"><div style="font-size:22px;margin-bottom:6px">'+ic+'</div><div class="stat-label">'+lbl+'</div><div class="stat-val">'+val+'</div><div class="stat-sub">'+sub+'</div></div>';}
+var _ck;
+function startClock(){if(_ck)clearInterval(_ck);_ck=setInterval(function(){var e=document.getElementById('lc');if(e)e.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});},1000);}
+function doClock(){
+  var b=document.getElementById('ck-btn');if(b){b.textContent='Processing...';b.disabled=true;}
+  navigator.geolocation?navigator.geolocation.getCurrentPosition(
+    function(p){google.script.run.withSuccessHandler(ckDone).withFailureHandler(err).clockAction(p.coords.latitude,p.coords.longitude);},
+    function(){google.script.run.withSuccessHandler(ckDone).withFailureHandler(err).clockAction(null,null);}
+  ):google.script.run.withSuccessHandler(ckDone).withFailureHandler(err).clockAction(null,null);
+}
+function ckDone(r){if(r.success){toast(r.action==='in'?'Clocked in at '+r.time:'Clocked out at '+r.time,'s');loadDash();}else toast(r.error,'e');}
 
-          body.innerHTML = rows.map(function(r) {
-            var tc = r[6] === 'ACTIVE' ? 'tag-active' : r[6] === 'ONBOARDING' ? 'tag-onboarding' : r[6] === 'OFFBOARDING' ? 'tag-offboarding' : 'tag-other';
-            return '<tr>'
-              + '<td><code>' + r[0] + '</code></td>'
-              + '<td><strong>' + r[1] + '</strong></td>'
-              + '<td>' + r[2] + '</td>'
-              + '<td>' + r[3] + '</td>'
-              + '<td>' + r[4] + '</td>'
-              + '<td>' + r[5] + '</td>'
-              + '<td><span class="tag ' + tc + '">' + r[6] + '</span></td>'
-              + '<td>' + r[7] + '</td>'
-              + '</tr>';
-          }).join('');
-        })
-        .withFailureHandler(function() {})
-        .gasGetEmployeeRows();
-    }
+// ── EMPLOYEES ──────────────────────────────────────────────
+var EF={search:'',status:'',departmentId:''};
+function loadEmps(){google.script.run.withSuccessHandler(renderEmps).withFailureHandler(err).getEmployees(EF);}
+function renderEmps(emps){
+  google.script.run.withSuccessHandler(function(depts){
+    var do_=depts.map(function(d){return '<option value="'+d.id+'">'+d.name+'</option>';}).join('');
+    var rows=emps.length?emps.map(function(e){
+      var ini=(e.firstName||'?')[0]+(e.lastName||'?')[0];
+      return '<tr onclick="viewEmp(\''+e.id+'\')" style="cursor:pointer">'+
+        '<td><div style="display:flex;align-items:center;gap:10px"><div class="emp-av">'+ini+'</div><div><div style="font-weight:600">'+e.firstName+' '+e.lastName+'</div><div style="font-size:11px;color:var(--muted)">'+e.employeeId+'</div></div></div></td>'+
+        '<td><div>'+e.designation+'</div><div style="font-size:11px;color:var(--muted)">'+e.departmentName+'</div></td>'+
+        '<td>'+bFor(e.status)+'</td>'+
+        '<td><span class="badge bg">'+e.employmentType+'</span></td>'+
+        '<td style="font-size:12px;color:var(--muted)">'+fd(e.joiningDate)+'</td>'+
+        '<td style="font-size:12px">'+e.email+'</td>'+
+        '<td><button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();editEmp(\''+e.id+'\')">Edit</button></td>'+
+      '</tr>';
+    }).join(''):'<tr><td colspan="7"><div class="empty"><div class="ei">👥</div><h3>No employees found</h3><p>Add your first employee</p></div></td></tr>';
+    C(
+    '<div class="ph"><div><h1>Employees <span style="font-size:13px;font-weight:500;color:var(--muted);background:var(--bg);border-radius:20px;padding:2px 10px">'+emps.length+'</span></h1><p>Manage your team</p></div>'+
+    '<div class="ph-actions">'+(isA()?'<button class="btn btn-secondary" onclick="openAddDept()">+ Dept</button>':'')+' '+(isA()?'<button class="btn btn-primary" onclick="openAddEmp()">+ Add Employee</button>':'')+'</div></div>'+
+    '<div style="display:flex;gap:10px;margin-bottom:16px">'+
+      '<input type="text" placeholder="🔍 Search..." value="'+EF.search+'" oninput="EF.search=this.value;loadEmps()" style="max-width:240px"/>'+
+      '<select onchange="EF.status=this.value;loadEmps()"><option value="">All Status</option><option>ACTIVE</option><option>ONBOARDING</option><option>OFFBOARDING</option><option>INACTIVE</option></select>'+
+      '<select onchange="EF.departmentId=this.value;loadEmps()"><option value="">All Departments</option>'+do_+'</select>'+
+    '</div>'+
+    '<div class="tw"><table><thead><tr><th>Employee</th><th>Role / Dept</th><th>Status</th><th>Type</th><th>Joined</th><th>Email</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+  }).getDepartments();
+}
+function viewEmp(id){
+  google.script.run.withSuccessHandler(function(e){
+    if(!e) return toast('Not found','e');
+    var ini=(e.firstName||'?')[0]+(e.lastName||'?')[0];
+    oM('Employee Profile',
+      '<div class="pr-hero">'+
+        '<div class="pr-av">'+ini+'</div>'+
+        '<div>'+
+          '<div class="pr-nm">'+e.firstName+' '+e.lastName+'</div>'+
+          '<div class="pr-sub">'+e.designation+' · '+e.departmentName+'</div>'+
+          '<div style="margin-top:8px;display:flex;gap:6px">'+bFor(e.status)+' <span class="badge bg">'+e.employmentType+'</span> <span class="badge bg">'+e.employeeId+'</span></div>'+
+        '</div>'+
+        '<div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="editEmp(\''+e.id+'\')">Edit</button></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+        sec2('Contact',[['Email',e.email],['Phone',e.phone],['Personal Email',e.personalEmail],['Emergency',e.emergencyContact],['Emergency Ph.',e.emergencyPhone]])+
+        sec2('Personal',[['Date of Birth',fd(e.dateOfBirth)],['Gender',e.gender],['Blood Group',e.bloodGroup],['PAN',e.pan]])+
+        sec2('Compensation',[['Basic',fm(e.basicSalary)],['HRA',fm(e.hra)],['Special Allowance',fm(e.specialAllowance)],['Total CTC',fm(e.totalCTC)]])+
+        sec2('Banking',[['Bank',e.bankName],['Account No',e.bankAccountNo],['IFSC',e.ifscCode]])+
+      '</div>',
+    '',true);
+  }).withFailureHandler(err).getEmployee(id);
+}
+function openAddEmp(){
+  google.script.run.withSuccessHandler(function(depts){
+    var do_=depts.map(function(d){return '<option value="'+d.id+'" data-n="'+d.name+'">'+d.name+'</option>';}).join('');
+    oM('Add Employee',
+      '<div class="fg2">'+
+        f('First Name','text','e-fn','','*')+f('Last Name','text','e-ln','','*')+
+        f('Email','email','e-em','','*')+f('Phone','tel','e-ph','')+
+        f('Designation','text','e-dg','','*')+
+        '<div class="fgg"><label>Department</label><select id="e-dp">'+do_+'</select></div>'+
+        '<div class="fgg"><label>Employment Type</label><select id="e-et"><option>FULL_TIME</option><option>PART_TIME</option><option>INTERN</option><option>CONTRACT</option></select></div>'+
+        '<div class="fgg"><label>Role</label><select id="e-rl"><option>EMPLOYEE</option><option>MANAGER</option><option>HR_ADMIN</option><option>SUPER_ADMIN</option><option>INTERN</option></select></div>'+
+        f('Joining Date','date','e-jd','')+f('Date of Birth','date','e-db','')+
+        '<div class="fgg"><label>Gender</label><select id="e-gn"><option value="">Select</option><option>MALE</option><option>FEMALE</option><option>OTHER</option></select></div>'+
+        f('Blood Group','text','e-bg','')+
+        f('Basic Salary','number','e-bs','')+f('HRA','number','e-hr','')+
+        f('Special Allowance','number','e-sa','')+f('PAN','text','e-pn','')+
+      '</div>',
+      '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitAddEmp()">Create</button>'
+    );
+  }).getDepartments();
+}
+function submitAddEmp(){
+  var ds=document.getElementById('e-dp');
+  var dn=ds?ds.options[ds.selectedIndex].text:'';
+  var emp={firstName:v('e-fn'),lastName:v('e-ln'),email:v('e-em'),phone:v('e-ph'),designation:v('e-dg'),departmentId:v('e-dp'),departmentName:dn,employmentType:v('e-et'),role:v('e-rl'),joiningDate:v('e-jd'),dateOfBirth:v('e-db'),gender:v('e-gn'),bloodGroup:v('e-bg'),basicSalary:v('e-bs'),hra:v('e-hr'),specialAllowance:v('e-sa'),pan:v('e-pn')};
+  if(!emp.firstName||!emp.email||!emp.designation){toast('Fill required fields *','e');return;}
+  google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Employee created! ID: '+r.employeeId,'s');loadEmps();}else toast(r.error,'e');}).withFailureHandler(err).saveEmployee(emp);
+}
+function editEmp(id){
+  google.script.run.withSuccessHandler(function(e){
+    google.script.run.withSuccessHandler(function(depts){
+      var do_=depts.map(function(d){return '<option value="'+d.id+'" '+(d.id===e.departmentId?'selected':'')+'>'+d.name+'</option>';}).join('');
+      oM('Edit Employee',
+        '<div class="fg2">'+
+          fv('First Name','text','ee-fn',e.firstName)+fv('Last Name','text','ee-ln',e.lastName)+
+          fv('Email','email','ee-em',e.email)+fv('Phone','tel','ee-ph',e.phone)+
+          fv('Designation','text','ee-dg',e.designation)+
+          '<div class="fgg"><label>Department</label><select id="ee-dp">'+do_+'</select></div>'+
+          '<div class="fgg"><label>Status</label><select id="ee-st"><option '+(e.status==='ACTIVE'?'selected':'')+'>ACTIVE</option><option '+(e.status==='INACTIVE'?'selected':'')+'>INACTIVE</option><option '+(e.status==='ONBOARDING'?'selected':'')+'>ONBOARDING</option><option '+(e.status==='OFFBOARDING'?'selected':'')+'>OFFBOARDING</option></select></div>'+
+          fv('Basic Salary','number','ee-bs',e.basicSalary)+fv('HRA','number','ee-hr',e.hra)+
+          fv('Special Allowance','number','ee-sa',e.specialAllowance)+fv('PAN','text','ee-pn',e.pan)+
+          fv('Bank Name','text','ee-bk',e.bankName)+fv('Account No','text','ee-ac',e.bankAccountNo)+
+          fv('IFSC','text','ee-if',e.ifscCode)+
+        '</div>',
+        '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitEditEmp(\''+id+'\')">Save</button>'
+      );
+    }).getDepartments();
+  }).withFailureHandler(err).getEmployee(id);
+}
+function submitEditEmp(id){
+  var ds=document.getElementById('ee-dp'),dn=ds?ds.options[ds.selectedIndex].text:'';
+  google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Saved','s');loadEmps();}else toast(r.error,'e');}).withFailureHandler(err).saveEmployee({id:id,firstName:v('ee-fn'),lastName:v('ee-ln'),email:v('ee-em'),phone:v('ee-ph'),designation:v('ee-dg'),departmentId:v('ee-dp'),departmentName:dn,status:v('ee-st'),basicSalary:v('ee-bs'),hra:v('ee-hr'),specialAllowance:v('ee-sa'),pan:v('ee-pn'),bankName:v('ee-bk'),bankAccountNo:v('ee-ac'),ifscCode:v('ee-if')});
+}
+function openAddDept(){oM('Add Department','<div class="fgg"><label>Name</label><input type="text" id="dn" placeholder="e.g. Engineering"/></div>','<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitDept()">Add</button>');}
+function submitDept(){var n=v('dn');if(!n){toast('Enter name','e');return;}google.script.run.withSuccessHandler(function(){cM();toast('Department added','s');}).saveDepartment({name:n});}
 
-    function loadOnboardingPreview() {
-      google.script.run
-        .withSuccessHandler(function(data) {
-          if (!data) return;
-          document.getElementById('stat-ob-done').textContent = data.complete + '/' + data.total;
-          var body = document.getElementById('ob-body');
-          if (!data.rows || data.rows.length === 0) {
-            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a1a1aa;padding:16px">No onboarding employees</td></tr>';
-            return;
-          }
-          body.innerHTML = data.rows.map(function(r) {
-            var done = r[7] === '3/3';
-            return '<tr>'
-              + '<td><code>' + r[0] + '</code></td>'
-              + '<td><strong>' + r[1] + '</strong></td>'
-              + '<td>' + r[2] + '</td>'
-              + '<td>' + r[3] + '</td>'
-              + '<td><span class="tag ' + (r[4] === '✓' ? 'tag-done' : 'tag-pending') + '">' + r[4] + '</span></td>'
-              + '<td><span class="tag ' + (r[5] === '✓' ? 'tag-done' : 'tag-pending') + '">' + r[5] + '</span></td>'
-              + '<td><span class="tag ' + (r[6] === '✓' ? 'tag-done' : 'tag-pending') + '">' + r[6] + '</span></td>'
-              + '<td><span class="tag ' + (done ? 'tag-done' : 'tag-pending') + '">' + r[7] + '</span></td>'
-              + '</tr>';
-          }).join('');
-        })
-        .withFailureHandler(function() {})
-        .gasGetOnboardingStats();
-    }
+// ── ONBOARDING ─────────────────────────────────────────────
+function loadOB(){google.script.run.withSuccessHandler(renderOB).withFailureHandler(err).getOnboardingList();}
+function renderOB(list){
+  var rows=list.length?list.map(function(o){
+    var p=o.totalTasks>0?Math.round(o.completedTasks/o.totalTasks*100):0;
+    return '<tr onclick="viewOB(\''+o.id+'\')" style="cursor:pointer">'+
+      '<td><div style="font-weight:600">'+o.name+'</div><div style="font-size:11px;color:var(--muted)">'+o.email+'</div></td>'+
+      '<td>'+o.designation+'<div style="font-size:11px;color:var(--muted)">'+o.department+'</div></td>'+
+      '<td style="font-size:12px">'+fd(o.joiningDate)+'</td>'+
+      '<td>'+(o.status==='COMPLETED'?'<span class="badge bgn">Complete</span>':'<span class="badge bgb">In Progress</span>')+'</td>'+
+      '<td style="min-width:130px"><div style="display:flex;align-items:center;gap:8px"><div class="progress" style="flex:1"><div class="pbar" style="width:'+p+'%"></div></div><span style="font-size:11px;color:var(--muted)">'+o.completedTasks+'/'+o.totalTasks+'</span></div></td>'+
+    '</tr>';
+  }).join(''):'<tr><td colspan="5"><div class="empty"><div class="ei">🚀</div><h3>No onboarding pipelines</h3></div></td></tr>';
+  C('<div class="ph"><div><h1>Onboarding <span style="font-size:13px;font-weight:500;color:var(--muted);background:var(--bg);border-radius:20px;padding:2px 10px">'+list.length+'</span></h1><p>New hire pipelines</p></div>'+(isA()?'<button class="btn btn-primary" onclick="openNewOB()">+ New Pipeline</button>':'')+'</div>'+
+  '<div class="tw"><table><thead><tr><th>New Hire</th><th>Role / Dept</th><th>Joining</th><th>Status</th><th>Progress</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+}
+function viewOB(id){
+  google.script.run.withSuccessHandler(function(tasks){
+    var cats={DOCUMENTATION:'📄',FINANCE:'💰',ASSET:'💻',IT_SETUP:'⚙️',ORIENTATION:'🎯',SOCIAL:'🤝',COMPLIANCE:'🛡️',TRAINING:'📚'};
+    var done=tasks.filter(function(t){return t.status==='COMPLETED';}).length;
+    var p=tasks.length>0?Math.round(done/tasks.length*100):0;
+    var th='<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-weight:600;font-size:13px">Progress</span><span style="font-size:13px;color:var(--muted)">'+done+'/'+tasks.length+' complete</span></div><div class="progress" style="height:8px"><div class="pbar pbar-g" style="width:'+p+'%"></div></div><div style="font-size:12px;color:var(--muted);margin-top:4px">'+p+'%</div></div>';
+    var tl=tasks.map(function(t){
+      var dc=t.status==='COMPLETED';
+      return '<div class="task-row"><div class="tchk '+(dc?'done':'')+'" onclick="togTask(\''+id+'\',\''+t.id+'\','+dc+')">'+(dc?'✓':'')+'</div><div style="flex:1"><div style="font-size:13px;font-weight:500;'+(dc?'text-decoration:line-through;color:var(--muted)':'')+'">'+(cats[t.category]||'📋')+' '+t.title+'</div><div style="font-size:11px;color:var(--muted)">'+t.description+'</div></div><span class="badge '+(dc?'bgn':'bg')+'">'+t.status+'</span></div>';
+    }).join('');
+    oM('Onboarding Tasks',th+tl,'',true);
+  }).withFailureHandler(err).getOnboardingTasks(id);
+}
+function togTask(hireId,taskId,done){
+  if(done) return;
+  google.script.run.withSuccessHandler(function(r){if(r.success){toast('Task complete ✓','s');viewOB(hireId);}}).withFailureHandler(err).updateOnboardingTask(taskId,'COMPLETED','');
+}
+function openNewOB(){
+  oM('New Onboarding Pipeline',
+    '<div class="fg2">'+f('First Name','text','oh-fn','','*')+f('Last Name','text','oh-ln','','*')+f('Email','email','oh-em','','*')+f('Designation','text','oh-dg','','*')+f('Department','text','oh-dp','')+f('Joining Date','date','oh-jd','')+'</div>',
+    '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitOB()">Create Pipeline (12 tasks)</button>'
+  );
+}
+function submitOB(){
+  var h={firstName:v('oh-fn'),lastName:v('oh-ln'),email:v('oh-em'),designation:v('oh-dg'),department:v('oh-dp'),joiningDate:v('oh-jd')};
+  if(!h.firstName||!h.email){toast('Fill required fields *','e');return;}
+  google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Pipeline created with 12 tasks!','s');loadOB();}else toast(r.error,'e');}).withFailureHandler(err).createOnboarding(h);
+}
 
-    // Auto-load on open
-    loadEmployeePreview();
-    loadOnboardingPreview();
-  </script>
+// ── SEPARATION ─────────────────────────────────────────────
+function loadSep(){google.script.run.withSuccessHandler(renderSep).withFailureHandler(err).getSeparations();}
+function renderSep(list){
+  var rows=list.length?list.map(function(s){return '<tr><td><div style="font-weight:600">'+s.employeeName+'</div></td><td><span class="badge bg">'+s.type+'</span></td><td style="font-size:12px">'+fd(s.initiatedDate)+'</td><td style="font-size:12px">'+fd(s.lastWorkingDay)+'</td><td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis">'+s.reason+'</td><td>'+bFor(s.status,'sep')+'</td></tr>';}).join(''):'<tr><td colspan="6"><div class="empty"><div class="ei">📤</div><h3>No separations</h3></div></td></tr>';
+  C('<div class="ph"><div><h1>Separations</h1><p>Employee exits</p></div>'+(isA()?'<button class="btn btn-primary" onclick="openInitSep()">+ Initiate Separation</button>':'')+'</div>'+
+  '<div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Initiated</th><th>Last Day</th><th>Reason</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+}
+function openInitSep(){
+  google.script.run.withSuccessHandler(function(emps){
+    var opts=emps.map(function(e){return '<option value="'+e.id+'" data-n="'+e.firstName+' '+e.lastName+'">'+e.firstName+' '+e.lastName+' ('+e.employeeId+')</option>';}).join('');
+    oM('Initiate Separation',
+      '<div class="fg2">'+
+        '<div class="fgg"><label>Employee</label><select id="sp-em">'+opts+'</select></div>'+
+        '<div class="fgg"><label>Type</label><select id="sp-tp"><option>RESIGNATION</option><option>TERMINATION</option><option>RETIREMENT</option><option>MUTUAL_SEPARATION</option><option>END_OF_CONTRACT</option></select></div>'+
+        f('Last Working Day','date','sp-ld','')+f('Notice Period (days)','number','sp-np','30')+
+        '<div class="fgg fg-full"><label>Reason</label><textarea id="sp-rs" rows="3"></textarea></div>'+
+      '</div>',
+      '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-danger" onclick="submitSep()">Initiate Separation</button>'
+    );
+  }).getEmployees({status:'ACTIVE'});
+}
+function submitSep(){
+  var s=document.getElementById('sp-em');
+  var sn=s?s.options[s.selectedIndex].text:'';
+  google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Separation initiated','s');loadSep();}else toast(r.error,'e');}).withFailureHandler(err).initiateSeparation({employeeId:v('sp-em'),employeeName:sn,type:v('sp-tp'),lastWorkingDay:v('sp-ld'),noticePeriod:v('sp-np'),reason:v('sp-rs')});
+}
+
+// ── OFFBOARDING ────────────────────────────────────────────
+function loadOff(){
+  google.script.run.withSuccessHandler(function(list){
+    var active=list.filter(function(s){return s.status!=='COMPLETED';});
+    var rows=active.length?active.map(function(s){return '<tr><td><div style="font-weight:600">'+s.employeeName+'</div></td><td style="font-size:12px">'+fd(s.lastWorkingDay)+'</td><td><span class="badge bgy">'+s.type+'</span></td><td><div style="display:flex;gap:6px"><span class="badge bg">📋 Exit Interview</span><span class="badge bg">💻 Asset Return</span><span class="badge bg">🔐 Account Revoke</span></div></td></tr>';}).join(''):'<tr><td colspan="4"><div class="empty"><div class="ei">🔄</div><h3>No active offboarding</h3></div></td></tr>';
+    C('<div class="ph"><div><h1>Offboarding</h1><p>Active offboarding checklists</p></div></div>'+
+    '<div class="tw"><table><thead><tr><th>Employee</th><th>Last Day</th><th>Type</th><th>Checklist</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+  }).withFailureHandler(err).getSeparations();
+}
+
+// ── ATTENDANCE ─────────────────────────────────────────────
+function loadAtt(){
+  C('<div class="ph"><div><h1>Attendance</h1><p>Daily logs</p></div></div>'+
+  '<div class="tabs">'+tab('my','My Attendance',S.attTab,'attTab=\'my\';loadAtt()')+(isM()?tab('team','Today\'s Log',S.attTab,'attTab=\'team\';loadAtt()'):'')+'</div>'+
+  '<div id="att-body"><div class="pg-load"><div class="spinner"></div></div></div>');
+  if(S.attTab==='my') google.script.run.withSuccessHandler(function(r){
+    var rows=r.length?r.map(function(a){return '<tr><td>'+fd(a.date)+'</td><td>'+a.firstIn+'</td><td>'+a.lastOut+'</td><td>'+(a.hours||0)+' hrs</td><td>'+bFor(a.status,'att')+'</td><td>'+(a.wfh?'<span class="badge bgp">WFH</span>':'')+'</td></tr>';}).join(''):'<tr><td colspan="6"><div class="empty"><div class="ei">🕐</div><h3>No records this month</h3></div></td></tr>';
+    document.getElementById('att-body').innerHTML='<div class="tw"><table><thead><tr><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Hours</th><th>Status</th><th>Note</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).withFailureHandler(err).getMyAttendance(null,null);
+  else google.script.run.withSuccessHandler(function(r){
+    var rows=r.length?r.map(function(a){return '<tr><td><div style="font-weight:600">'+a.name+'</div><div style="font-size:11px;color:var(--muted)">'+a.employeeId+'</div></td><td>'+a.firstIn+'</td><td>'+a.lastOut+'</td><td>'+(a.hours||0)+' hrs</td><td>'+bFor(a.status,'att')+'</td></tr>';}).join(''):'<tr><td colspan="5"><div class="empty"><div class="ei">🕐</div><h3>No attendance today yet</h3></div></td></tr>';
+    document.getElementById('att-body').innerHTML='<div class="tw"><table><thead><tr><th>Employee</th><th>Clock In</th><th>Clock Out</th><th>Hours</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).withFailureHandler(err).getAllAttendanceToday();
+}
+
+// ── LEAVE ──────────────────────────────────────────────────
+function loadLeave(){
+  google.script.run.withSuccessHandler(function(bal){
+    var bh=bal.map(function(b){var p=b.allocated>0?Math.round(b.used/b.allocated*100):0;return '<div class="card card-sm" style="text-align:center"><div style="font-size:24px;font-weight:800;margin-bottom:2px">'+b.remaining+'</div><div style="font-size:11px;font-weight:600;color:var(--muted)">'+b.leaveTypeName+'</div><div style="font-size:11px;color:var(--muted)">'+b.used+' used · '+b.allocated+' total</div><div class="progress" style="margin-top:6px"><div class="pbar pbar-b" style="width:'+p+'%"></div></div></div>';}).join('');
+    C('<div class="ph"><div><h1>Leave Management</h1><p>Apply and track leave</p></div><button class="btn btn-primary" onclick="openApplyLeave()">+ Apply Leave</button></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">'+bh+'</div>'+
+    '<div class="tabs">'+tab('my','My Requests',S.leaveTab,'S.leaveTab=\'my\';renderLR()')+(isM()?tab('pending','Pending Approval',S.leaveTab,'S.leaveTab=\'pending\';renderLR()'):'')+(isM()?tab('all','All',S.leaveTab,'S.leaveTab=\'all\';renderLR()'):'')+'</div>'+
+    '<div id="lr-body"><div class="pg-load"><div class="spinner"></div></div></div>');
+    renderLR();
+  }).getMyLeaveBalances();
+}
+function renderLR(){
+  var f=S.leaveTab==='pending'?{status:'PENDING'}:{};
+  google.script.run.withSuccessHandler(function(reqs){
+    var rows=reqs.length?reqs.map(function(r){
+      var act='';
+      if(isM()&&r.status==='PENDING') act='<button class="btn btn-sm btn-success" onclick="doAppLv(\''+r.id+'\',true)">✓</button> <button class="btn btn-sm btn-danger" onclick="doAppLv(\''+r.id+'\',false)">✗</button>';
+      else if(!isM()&&r.status==='PENDING') act='<button class="btn btn-sm btn-secondary" onclick="doCxLv(\''+r.id+'\')">Cancel</button>';
+      return '<tr><td style="font-weight:600">'+r.employeeName+'</td><td><span class="badge bg">'+r.leaveTypeName+'</span></td><td style="font-size:12px">'+fd(r.fromDate)+' – '+fd(r.toDate)+'</td><td style="font-weight:600">'+r.days+'d</td><td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis">'+r.reason+'</td><td>'+bFor(r.status,'leave')+'</td><td>'+act+'</td></tr>';
+    }).join(''):'<tr><td colspan="7"><div class="empty"><div class="ei">🌴</div><h3>No leave requests</h3></div></td></tr>';
+    document.getElementById('lr-body').innerHTML='<div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).withFailureHandler(err).getLeaveRequests(f);
+}
+function openApplyLeave(){
+  google.script.run.withSuccessHandler(function(types){
+    var opts=types.map(function(t){return '<option value="'+t.id+'">'+t.name+(t.isPaid?' · Paid':' · Unpaid')+'</option>';}).join('');
+    oM('Apply for Leave',
+      '<div class="fg2">'+
+        '<div class="fgg"><label>Leave Type</label><select id="lv-tp">'+opts+'</select></div>'+
+        f('From Date','date','lv-fr','')+f('To Date','date','lv-to','')+
+        '<div class="fgg fg-full"><label>Reason</label><textarea id="lv-rs" rows="3" placeholder="Brief reason..."></textarea></div>'+
+      '</div>',
+      '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitLeave()">Apply</button>'
+    );
+  }).getLeaveTypes();
+}
+function submitLeave(){
+  var r={leaveTypeId:v('lv-tp'),fromDate:v('lv-fr'),toDate:v('lv-to'),reason:v('lv-rs')};
+  if(!r.fromDate||!r.toDate){toast('Select dates','e');return;}
+  if(new Date(r.toDate)<new Date(r.fromDate)){toast('To date must be after From date','e');return;}
+  google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Applied for '+r.days+' day(s)','s');loadLeave();}else toast(r.error,'e');}).withFailureHandler(err).applyLeave(r);
+}
+function doAppLv(id,ap){google.script.run.withSuccessHandler(function(r){if(r.success){toast(ap?'Approved':'Rejected','s');renderLR();}else toast(r.error,'e');}).withFailureHandler(err).approveLeave(id,ap);}
+function doCxLv(id){if(!confirm('Cancel this leave request?'))return;google.script.run.withSuccessHandler(function(r){if(r.success){toast('Cancelled','i');renderLR();}}).withFailureHandler(err).cancelLeave(id);}
+
+// ── PAYROLL ────────────────────────────────────────────────
+function loadPay(){
+  C('<div class="ph"><div><h1>Payroll</h1><p>Salary processing</p></div>'+(isA()?'<button class="btn btn-primary" onclick="openRunPay()">▶ Run Payroll</button>':'')+'</div>'+
+  '<div class="tabs">'+tab('runs','Payroll Runs',S.payTab,'S.payTab=\'runs\';loadPay()')+''+tab('mine','My Payslips',S.payTab,'S.payTab=\'mine\';loadPay()')+'</div>'+
+  '<div id="pay-body"><div class="pg-load"><div class="spinner"></div></div></div>');
+  if(S.payTab==='runs'&&isA()) google.script.run.withSuccessHandler(function(runs){
+    var rows=runs.length?runs.map(function(r){return '<tr onclick="viewPS(\''+r.id+'\',null)" style="cursor:pointer"><td style="font-weight:600">'+r.month+' '+r.year+'</td><td><span class="badge bgn">'+r.status+'</span></td><td>'+fm(r.totalGross)+'</td><td style="font-weight:700">'+fm(r.totalNet)+'</td><td style="font-size:12px;color:var(--muted)">'+r.processedAt+'</td></tr>';}).join(''):'<tr><td colspan="5"><div class="empty"><div class="ei">💰</div><h3>No payroll runs yet</h3></div></td></tr>';
+    document.getElementById('pay-body').innerHTML='<div class="tw"><table><thead><tr><th>Period</th><th>Status</th><th>Gross</th><th>Net</th><th>Processed</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).withFailureHandler(err).getPayrollRuns();
+  else google.script.run.withSuccessHandler(function(slips){
+    var rows=slips.length?slips.map(function(s){return '<tr><td style="font-weight:600">'+s.month+' '+s.year+'</td><td>'+fm(s.gross)+'</td><td>'+fm(s.deductions)+'</td><td style="font-weight:700;color:var(--green)">'+fm(s.net)+'</td><td><button class="btn btn-sm btn-secondary" onclick="viewPS(\''+s.runId+'\','+JSON.stringify(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')+')">View Payslip</button></td></tr>';}).join(''):'<tr><td colspan="5"><div class="empty"><div class="ei">💰</div><h3>No payslips yet</h3></div></td></tr>';
+    document.getElementById('pay-body').innerHTML='<div class="tw"><table><thead><tr><th>Period</th><th>Gross</th><th>Deductions</th><th>Net Pay</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).withFailureHandler(err).getMyPayslips();
+}
+function openRunPay(){
+  var now=new Date(),ms=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  oM('Run Payroll',
+    '<div class="fg2">'+
+      '<div class="fgg"><label>Month</label><select id="pr-m">'+ms.map(function(m,i){return '<option value="'+m+'" '+(i===now.getMonth()?'selected':'')+'>'+m+'</option>';}).join('')+'</select></div>'+
+      fv('Year','number','pr-y',now.getFullYear())+
+    '</div>'+
+    '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#854d0e">⚠️ This will process payroll for all ACTIVE employees. Cannot be undone.</div>',
+    '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitPay()">Process Payroll</button>'
+  );
+}
+function submitPay(){google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Payroll done! Net: '+fm(r.totalNet),'s');loadPay();}else toast(r.error,'e');}).withFailureHandler(err).processPayroll(v('pr-m'),v('pr-y'));}
+function viewPS(runId,slip){
+  if(!slip){toast('Select a specific payslip','i');return;}
+  oM('Payslip — '+slip.month+' '+slip.year,
+    '<div class="payslip">'+
+      '<div class="ps-hdr"><div><div style="font-size:16px;font-weight:700">AntBox</div><div style="font-size:12px;color:rgba(255,255,255,.6)">'+slip.month+' '+slip.year+'</div></div><div style="text-align:right"><div style="font-size:18px;font-weight:700">'+fm(slip.net)+'</div><div style="font-size:11px;color:rgba(255,255,255,.6)">Net Pay</div></div></div>'+
+      '<div class="pay-row"><span style="color:var(--muted)">Basic Salary</span><span>'+fm(slip.basic)+'</span></div>'+
+      '<div class="pay-row"><span style="color:var(--muted)">HRA</span><span>'+fm(slip.hra)+'</span></div>'+
+      '<div class="pay-row"><span style="color:var(--muted)">Special Allowance</span><span>'+fm(slip.special)+'</span></div>'+
+      '<div class="pay-row pay-total"><span>Gross Salary</span><span>'+fm(slip.gross)+'</span></div>'+
+      '<div class="pay-row" style="background:#fef2f2"><span style="color:var(--red)">PF (12%)</span><span style="color:var(--red)">−'+fm(slip.pf)+'</span></div>'+
+      '<div class="pay-row" style="background:#fef2f2"><span style="color:var(--red)">Professional Tax</span><span style="color:var(--red)">−'+fm(slip.pt)+'</span></div>'+
+      '<div class="pay-row" style="background:#fef2f2"><span style="color:var(--red)">TDS</span><span style="color:var(--red)">−'+fm(slip.tds)+'</span></div>'+
+      '<div class="pay-row pay-net"><span>Net Pay</span><span>'+fm(slip.net)+'</span></div>'+
+    '</div>',
+    '<button class="btn btn-secondary" onclick="cM()">Close</button><button class="btn btn-primary" onclick="window.print()">🖨 Print</button>'
+  );
+}
+
+// ── DOCUMENTS ──────────────────────────────────────────────
+function loadDocs(){google.script.run.withSuccessHandler(renderDocs).withFailureHandler(err).getDocuments(null);}
+function renderDocs(docs){
+  var rows=docs.length?docs.map(function(d){return '<tr>'+
+    '<td><div style="font-weight:600">'+d.title+'</div><div style="font-size:11px;color:var(--muted)">'+d.type+'</div></td>'+
+    '<td>'+d.employeeName+'</td>'+
+    '<td><span class="badge '+(d.status==='VERIFIED'?'bgn':'bgy')+'">'+d.status+'</span></td>'+
+    '<td style="font-size:12px;color:var(--muted)">'+d.createdAt+'</td>'+
+    '<td>'+(d.driveUrl?'<a href="'+d.driveUrl+'" target="_blank" class="btn btn-sm btn-secondary">View ↗</a> ':'')+
+    (isA()&&d.status!=='VERIFIED'?'<button class="btn btn-sm btn-success" onclick="verDoc(\''+d.id+'\')">✓ Verify</button>':'')+'</td>'+
+  '</tr>';}).join(''):'<tr><td colspan="5"><div class="empty"><div class="ei">📄</div><h3>No documents</h3></div></td></tr>';
+  C('<div class="ph"><div><h1>Documents</h1><p>Employee documents</p></div><button class="btn btn-primary" onclick="openUpDoc()">+ Upload Document</button></div>'+
+  '<div class="tw"><table><thead><tr><th>Document</th><th>Employee</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+}
+function openUpDoc(){
+  oM('Upload Document',
+    '<div class="fg2">'+
+      '<div class="fgg"><label>Type</label><select id="dc-tp"><option>OFFER_LETTER</option><option>APPOINTMENT_LETTER</option><option>INTERNSHIP_AGREEMENT</option><option>EXPERIENCE_LETTER</option><option>RELIEVING_LETTER</option><option>LOR</option><option>PROMOTION_LETTER</option><option>OTHER</option></select></div>'+
+      f('Title','text','dc-tt','e.g. Offer Letter Jan 2025')+
+      '<div class="fgg fg-full"><label>Google Drive Link</label><input type="url" id="dc-url" placeholder="https://drive.google.com/..."/></div>'+
+    '</div>'+
+    '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#0369a1">💡 Upload to Google Drive first → Share → Anyone with link → paste the link above.</div>',
+    '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitDoc()">Upload</button>'
+  );
+}
+function submitDoc(){var d={type:v('dc-tp'),title:v('dc-tt'),driveUrl:v('dc-url')};if(!d.title){toast('Enter title','e');return;}google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Document uploaded','s');loadDocs();}else toast(r.error,'e');}).withFailureHandler(err).saveDocument(d);}
+function verDoc(id){google.script.run.withSuccessHandler(function(r){if(r.success){toast('Verified ✓','s');loadDocs();}}).withFailureHandler(err).verifyDocument(id);}
+
+// ── REIMBURSEMENTS ─────────────────────────────────────────
+function loadRmb(){google.script.run.withSuccessHandler(renderRmb).withFailureHandler(err).getReimbursements();}
+function renderRmb(list){
+  var rows=list.length?list.map(function(r){
+    var act=isM()&&r.status==='PENDING'?'<button class="btn btn-sm btn-success" onclick="appRmb(\''+r.id+'\',true)">✓</button> <button class="btn btn-sm btn-danger" onclick="appRmb(\''+r.id+'\',false)">✗</button>':'';
+    return '<tr><td style="font-weight:600">'+r.employeeName+'</td><td><span class="badge bg">'+r.category+'</span></td><td style="font-weight:600">'+fm(r.amount)+'</td><td style="font-size:12px">'+fd(r.date)+'</td><td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis">'+r.description+'</td><td>'+bFor(r.status,'rmb')+'</td><td>'+act+(r.receiptUrl?'<a href="'+r.receiptUrl+'" target="_blank" class="btn btn-sm btn-secondary" style="margin-left:4px">Receipt↗</a>':'')+'</td></tr>';
+  }).join(''):'<tr><td colspan="7"><div class="empty"><div class="ei">🧾</div><h3>No reimbursements</h3></div></td></tr>';
+  C('<div class="ph"><div><h1>Reimbursements</h1><p>Expense claims</p></div><button class="btn btn-primary" onclick="openRmb()">+ Submit Claim</button></div>'+
+  '<div class="tw"><table><thead><tr><th>Employee</th><th>Category</th><th>Amount</th><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+}
+function openRmb(){
+  oM('Submit Reimbursement',
+    '<div class="fg2">'+
+      '<div class="fgg"><label>Category</label><select id="rm-ct"><option>TRAVEL</option><option>FOOD</option><option>ACCOMMODATION</option><option>EQUIPMENT</option><option>INTERNET</option><option>MOBILE</option><option>OTHER</option></select></div>'+
+      f('Amount (₹)','number','rm-am','')+f('Date','date','rm-dt','')+
+      '<div class="fgg fg-full"><label>Description</label><textarea id="rm-ds" rows="2" placeholder="Brief description..."></textarea></div>'+
+      '<div class="fgg fg-full"><label>Receipt (Google Drive Link)</label><input type="url" id="rm-url" placeholder="https://drive.google.com/..."/></div>'+
+    '</div>',
+    '<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitRmb()">Submit Claim</button>'
+  );
+}
+function submitRmb(){var r={category:v('rm-ct'),amount:v('rm-am'),date:v('rm-dt'),description:v('rm-ds'),receiptUrl:v('rm-url')};if(!r.amount||!r.date){toast('Fill required fields','e');return;}google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Claim submitted!','s');loadRmb();}else toast(r.error,'e');}).withFailureHandler(err).submitReimbursement(r);}
+function appRmb(id,ap){google.script.run.withSuccessHandler(function(r){if(r.success){toast(ap?'Approved':'Rejected','s');loadRmb();}}).withFailureHandler(err).approveReimbursement(id,ap);}
+
+// ── CALENDAR ───────────────────────────────────────────────
+function loadCal(){google.script.run.withSuccessHandler(renderCal).withFailureHandler(err).getCalendarData(S.cal.m,S.cal.y);}
+function renderCal(data){
+  var ms=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var ds=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  var m=data.month,y=data.year,first=new Date(y,m-1,1).getDay(),total=new Date(y,m,0).getDate();
+  var tn=new Date(),td=y===tn.getFullYear()&&m===tn.getMonth()+1?tn.getDate():0;
+  var em={};data.items.forEach(function(e){var d=parseInt((e.date||'').split('-')[2]);if(d){if(!em[d])em[d]=[];em[d].push(e);}});
+  var hdrs=ds.map(function(d){return '<div class="cal-dh">'+d+'</div>';}).join('');
+  var cells='';
+  for(var i=0;i<first;i++) cells+='<div class="cal-cell"></div>';
+  for(var d=1;d<=total;d++){
+    var evts=(em[d]||[]).map(function(e){return '<div class="cal-evt" style="background:'+e.color+'22;color:'+e.color+'">'+e.title+'</div>';}).join('');
+    cells+='<div class="cal-cell '+(d===td?'today-cell':'')+'"><div class="cal-num">'+d+'</div>'+evts+'</div>';
+  }
+  C('<div class="ph"><div><h1>Calendar</h1><p>Holidays, leave, events</p></div>'+(isA()?'<button class="btn btn-primary" onclick="openAddEvt()">+ Add Event</button>':'')+'</div>'+
+  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'+
+    '<button class="btn btn-secondary btn-sm" onclick="S.cal.m--;if(S.cal.m<1){S.cal.m=12;S.cal.y--;}loadCal()">‹</button>'+
+    '<span style="font-size:16px;font-weight:700">'+ms[m-1]+' '+y+'</span>'+
+    '<button class="btn btn-secondary btn-sm" onclick="S.cal.m++;if(S.cal.m>12){S.cal.m=1;S.cal.y++;}loadCal()">›</button>'+
+  '</div>'+
+  '<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">'+
+    '<div class="cal-hdr">'+hdrs+'</div>'+
+    '<div class="cal-grid">'+cells+'</div>'+
+  '</div>'+
+  '<div style="display:flex;gap:14px;margin-top:12px">'+
+    '<span style="font-size:12px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#ef4444;border-radius:2px;display:inline-block"></span>Holiday</span>'+
+    '<span style="font-size:12px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#3b82f6;border-radius:2px;display:inline-block"></span>Leave</span>'+
+    '<span style="font-size:12px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#8b5cf6;border-radius:2px;display:inline-block"></span>Event</span>'+
+  '</div>');
+}
+function openAddEvt(){oM('Add Event','<div class="fg2">'+f('Title','text','ev-tt','')+
+'<div class="fgg"><label>Type</label><select id="ev-tp"><option>EVENT</option><option>ANNOUNCEMENT</option></select></div>'+f('Date','date','ev-dt','')+f('End Date','date','ev-ed','')+
+'<div class="fgg fg-full"><label>Description</label><textarea id="ev-ds" rows="2"></textarea></div></div>',
+'<button class="btn btn-secondary" onclick="cM()">Cancel</button><button class="btn btn-primary" onclick="submitEvt()">Add</button>');}
+function submitEvt(){google.script.run.withSuccessHandler(function(r){if(r.success){cM();toast('Event added','s');loadCal();}}).withFailureHandler(err).saveEvent({title:v('ev-tt'),type:v('ev-tp'),date:v('ev-dt'),endDate:v('ev-ed'),description:v('ev-ds')});}
+
+// ── REPORTS ────────────────────────────────────────────────
+function loadRep(){
+  C('<div class="ph"><div><h1>Reports</h1><p>Analytics and insights</p></div></div>'+
+  '<div class="tabs">'+tab('headcount','Headcount',S.repTab,'S.repTab=\'headcount\';loadRep()')+tab('leave','Leave',S.repTab,'S.repTab=\'leave\';loadRep()')+tab('payroll','Payroll',S.repTab,'S.repTab=\'payroll\';loadRep()')+'</div>'+
+  '<div id="rep-body"><div class="pg-load"><div class="spinner"></div></div></div>');
+  google.script.run.withSuccessHandler(renderRep).withFailureHandler(err).getReportData(S.repTab);
+}
+function renderRep(data){
+  var h='';
+  if(S.repTab==='headcount'){
+    h='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">'+rt('By Department',data.byDept)+rt('By Type',data.byType)+rt('By Status',data.byStatus)+'</div>'+
+    '<div class="card" style="margin-top:18px;text-align:center;padding:30px"><div style="font-size:52px;font-weight:800">'+data.total+'</div><div style="color:var(--muted);font-size:14px;margin-top:4px">Total Employees</div></div>';
+  } else if(S.repTab==='leave'){
+    h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">'+rt('By Leave Type',data.byType)+rt('By Status',data.byStatus)+'</div>';
+  } else {
+    var rows=(data.runs||[]).map(function(r){return '<tr><td style="font-weight:600">'+r.month+' '+r.year+'</td><td>'+fm(r.totalGross)+'</td><td style="font-weight:700;color:var(--green)">'+fm(r.totalNet)+'</td></tr>';}).join('');
+    h='<div class="tw"><table><thead><tr><th>Period</th><th>Gross</th><th>Net</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  document.getElementById('rep-body').innerHTML=h;
+}
+function rt(title,obj){var rows=Object.keys(obj).map(function(k){return '<tr><td>'+k+'</td><td style="font-weight:700;text-align:right">'+obj[k]+'</td></tr>';}).join('');return '<div class="card card-sm"><div style="font-size:13px;font-weight:700;margin-bottom:10px">'+title+'</div><table style="width:100%"><tbody>'+rows+'</tbody></table></div>';}
+
+// ── PORTAL ─────────────────────────────────────────────────
+function loadPortal(){
+  google.script.run.withSuccessHandler(function(user){
+    if(!user){C('<div class="empty"><div class="ei">👤</div><h3>Not logged in</h3></div>');return;}
+    if(!user.employeeId){C('<div class="card" style="max-width:480px"><div class="empty"><div class="ei">👤</div><h3>'+user.name+'</h3><p>'+user.email+'</p><div style="margin-top:10px"><span class="badge bg">'+user.role+'</span></div><p style="margin-top:12px;font-size:13px;color:var(--muted)">Account not linked to an employee profile. Contact HR admin.</p></div></div>');return;}
+    google.script.run.withSuccessHandler(function(e){
+      if(!e){C('<div class="empty"><div class="ei">⚠️</div><h3>Employee profile not found</h3></div>');return;}
+      var ini=(e.firstName||'?')[0]+(e.lastName||'?')[0];
+      C('<div class="pr-hero"><div class="pr-av">'+ini+'</div><div><div class="pr-nm">'+e.firstName+' '+e.lastName+'</div><div class="pr-sub">'+e.designation+' · '+e.departmentName+'</div><div style="margin-top:8px;display:flex;gap:6px">'+bFor(e.status)+' <span class="badge bg">'+e.employeeId+'</span> <span class="badge bg">'+e.role+'</span></div></div></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+        sec('Contact',[['Email',e.email],['Phone',e.phone],['Personal Email',e.personalEmail],['Emergency',e.emergencyContact],['Emergency Ph.',e.emergencyPhone]])+
+        sec('Personal',[['Date of Birth',fd(e.dateOfBirth)],['Gender',e.gender],['Blood Group',e.bloodGroup],['PAN',e.pan]])+
+        sec('Employment',[['Employee ID',e.employeeId],['Joining Date',fd(e.joiningDate)],['Type',e.employmentType],['Department',e.departmentName],['Designation',e.designation]])+
+        sec('Address',[['Address',e.address],['City',e.city],['State',e.state],['Pincode',e.pincode]])+
+        sec('Banking',[['Bank',e.bankName],['Account No',e.bankAccountNo],['IFSC',e.ifscCode]])+
+        sec('Compensation',[['Basic',fm(e.basicSalary)],['HRA',fm(e.hra)],['Special Allowance',fm(e.specialAllowance)],['Total CTC',fm(e.totalCTC)]])+
+      '</div>');
+    }).getEmployee(user.employeeId);
+  }).getCurrentUser();
+}
+
+// ── SETTINGS ───────────────────────────────────────────────
+function loadSet(){
+  if(!isA()){C('<div class="empty"><div class="ei">🔒</div><h3>Admin access required</h3></div>');return;}
+  C('<div class="ph"><div><h1>Settings</h1><p>System configuration</p></div></div>'+
+  '<div class="tabs"><div class="tab active" id="st-co" onclick="loadST(\'company\')">Company</div><div class="tab" id="st-us" onclick="loadST(\'users\')">Users</div><div class="tab" id="st-au" onclick="loadST(\'automation\')">Automation</div></div>'+
+  '<div id="st-body"><div class="pg-load"><div class="spinner"></div></div></div>');
+  loadST('company');
+}
+function loadST(t){
+  document.querySelectorAll('[id^="st-"]').forEach(function(e){e.classList.remove('active');});
+  var el=document.getElementById('st-'+t.substring(0,2));if(el)el.classList.add('active');
+  if(t==='company'){
+    google.script.run.withSuccessHandler(function(cfg){
+      document.getElementById('st-body').innerHTML='<div class="card" style="max-width:580px"><div style="font-size:14px;font-weight:700;margin-bottom:16px">Company Settings</div>'+
+        '<div class="fg2">'+fv('Company Name','text','cf-nm',cfg.COMPANY_NAME)+fv('Company Email','email','cf-em',cfg.COMPANY_EMAIL)+fv('City','text','cf-cy',cfg.COMPANY_CITY)+fv('Office Latitude','text','cf-la',cfg.OFFICE_LAT)+fv('Office Longitude','text','cf-lo',cfg.OFFICE_LON)+fv('Office Radius (m)','number','cf-ra',cfg.OFFICE_RADIUS_M)+fv('Work Start','time','cf-ws',cfg.WORK_START||'09:00')+fv('Work End','time','cf-we',cfg.WORK_END||'18:00')+fv('Payroll Cycle Day','number','cf-pd',cfg.PAYROLL_CYCLE_DAY)+fv('PF %','number','cf-pf',cfg.PF_PERCENT)+'</div>'+
+        '<button class="btn btn-primary" style="margin-top:16px" onclick="saveSet()">Save Settings</button></div>';
+    }).getSettings();
+  } else if(t==='users'){
+    google.script.run.withSuccessHandler(function(users){
+      var rows=users.map(function(u){return '<tr><td style="font-weight:600">'+u.name+'</td><td style="font-size:12px">'+u.email+'</td><td><select data-uid="'+u.id+'" onchange="updRole(this)" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px"><option '+(u.role==='SUPER_ADMIN'?'selected':'')+'>SUPER_ADMIN</option><option '+(u.role==='HR_ADMIN'?'selected':'')+'>HR_ADMIN</option><option '+(u.role==='MANAGER'?'selected':'')+'>MANAGER</option><option '+(u.role==='EMPLOYEE'?'selected':'')+'>EMPLOYEE</option><option '+(u.role==='INTERN'?'selected':'')+'>INTERN</option></select></td><td><span class="badge '+(u.isActive?'bgn':'bgr')+'">'+(u.isActive?'Active':'Inactive')+'</span></td></tr>';}).join('');
+      document.getElementById('st-body').innerHTML='<div class="tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }).getUsers();
+  } else {
+    document.getElementById('st-body').innerHTML='<div class="card" style="max-width:480px">'+
+      '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Automation Triggers</div>'+
+      '<div style="display:flex;flex-direction:column;gap:10px">'+
+        '<div class="card card-sm"><b>🕐 Daily Attendance Check</b><div style="font-size:12px;color:var(--muted);margin-top:3px">9 AM daily — auto-marks absent employees</div></div>'+
+        '<div class="card card-sm"><b>💰 Monthly Payroll Reminder</b><div style="font-size:12px;color:var(--muted);margin-top:3px">24th of month — reminds admin to run payroll</div></div>'+
+        '<div class="card card-sm"><b>📊 Weekly Leave Report</b><div style="font-size:12px;color:var(--muted);margin-top:3px">Every Monday — pending approvals summary</div></div>'+
+      '</div>'+
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="setTriggers()">⚙️ Create / Reset Triggers</button></div>';
+  }
+}
+function saveSet(){google.script.run.withSuccessHandler(function(r){if(r.success)toast('Saved ✓','s');else toast(r.error,'e');}).withFailureHandler(err).saveSettings({COMPANY_NAME:v('cf-nm'),COMPANY_EMAIL:v('cf-em'),COMPANY_CITY:v('cf-cy'),OFFICE_LAT:v('cf-la'),OFFICE_LON:v('cf-lo'),OFFICE_RADIUS_M:v('cf-ra'),WORK_START:v('cf-ws'),WORK_END:v('cf-we'),PAYROLL_CYCLE_DAY:v('cf-pd'),PF_PERCENT:v('cf-pf')});}
+function updRole(sel){google.script.run.withSuccessHandler(function(r){if(r.success)toast('Role updated','s');}).withFailureHandler(err).updateUserRole(sel.dataset.uid,sel.value);}
+function setTriggers(){google.script.run.withSuccessHandler(function(r){toast(r.message,'s');}).withFailureHandler(err).createAllTriggers();}
+
+// ── NOTIFICATIONS ──────────────────────────────────────────
+function loadNotifs(){
+  google.script.run.withSuccessHandler(function(notifs){
+    var u=notifs.filter(function(n){return !n.read;}).length;
+    var nb=document.getElementById('nb');if(nb){nb.textContent=u;nb.style.display=u>0?'flex':'none';}
+    var h=notifs.length?notifs.map(function(n){return '<div class="notif-item '+(n.read?'':'unread')+'"><div class="ni-title">'+n.title+'</div><div class="ni-msg">'+n.message+'</div><div style="font-size:10px;color:var(--muted);margin-top:3px">'+n.createdAt+'</div></div>';}).join(''):'<div class="empty" style="padding:30px"><div class="ei">🔔</div><p>No notifications</p></div>';
+    var nl=document.getElementById('notif-list');if(nl)nl.innerHTML=h;
+  }).getMyNotifications();
+}
+function toggleNotif(){var p=document.getElementById('notif-panel');p.classList.toggle('open');if(p.classList.contains('open'))loadNotifs();}
+function markRead(){google.script.run.withSuccessHandler(function(){loadNotifs();}).markNotificationsRead();}
+
+// ── USER UI ────────────────────────────────────────────────
+function setUser(u){
+  if(!u)return;S.user=u;
+  var ini=(u.name||'?')[0].toUpperCase();
+  var av=document.getElementById('tb-av');if(av)av.textContent=ini;
+  var nm=document.getElementById('tb-nm');if(nm)nm.textContent=u.name;
+  var rl=document.getElementById('tb-rl');if(rl)rl.textContent=u.role.replace(/_/g,' ');
+  var sb=document.getElementById('sb-user');if(sb)sb.innerHTML='<span style="color:#e5e7eb;font-size:12px;font-weight:500">'+u.name+'</span><br><span style="color:#4b4b4b;font-size:10px">'+u.role+'</span>';
+}
+
+// ── SEARCH ─────────────────────────────────────────────────
+var _st;
+function gSearch(q){clearTimeout(_st);if(q.length<2)return;_st=setTimeout(function(){if(S.page==='employees'){EF.search=q;loadEmps();}},400);}
+
+// ── HELPERS ────────────────────────────────────────────────
+function C(h){document.getElementById('main').innerHTML=h;}
+function v(id){var e=document.getElementById(id);return e?e.value:'';}
+function f(lbl,type,id,ph,req){return '<div class="fgg"><label>'+lbl+(req?' *':'')+'</label><input type="'+type+'" id="'+id+'" placeholder="'+(ph||'')+'"/></div>';}
+function fv(lbl,type,id,val){return '<div class="fgg"><label>'+lbl+'</label><input type="'+type+'" id="'+id+'" value="'+(val||'')+'"/></div>';}
+function sec(title,rows){return '<div class="card card-sm"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.07em">'+title+'</div>'+rows.map(function(r){return '<div class="info-row2"><div class="ir-lbl">'+r[0]+'</div><div class="ir-val">'+(r[1]||'—')+'</div></div>';}).join('')+'</div>';}
+function sec2(title,rows){return '<div class="card card-sm"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em">'+title+'</div>'+rows.map(function(r){return '<div class="info-row2"><div class="ir-lbl">'+r[0]+'</div><div class="ir-val">'+(r[1]||'—')+'</div></div>';}).join('')+'</div>';}
+function tab(id,lbl,active,onclick){return '<div class="tab '+(active===id?'active':'')+'" onclick="'+onclick+'">'+lbl+'</div>';}
+function fd(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
+function fm(n){if(!n)return '—';return '₹'+parseFloat(n).toLocaleString('en-IN',{maximumFractionDigits:0});}
+function bFor(s){var m={ACTIVE:'bgn',INACTIVE:'bgr',ONBOARDING:'bgb',OFFBOARDING:'bgy',ALUMNI:'bgp',PENDING:'bgy',APPROVED:'bgn',REJECTED:'bgr',CANCELLED:'bg',WITHDRAWN:'bg',COMPLETED:'bgn',IN_PROGRESS:'bgb',INITIATED:'bgy',PAID:'bgn',DRAFT:'bg',PROCESSING:'bgb',PRESENT:'bgn',ABSENT:'bgr',PRESENT_REMOTE:'bgb'};return '<span class="badge '+(m[s]||'bg')+'">'+s+'</span>';}
+function oM(title,body,footer,wide){
+  document.getElementById('mt').textContent=title;
+  document.getElementById('mbody').innerHTML=body;
+  document.getElementById('mfoot').innerHTML=footer||'';
+  document.getElementById('mbox').style.width=wide?'820px':'600px';
+  document.getElementById('mov').classList.add('open');
+}
+function cM(){document.getElementById('mov').classList.remove('open');}
+function toast(msg,t){t=t||'i';var el=document.createElement('div');el.className='toast t'+t;el.innerHTML=(t==='s'?'✅':t==='e'?'❌':'ℹ️')+' '+msg;document.getElementById('toast-cnt').appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transform='translateX(100%)';el.style.transition='all .3s';setTimeout(function(){el.remove();},300);},3500);}
+function err(e){toast('Error: '+(e.message||e),'e');console.error(e);}
+
+document.getElementById('mov').addEventListener('click',function(e){if(e.target===this)cM();});
+document.addEventListener('click',function(e){
+  var p=document.getElementById('notif-panel'),b=document.querySelector('.notif-btn');
+  if(p&&p.classList.contains('open')&&!p.contains(e.target)&&b&&!b.contains(e.target))p.classList.remove('open');
+});
+</script>
 </body>
 </html>

@@ -14,6 +14,7 @@ import { LeaveBalancesCard } from "@/components/dashboard/LeaveBalancesCard";
 import { CompanyCalendarWidget } from "@/components/dashboard/CompanyCalendarWidget";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { TribeRadarWidget } from "@/components/dashboard/TribeRadarWidget";
+import { ScrollIndicator } from "@/components/dashboard/ScrollIndicator";
 import { getDashboardStats, getRecentActivity } from "@/lib/dashboard";
 
 import type { Employee } from "@prisma/client";
@@ -235,6 +236,9 @@ export default async function DashboardPage() {
       <ScrollReveal delayClass="reveal-delay-4" className="pt-2">
         <QuickActions isAdmin={isAdmin} />
       </ScrollReveal>
+
+      {/* Scroll Down Arrow Indicator */}
+      <ScrollIndicator />
     </div>
   );
 }

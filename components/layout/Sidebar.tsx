@@ -31,7 +31,7 @@ const navItems: {
   roles?: Role[];
 }[] = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard },
-  { title: "Employees", href: "/employees", icon: Users },
+  { title: "Employees", href: "/employees", icon: Users, roles: ["SUPER_ADMIN", "HR_ADMIN"] },
   { title: "Onboarding", href: "/onboarding", icon: UserPlus, roles: ["HR_ADMIN", "SUPER_ADMIN"] },
   { title: "Separation", href: "/separation", icon: DoorOpen },
   { title: "Offboarding", href: "/offboarding", icon: UserMinus, roles: ["HR_ADMIN", "SUPER_ADMIN"] },
@@ -76,7 +76,7 @@ export function Sidebar({ role, gender }: SidebarProps) {
   });
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)]">
+    <aside className="flex h-full w-full flex-col bg-[var(--sidebar-bg)]">
       {/* Brand Logo Header */}
       <div className="flex h-16 items-center border-b border-[var(--border)] px-6 bg-white justify-start">
         <Image src="/logo.png" alt="AntBox Logo" width={110} height={28} className="object-contain" />

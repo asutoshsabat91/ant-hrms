@@ -50,6 +50,7 @@ interface LeaveRequestItem {
   endDate: string | Date;
   days: number;
   status: string;
+  reason?: string;
 }
 
 interface LeaveTypeItem {
@@ -79,6 +80,7 @@ const DEFAULT_REQUESTS: LeaveRequestItem[] = [
     endDate: "2026-06-14",
     days: 5,
     status: "PENDING",
+    reason: "Family vacation to Hill Station",
   },
   {
     id: "mock-2",
@@ -88,6 +90,7 @@ const DEFAULT_REQUESTS: LeaveRequestItem[] = [
     endDate: "2026-06-06",
     days: 1,
     status: "APPROVED",
+    reason: "Severe fever and doctor appointment",
   },
   {
     id: "mock-3",
@@ -97,6 +100,7 @@ const DEFAULT_REQUESTS: LeaveRequestItem[] = [
     endDate: "2026-06-21",
     days: 2,
     status: "PENDING",
+    reason: "Urgent personal work at home town",
   },
   {
     id: "mock-4",
@@ -106,6 +110,7 @@ const DEFAULT_REQUESTS: LeaveRequestItem[] = [
     endDate: "2026-07-05",
     days: 4,
     status: "APPROVED",
+    reason: "Moving houses and setup",
   },
 ];
 
@@ -116,7 +121,9 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
 
   const openDialog = useCallback(() => setIsDialogOpen(true), []);
 
-  const displayRequests = requests.length > 0 ? requests : DEFAULT_REQUESTS;
+  const displayRequests = useMemo(() => {
+    return requests.length > 0 ? requests : (userRole === "SUPER_ADMIN" ? DEFAULT_REQUESTS : []);
+  }, [requests, userRole]);
 
   // Memoize balance cards — only recalculates when balances change
   const balancesData = useMemo(() => {
@@ -131,15 +138,26 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
       if (typeCode === "PL") return { allocated: 24, used: 6, remaining: 18, percent: 75 };
       if (typeCode === "SL") return { allocated: 12, used: 3, remaining: 9, percent: 75 };
       if (typeCode === "CL") return { allocated: 8, used: 2, remaining: 6, percent: 75 };
+      if (typeCode === "WFH") return { allocated: 0, used: 0, remaining: 0, percent: 0 };
       return { allocated: 5, used: 0, remaining: 5, percent: 100 };
     };
+
+    if (userRole === "SUPER_ADMIN") {
+      return [
+        { label: "EARNED LEAVE", code: "PL", ...getInfo("PL") },
+        { label: "SICK LEAVE", code: "SL", ...getInfo("SL") },
+        { label: "CASUAL LEAVE", code: "CL", ...getInfo("CL") },
+        { label: "SPRINT LEAVE", code: "SPRINT", ...getInfo("SPRINT") },
+      ];
+    }
+
     return [
       { label: "EARNED LEAVE", code: "PL", ...getInfo("PL") },
       { label: "SICK LEAVE", code: "SL", ...getInfo("SL") },
       { label: "CASUAL LEAVE", code: "CL", ...getInfo("CL") },
-      { label: "SPRINT LEAVE", code: "SPRINT", ...getInfo("SPRINT") },
+      { label: "WORK FROM HOME (WFH)", code: "WFH", ...getInfo("WFH") },
     ];
-  }, [balances]);
+  }, [balances, userRole]);
 
   // Memoize the leave-taken map — only recalculates when displayRequests changes
   const leavesTakenByEmployee = useMemo(() => {
@@ -219,33 +237,59 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
 
       {/* Balance Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {balancesData.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between h-[130px]"
-          >
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
-                {item.label}
-              </p>
-              <p className="text-2xl font-bold text-zinc-950 mt-1.5">
-                {item.remaining}{" "}
-                <span className="text-xs font-medium text-zinc-400">/ {item.allocated} days</span>
-              </p>
-            </div>
-            <div className="mt-3">
-              <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-zinc-950 rounded-full transition-all duration-300"
-                  style={{ width: `${item.percent}%` }}
-                />
+        {balancesData.map((item) => {
+          if (item.code === "WFH") {
+            return (
+              <div
+                key={item.label}
+                className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between h-[130px]"
+              >
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                    {item.label}
+                  </p>
+                  <p className="text-2xl font-bold text-zinc-950 mt-1.5">
+                    {item.used}{" "}
+                    <span className="text-xs font-medium text-zinc-400">days taken</span>
+                  </p>
+                </div>
+                <div className="mt-3">
+                  <p className="text-[10px] font-semibold text-zinc-400">
+                    Tracked work from home days
+                  </p>
+                </div>
               </div>
-              <p className="text-[9px] font-semibold text-zinc-400 mt-2">
-                {item.used} days used
-              </p>
+            );
+          }
+
+          return (
+            <div
+              key={item.label}
+              className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between h-[130px]"
+            >
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                  {item.label}
+                </p>
+                <p className="text-2xl font-bold text-zinc-950 mt-1.5">
+                  {item.remaining}{" "}
+                  <span className="text-xs font-medium text-zinc-400">/ {item.allocated} days</span>
+                </p>
+              </div>
+              <div className="mt-3">
+                <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-zinc-950 rounded-full transition-all duration-300"
+                    style={{ width: `${item.percent}%` }}
+                  />
+                </div>
+                <p className="text-[9px] font-semibold text-zinc-400 mt-2">
+                  {item.used} days used
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Table Section */}
@@ -253,7 +297,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-zinc-900">Leave requests</h3>
           <span className="text-xs text-zinc-400 font-medium">
-            {displayRequests.length} this month
+            {displayRequests.length} request{displayRequests.length === 1 ? "" : "s"}
           </span>
         </div>
 
@@ -262,16 +306,22 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
             <table className="w-full border-collapse text-left text-sm text-zinc-500">
               <thead className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                 <tr>
-                  <th scope="col" className="px-6 py-4">Employee</th>
+                  {userRole === "SUPER_ADMIN" ? (
+                    <th scope="col" className="px-6 py-4">Employee</th>
+                  ) : (
+                    <th scope="col" className="px-6 py-4">Reason</th>
+                  )}
                   <th scope="col" className="px-6 py-4">Type</th>
                   <th scope="col" className="px-6 py-4">From</th>
                   <th scope="col" className="px-6 py-4">To</th>
                   <th scope="col" className="px-6 py-4">Days</th>
                   <th scope="col" className="px-6 py-4">Status</th>
-                  {["HR_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(userRole) && (
-                    <th scope="col" className="px-6 py-4 text-right w-40">Actions</th>
+                  {userRole === "SUPER_ADMIN" && (
+                    <>
+                      <th scope="col" className="px-6 py-4 text-right w-40">Actions</th>
+                      <th scope="col" className="px-6 py-4 w-10"></th>
+                    </>
                   )}
-                  <th scope="col" className="px-6 py-4 w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -284,21 +334,27 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
 
                   return (
                     <tr key={req.id} className="hover:bg-zinc-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9 border border-zinc-100">
-                            <AvatarFallback className="bg-zinc-100 text-zinc-800 text-xs font-bold">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-bold text-zinc-900 leading-tight">{name}</p>
-                            <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
-                              {req.employee.employeeId || "LV-100"}
-                            </p>
+                      {userRole === "SUPER_ADMIN" ? (
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9 border border-zinc-100">
+                              <AvatarFallback className="bg-zinc-100 text-zinc-800 text-xs font-bold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-bold text-zinc-900 leading-tight">{name}</p>
+                              <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
+                                {req.employee.employeeId || "LV-100"}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
+                      ) : (
+                        <td className="px-6 py-4 text-xs font-semibold text-zinc-900 max-w-[220px] truncate" title={req.reason}>
+                          {req.reason || "No reason provided"}
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-xs font-semibold text-zinc-900">
                         {req.leaveType.name}
                       </td>
@@ -323,77 +379,78 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
                           </span>
                         )}
                       </td>
-                      {["HR_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(userRole) && (
-                        <td className="px-6 py-4 text-right">
-                          {req.status === "PENDING" ? (
-                            <div className="inline-flex items-center gap-2">
-                              <button
-                                onClick={() => handleDecision(req.id, "REJECT")}
-                                className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
-                              >
-                                Decline
-                              </button>
-                              <button
-                                onClick={() => handleDecision(req.id, "APPROVE")}
-                                className="rounded-lg bg-zinc-950 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-zinc-800 transition-colors"
-                              >
-                                Approve
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-zinc-400 font-medium pr-6">—</span>
-                          )}
-                        </td>
-                      )}
-                      <td className="px-6 py-4 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="text-zinc-400 hover:text-zinc-900 transition-colors p-1 hover:bg-zinc-100 rounded-lg outline-none">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-56 bg-white border border-zinc-100 rounded-xl shadow-lg p-1"
-                          >
-                            <div className="px-3 py-2 border-b border-zinc-100 mb-1">
-                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                Employee Summary
-                              </p>
-                              <p className="text-xs font-bold text-zinc-900 mt-0.5">{name}</p>
-                            </div>
-                            <div className="flex items-center gap-2 px-3 py-2.5">
-                              <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
-                              <div>
-                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                  Total Leaves Taken
-                                </p>
-                                <p className="text-sm font-extrabold text-zinc-900">
-                                  {totalLeavesTaken} days
-                                </p>
+                      {userRole === "SUPER_ADMIN" && (
+                        <>
+                          <td className="px-6 py-4 text-right">
+                            {req.status === "PENDING" ? (
+                              <div className="inline-flex items-center gap-2">
+                                <button
+                                  onClick={() => handleDecision(req.id, "REJECT")}
+                                  className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => handleDecision(req.id, "APPROVE")}
+                                  className="rounded-lg bg-zinc-950 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-zinc-800 transition-colors"
+                                >
+                                  Approve
+                                </button>
                               </div>
-                            </div>
-                            {["HR_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(userRole) &&
-                              req.status === "PENDING" && (
-                                <>
-                                  <DropdownMenuSeparator className="bg-zinc-100" />
-                                  <DropdownMenuItem
-                                    onClick={() => handleDecision(req.id, "APPROVE")}
-                                    className="flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50 rounded-lg cursor-pointer font-medium"
-                                  >
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                    Approve leave
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDecision(req.id, "REJECT")}
-                                    className="flex items-center gap-2 px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer font-medium"
-                                  >
-                                    <XCircle className="h-3.5 w-3.5" />
-                                    Decline leave
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
+                            ) : (
+                              <span className="text-xs text-zinc-400 font-medium pr-6">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className="text-zinc-400 hover:text-zinc-900 transition-colors p-1 hover:bg-zinc-100 rounded-lg outline-none">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-56 bg-white border border-zinc-100 rounded-xl shadow-lg p-1"
+                              >
+                                <div className="px-3 py-2 border-b border-zinc-100 mb-1">
+                                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                    Employee Summary
+                                  </p>
+                                  <p className="text-xs font-bold text-zinc-900 mt-0.5">{name}</p>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-2.5">
+                                  <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
+                                  <div>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                      Total Leaves Taken
+                                    </p>
+                                    <p className="text-sm font-extrabold text-zinc-900">
+                                      {totalLeavesTaken} days
+                                    </p>
+                                  </div>
+                                </div>
+                                {req.status === "PENDING" && (
+                                  <>
+                                    <DropdownMenuSeparator className="bg-zinc-100" />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDecision(req.id, "APPROVE")}
+                                      className="flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50 rounded-lg cursor-pointer font-medium"
+                                    >
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                      Approve leave
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDecision(req.id, "REJECT")}
+                                      className="flex items-center gap-2 px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer font-medium"
+                                    >
+                                      <XCircle className="h-3.5 w-3.5" />
+                                      Decline leave
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}

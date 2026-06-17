@@ -6,6 +6,7 @@ import type { Role } from "@prisma/client";
 const publicPaths = ["/login", "/register", "/api/auth"];
 
 const roleRoutes: Record<string, Role[]> = {
+  "/employees": ["SUPER_ADMIN"],
   "/payroll": ["HR_ADMIN", "SUPER_ADMIN"],
   "/it-ops": ["HR_ADMIN", "SUPER_ADMIN"],
   "/reports": ["HR_ADMIN", "SUPER_ADMIN", "MANAGER"],
@@ -19,10 +20,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
+  const isSecure = req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https";
+  const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token";
+
+  let token = await getToken({
     req,
     secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    secureCookie: isSecure,
+    cookieName: cookieName,
   });
+
+  if (!token) {
+    token = await getToken({
+      req,
+      secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    });
+  }
 
   if (!token) {
     const login = new URL("/login", req.url);

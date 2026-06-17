@@ -25,6 +25,7 @@ interface LeaveRequestItem {
   endDate: string | Date;
   days: number;
   status: string;
+  reason?: string;
 }
 
 interface ApplyLeaveDialogProps {

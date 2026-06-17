@@ -51,17 +51,17 @@ function AntSvg({ type }: { type: string }) {
       <svg viewBox="0 0 100 60" className="w-full h-auto overflow-visible">
         {/* Carrying Item: Green Leaf */}
         <path d="M 45,5 C 55,-5 70,5 65,15 C 60,20 40,15 45,5 Z" fill="#10b981" className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(16,185,129,0.4))" />
-        {/* Legs - White */}
-        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
-        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
-        {/* Head & Antennae - White */}
-        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#ffffff" />
-        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        {/* Legs */}
+        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#e4e4e7" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
+        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#e4e4e7" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
+        {/* Head & Antennae */}
+        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#c084fc" />
+        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#c084fc" strokeWidth="1.5" strokeLinecap="round" fill="none" />
         {/* Eyes */}
         <circle cx="64" cy="21" r="1.5" fill="#000" />
-        {/* Body Segments - White */}
-        <circle cx="50" cy="25" r="7" fill="#ffffff" />
-        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#f4f4f5" />
+        {/* Body Segments */}
+        <circle cx="50" cy="25" r="7" fill="#a855f7" />
+        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#7c3aed" />
       </svg>
     );
   }
@@ -71,17 +71,17 @@ function AntSvg({ type }: { type: string }) {
         {/* Carrying Item: Gold Coin */}
         <circle cx="50" cy="8" r="7" fill="#f97316" className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(249,115,22,0.5))" />
         <text x="50" y="11" fill="#fff" fontSize="9" fontWeight="bold" textAnchor="middle" className="ant-carrying">$</text>
-        {/* Legs - White */}
-        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
-        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
-        {/* Head & Antennae - White */}
-        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#ffffff" />
-        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        {/* Legs */}
+        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#e4e4e7" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
+        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#e4e4e7" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
+        {/* Head & Antennae */}
+        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#c084fc" />
+        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#c084fc" strokeWidth="1.5" strokeLinecap="round" fill="none" />
         {/* Eyes */}
         <circle cx="64" cy="21" r="1.5" fill="#000" />
-        {/* Body Segments - White */}
-        <circle cx="50" cy="25" r="7" fill="#ffffff" />
-        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#f4f4f5" />
+        {/* Body Segments */}
+        <circle cx="50" cy="25" r="7" fill="#a855f7" />
+        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#7c3aed" />
       </svg>
     );
   }
@@ -90,32 +90,32 @@ function AntSvg({ type }: { type: string }) {
       {/* Carrying Item: Neon Coffee Cup */}
       <path d="M 42,4 L 58,4 L 56,14 L 44,14 Z" fill="#3b82f6" className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(59,130,246,0.5))" />
       <path d="M 56,6 C 60,6 61,10 56,11" stroke="#3b82f6" strokeWidth="1.5" fill="none" className="ant-carrying" />
-      {/* Legs - White */}
-      <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
-      <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
-      {/* Head & Antennae - White */}
-      <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#ffffff" />
-      <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      {/* Legs */}
+      <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#e4e4e7" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
+      <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#e4e4e7" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
+      {/* Head & Antennae */}
+      <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#c084fc" />
+      <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#c084fc" strokeWidth="1.5" strokeLinecap="round" fill="none" />
       {/* Eyes */}
       <circle cx="64" cy="21" r="1.5" fill="#000" />
-      {/* Body Segments - White */}
-      <circle cx="50" cy="25" r="7" fill="#ffffff" />
-      <ellipse cx="32" cy="27" rx="10" ry="7" fill="#f4f4f5" />
+      {/* Body Segments */}
+      <circle cx="50" cy="25" r="7" fill="#a855f7" />
+      <ellipse cx="32" cy="27" rx="10" ry="7" fill="#7c3aed" />
     </svg>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#7c3aed] font-sans selection:bg-[#c084fc] selection:text-black">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] font-sans selection:bg-[#c084fc] selection:text-black">
       {/* Dynamic Animated Background Mesh */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[80%] rounded-full bg-radial-gradient from-[rgba(255,255,255,0.15)] to-transparent blur-[120px] animate-pulse" style={{ animationDuration: "8s" }} />
-        <div className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[80%] rounded-full bg-radial-gradient from-[rgba(255,255,255,0.1)] to-transparent blur-[120px] animate-pulse" style={{ animationDuration: "12s" }} />
+        <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[80%] rounded-full bg-radial-gradient from-[rgba(168,85,247,0.15)] to-transparent blur-[120px] animate-pulse" style={{ animationDuration: "8s" }} />
+        <div className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[80%] rounded-full bg-radial-gradient from-[rgba(249,115,22,0.12)] to-transparent blur-[120px] animate-pulse" style={{ animationDuration: "12s" }} />
       </div>
 
       {/* Cyber Grid Lines */}
-      <div className="absolute inset-0 z-0 opacity-[0.06] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="absolute inset-0 z-0 opacity-[0.03] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px]" />
 
       {/* Embedded CSS Animations */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -157,14 +157,14 @@ export default function LoginPage() {
         }
         @keyframes leaf-fall {
           0% { transform: translateY(-50px) translateX(0) rotate(0deg); opacity: 0; }
-          10% { opacity: 0.15; }
-          90% { opacity: 0.15; }
+          10% { opacity: 0.12; }
+          90% { opacity: 0.12; }
           100% { transform: translateY(105vh) translateX(120px) rotate(360deg); opacity: 0; }
         }
         @keyframes footprint-pulse {
           0% { opacity: 0; transform: scale(0.6); }
-          0.5% { opacity: 0.5; transform: scale(1); }
-          4% { opacity: 0.18; transform: scale(0.8); }
+          0.5% { opacity: 0.45; transform: scale(1); }
+          4% { opacity: 0.15; transform: scale(0.8); }
           8% { opacity: 0; transform: scale(0.6); }
           100% { opacity: 0; }
         }
@@ -202,14 +202,14 @@ export default function LoginPage() {
               animationDuration: leaf.duration,
             }}
           >
-            <svg viewBox="0 0 24 24" className="w-full h-full fill-white/15">
+            <svg viewBox="0 0 24 24" className="w-full h-full fill-emerald-500/15">
               <path d="M17,8C8,10 5.9,16.17 3.82,21.34L21.34,3.82C16.17,5.9 10,8 17,8Z" />
             </svg>
           </div>
         ))}
       </div>
 
-      {/* Dotted Footprints (Ant Trails) Layer - White */}
+      {/* Dotted Footprints (Ant Trails) Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {ANTS_CONFIG.map((ant) => {
           const isDiagonal = ant.anim.includes("diagonal");
@@ -231,14 +231,14 @@ export default function LoginPage() {
                 }}
               >
                 <div
-                  className="w-[3px] h-[3px] rounded-full bg-white/40 footprint-dot"
+                  className="w-[3px] h-[3px] rounded-full bg-purple-400/40 footprint-dot"
                   style={{
                     animationDuration: ant.duration,
                     animationDelay: delay,
                   }}
                 />
                 <div
-                  className="w-[3px] h-[3px] rounded-full bg-white/40 footprint-dot ml-[2px]"
+                  className="w-[3px] h-[3px] rounded-full bg-purple-400/40 footprint-dot ml-[2px]"
                   style={{
                     animationDuration: ant.duration,
                     animationDelay: `${parseFloat(delay) + 0.1}s`,
@@ -271,23 +271,22 @@ export default function LoginPage() {
       {/* Split Layout Container */}
       <div className="relative z-10 flex min-h-screen w-full flex-col lg:flex-row">
         {/* Left Side Hero Panel (Hidden on mobile for focus, visible on desktop) */}
-        <div className="hidden w-1/2 flex-col justify-between p-16 text-black lg:flex lg:w-[45%]">
+        <div className="hidden w-1/2 flex-col justify-between p-16 text-white lg:flex lg:w-[45%]">
           <div>
-            {/* Brand Logo with no boundary */}
-            <div className="mb-10 inline-flex items-center justify-start">
-              <Image src="/logo.png" alt="AntBox Logo" width={120} height={35} className="object-contain" />
+            {/* Brand Logo with Funky Drop Shadow */}
+            <div className="mb-10 inline-flex items-center justify-center rounded-2xl bg-[#121214] p-4 shadow-[0_0_30px_rgba(168,85,247,0.3)] border border-[#27272a] hover:scale-105 transition-transform duration-300">
+              <Image src="/logo.png" alt="AntBox Logo" width={120} height={35} className="object-contain filter invert brightness-200" />
             </div>
-            <h1 className="text-5xl font-black tracking-tight leading-none text-black flex flex-wrap items-center gap-3">
-              <span className="bg-white px-4 py-1.5 rounded-2xl text-black inline-block shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-black/5">Welcome to</span>
-              <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">AntHRMS</span>
+            <h1 className="text-5xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+              Welcome to <span className="bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">AntHRMS</span>
             </h1>
-            <p className="mt-8 max-w-md text-xl md:text-2xl font-extrabold leading-relaxed text-black/90">
+            <p className="mt-6 max-w-sm text-sm font-medium leading-relaxed text-zinc-400">
               A GenZ-first workspace bridging academia to SaaS careers. Manage onboarding, attendance, leaves, and payroll in an ultra-modern environment.
             </p>
           </div>
-          <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-black/60">
+          <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
             <span>Bhubaneswar HQ</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-black" />
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
             <span>people@theantbox.com</span>
           </div>
         </div>
@@ -296,21 +295,23 @@ export default function LoginPage() {
         <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-[55%] lg:px-16 xl:px-24">
           <div className="mx-auto w-full max-w-[480px]">
             {/* Floating Glassmorphic Login Box */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/45 p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:p-10">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:p-10">
               {/* Outer Decorative Neon Ring */}
-              <div className="absolute -top-12 -left-12 h-24 w-24 rounded-full bg-white/5 blur-xl" />
-              <div className="absolute -bottom-12 -right-12 h-24 w-24 rounded-full bg-white/5 blur-xl" />
+              <div className="absolute -top-12 -left-12 h-24 w-24 rounded-full bg-purple-500/10 blur-xl" />
+              <div className="absolute -bottom-12 -right-12 h-24 w-24 rounded-full bg-orange-500/10 blur-xl" />
 
               <div className="relative z-10">
-                {/* Logo for mobile view with no boundary */}
+                {/* Logo for mobile view */}
                 <div className="mb-6 flex justify-center lg:hidden">
-                  <Image src="/logo.png" alt="AntBox Logo" width={90} height={26} className="object-contain" />
+                  <div className="inline-flex items-center justify-center rounded-xl bg-[#121214] p-3 border border-[#27272a]">
+                    <Image src="/logo.png" alt="AntBox Logo" width={90} height={26} className="object-contain filter invert brightness-200" />
+                  </div>
                 </div>
 
                 <Suspense fallback={
                   <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    <p className="text-xs text-zinc-300 font-semibold uppercase tracking-wider">Tuning AntBox Antennas...</p>
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+                    <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Tuning AntBox Antennas...</p>
                   </div>
                 }>
                   <LoginForm />

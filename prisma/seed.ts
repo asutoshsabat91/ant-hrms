@@ -1,8 +1,11 @@
 import "dotenv/config";
 import { PrismaClient, TaskCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 
 const prisma = new PrismaClient();
+
 
 const INDIAN_HOLIDAYS_2025 = [
   { name: "Republic Day", date: "2025-01-26" },
@@ -71,7 +74,7 @@ async function main() {
           firstName: "Admin",
           lastName: "AntBox",
           email: "admin@theantbox.com",
-          employeeId: "ANT-001",
+          employeeId: "ANT-ADMIN",
           designation: "Super Admin",
           departmentId: ops.id,
           employmentType: "FULL_TIME",
@@ -87,96 +90,86 @@ async function main() {
     update: { passwordHash, role: "SUPER_ADMIN" },
   });
 
-  // 2. HR Admin User
-  await prisma.user.upsert({
-    where: { email: "hr@theantbox.com" },
-    create: {
-      email: "hr@theantbox.com",
-      passwordHash,
-      role: "HR_ADMIN",
-      employee: {
-        create: {
-          firstName: "Pooja",
-          lastName: "Mishra",
-          email: "hr@theantbox.com",
-          employeeId: "ANT-012",
-          designation: "HR Lead",
-          departmentId: ops.id,
-          employmentType: "FULL_TIME",
-          status: "ACTIVE",
-          joiningDate: new Date("2024-06-01"),
-          ctc: 840000,
-          basicSalary: 30000,
-          hra: 15000,
-          specialAllowance: 15000,
-        },
-      },
-    },
-    update: { passwordHash, role: "HR_ADMIN" },
-  });
+  const eng = await prisma.department.findUniqueOrThrow({ where: { code: "ENG" } });
 
-  // 3. Manager User
-  const seededManager = await prisma.user.upsert({
-    where: { email: "manager@theantbox.com" },
-    create: {
-      email: "manager@theantbox.com",
-      passwordHash,
-      role: "MANAGER",
-      employee: {
+  // Load real employees list
+  const employeesPath = path.join(__dirname, "../scratch/employees.json");
+  if (fs.existsSync(employeesPath)) {
+    const employees = JSON.parse(fs.readFileSync(employeesPath, "utf-8"));
+    console.log(`Seeding ${employees.length} real employees...`);
+    
+    let count = 0;
+    for (const emp of employees) {
+      count++;
+      const isSuperAdmin = emp.officialEmail === "asutosh.sabat@theantbox.com";
+      const isHrAdmin = emp.client === "Admin";
+      
+      const role = isSuperAdmin 
+        ? "SUPER_ADMIN" 
+        : isHrAdmin 
+          ? "HR_ADMIN" 
+          : emp.empType === "FULL_TIME" 
+            ? "EMPLOYEE" 
+            : "INTERN";
+            
+      const deptId = isHrAdmin ? ops.id : eng.id;
+      const empStatus = emp.client === "Out of System" ? "INACTIVE" : "ACTIVE";
+      
+      console.log(`[${count}/${employees.length}] Upserting: ${emp.fullName} (${emp.officialEmail})`);
+      
+      await prisma.user.upsert({
+        where: { email: emp.officialEmail },
         create: {
-          firstName: "Rajesh",
-          lastName: "Gupta",
-          email: "manager@theantbox.com",
-          employeeId: "ANT-013",
-          designation: "Engineering Manager",
-          departmentId: ops.id,
-          employmentType: "FULL_TIME",
-          status: "ACTIVE",
-          joiningDate: new Date("2024-03-01"),
-          ctc: 1800000,
-          basicSalary: 60000,
-          hra: 30000,
-          specialAllowance: 40000,
+          email: emp.officialEmail,
+          passwordHash,
+          role,
+          isActive: empStatus === "ACTIVE",
+          employee: {
+            create: {
+              firstName: emp.firstName,
+              lastName: emp.lastName,
+              email: emp.officialEmail,
+              personalEmail: emp.personalEmail,
+              phone: emp.contactNumber || null,
+              employeeId: emp.employeeId,
+              designation: emp.designation,
+              departmentId: deptId,
+              employmentType: emp.empType,
+              status: empStatus,
+              joiningDate: new Date(emp.joiningDate),
+              city: "Bhubaneswar",
+              state: "Odisha",
+              ctc: 480000,
+              basicSalary: 20000,
+              hra: 8000,
+              specialAllowance: 12000,
+            }
+          }
         },
-      },
-    },
-    update: { passwordHash, role: "MANAGER" },
-    include: { employee: true },
-  });
+        update: {
+          role,
+          isActive: empStatus === "ACTIVE",
+          employee: {
+            update: {
+              firstName: emp.firstName,
+              lastName: emp.lastName,
+              personalEmail: emp.personalEmail,
+              phone: emp.contactNumber || null,
+              employeeId: emp.employeeId,
+              designation: emp.designation,
+              departmentId: deptId,
+              employmentType: emp.empType,
+              status: empStatus,
+              joiningDate: new Date(emp.joiningDate),
+              city: "Bhubaneswar",
+              state: "Odisha",
+            }
+          }
+        }
+      });
+    }
+  }
 
-  // 4. Employee User
-  await prisma.user.upsert({
-    where: { email: "employee@theantbox.com" },
-    create: {
-      email: "employee@theantbox.com",
-      passwordHash,
-      role: "EMPLOYEE",
-      employee: {
-        create: {
-          firstName: "Amit",
-          lastName: "Sharma",
-          email: "employee@theantbox.com",
-          employeeId: "ANT-014",
-          designation: "Software Engineer",
-          departmentId: ops.id,
-          managerId: seededManager.employee?.id,
-          employmentType: "FULL_TIME",
-          status: "ACTIVE",
-          joiningDate: new Date("2025-01-01"),
-          ctc: 720000,
-          basicSalary: 25000,
-          hra: 12500,
-          specialAllowance: 12500,
-          pan: "ABCDE1234F",
-          uan: "100987654321",
-          bankName: "State Bank of India",
-          bankAccountNo: "30012345678",
-          ifscCode: "SBIN0001234",
-        },
-      },
-    },
-    update: { passwordHash, role: "EMPLOYEE" },
-  });
 
   const leaveTypes = [
     { name: "Sick Leave", code: "SL", daysPerYear: 7, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
@@ -196,7 +189,13 @@ async function main() {
   // Seed leave balances for all active employees for year 2026
   const dbLeaveTypes = await prisma.leaveType.findMany();
   const dbEmployees = await prisma.employee.findMany();
+  console.log(`Seeding leave balances for ${dbEmployees.length} active employees...`);
+  let lbCount = 0;
   for (const emp of dbEmployees) {
+    lbCount++;
+    if (lbCount % 10 === 0 || lbCount === dbEmployees.length) {
+      console.log(`Seeding leave balances progress: [${lbCount}/${dbEmployees.length}]`);
+    }
     for (const lt of dbLeaveTypes) {
       await prisma.leaveBalance.upsert({
         where: {

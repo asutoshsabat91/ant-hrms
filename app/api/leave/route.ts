@@ -37,7 +37,10 @@ export async function GET() {
     }),
     prisma.leaveRequest.findMany({
       where: { employeeId: user.employee.id },
-      include: { leaveType: true },
+      include: {
+        leaveType: true,
+        employee: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 8,
     }),

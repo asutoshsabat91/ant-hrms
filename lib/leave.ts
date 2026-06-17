@@ -2,10 +2,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function getLeaveOverview(userId?: string, userRole?: string) {
   const currentYear = new Date().getFullYear();
-  const isHrOrAdmin = userRole === "HR_ADMIN" || userRole === "SUPER_ADMIN" || userRole === "MANAGER";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
 
   let employeeId: string | undefined = undefined;
-  if (userId && !isHrOrAdmin) {
+  if (userId && !isSuperAdmin) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { employee: true },

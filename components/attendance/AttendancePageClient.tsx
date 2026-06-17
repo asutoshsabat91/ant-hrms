@@ -263,7 +263,7 @@ export function AttendancePageClient() {
                           {punch.punchType === "IN" ? "Punch In" : "Punch Out"}
                         </p>
                         <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
-                          {punch.location || "Office · Bengaluru HQ"}
+                          {punch.location || "Office · Bhubaneswar HQ"}
                         </p>
                       </div>
                     </div>

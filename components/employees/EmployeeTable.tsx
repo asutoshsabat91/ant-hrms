@@ -79,7 +79,7 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
                 const joinedDate = emp.joiningDate
                   ? format(new Date(emp.joiningDate), "MMM yyyy")
                   : "N/A";
-                const locationStr = emp.city || "Bengaluru";
+                const locationStr = emp.city || "Bhubaneswar";
                 return (
                   <tr key={emp.id} className="hover:bg-zinc-50/50 transition-colors">
                     <td className="px-6 py-4">
