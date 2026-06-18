@@ -106,7 +106,7 @@ export function AttendanceCard({ initialPunches }: Props) {
   }, [nextType, officeConfig]);
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
+    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4 lg:h-full">
       {/* Header + clock */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
