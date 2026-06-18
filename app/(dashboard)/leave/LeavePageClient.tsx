@@ -110,7 +110,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
   // Memoize balance cards — only recalculates when balances change
   const balancesData = useMemo(() => {
     const getInfo = (typeCode: string) => {
-      const balance = balances.find((b) => b.leaveType.code === typeCode);
+      const balance = (balances || []).find((b) => b?.leaveType?.code === typeCode);
       if (balance) {
         const allocated = balance.allocated || 0;
         const used = balance.used || 0;
@@ -127,6 +127,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
         { label: "LOSS OF PAY", code: "LOP", ...getInfo("LOP"), isUnlimited: true },
         { label: "ACADEMIC LEAVES", code: "ACADEMIC", ...getInfo("ACADEMIC"), isUnlimited: true },
         { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
+        { label: "WORK FROM HOME", code: "WFH", ...getInfo("WFH"), isUnlimited: true },
       ];
     }
 
@@ -136,6 +137,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
       { label: "BEREAVEMENT LEAVE", code: "BEREAVEMENT", ...getInfo("BEREAVEMENT"), isUnlimited: false },
       { label: "COMP-OFF LEAVE", code: "COMP_OFF", ...getInfo("COMP_OFF"), isUnlimited: true },
       { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
+      { label: "WORK FROM HOME", code: "WFH", ...getInfo("WFH"), isUnlimited: true },
     ];
   }, [balances, employmentType]);
 

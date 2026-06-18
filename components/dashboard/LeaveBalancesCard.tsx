@@ -22,10 +22,11 @@ const COLORS: Record<string, string> = {
   BEREAVEMENT: "bg-purple-400",
   COMP_OFF: "bg-emerald-400",
   OPTIONAL_HOLIDAY: "bg-teal-400",
+  WFH: "bg-emerald-400",
 };
 
 export function LeaveBalancesCard({ balances }: Props) {
-  const displayBalances = balances;
+  const displayBalances = balances || [];
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
@@ -39,6 +40,7 @@ export function LeaveBalancesCard({ balances }: Props) {
       ) : (
         <div className="space-y-3">
           {displayBalances.map((b) => {
+            if (!b || !b.leaveType) return null;
             const remaining = Math.max(0, b.allocated - b.used - b.pending);
             const usedPct = b.allocated > 0 ? Math.min(100, ((b.used + b.pending) / b.allocated) * 100) : 0;
             const color = COLORS[b.leaveType.code] || "bg-zinc-400";

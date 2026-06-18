@@ -46,10 +46,10 @@ export function ApplyLeaveDialog({
   const filteredLeaveTypes = useMemo(() => {
     const isIntern = employmentType === "INTERN";
     const allowedCodes = isIntern
-      ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY"]
-      : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY"];
+      ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH"]
+      : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH"];
     
-    return leaveTypes.filter((type) => {
+    return (leaveTypes || []).filter((type) => {
       const code = type.code || "";
       return allowedCodes.includes(code);
     });
@@ -67,7 +67,7 @@ export function ApplyLeaveDialog({
   // Focus first field and set default selected type when opening
   useEffect(() => {
     if (isOpen) {
-      if (filteredLeaveTypes.length > 0) {
+      if (filteredLeaveTypes.length > 0 && filteredLeaveTypes[0]) {
         setSelectedTypeId(filteredLeaveTypes[0].id);
       }
       if (firstInputRef.current) {

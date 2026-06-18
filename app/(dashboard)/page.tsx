@@ -12,6 +12,7 @@ import { JoiningSoonWidget } from "@/components/dashboard/JoiningSoonWidget";
 import { AttendanceCard } from "@/components/dashboard/AttendanceCard";
 import { LeaveBalancesCard } from "@/components/dashboard/LeaveBalancesCard";
 import { CompanyCalendarWidget } from "@/components/dashboard/CompanyCalendarWidget";
+import { UpcomingHolidaysWidget } from "@/components/dashboard/UpcomingHolidaysWidget";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { TribeRadarWidget } from "@/components/dashboard/TribeRadarWidget";
 import { ScrollIndicator } from "@/components/dashboard/ScrollIndicator";
@@ -173,12 +174,13 @@ export default async function DashboardPage() {
         <ScrollReveal delayClass="reveal-delay-2">
           <LeaveBalancesCard balances={leaveBalances} />
         </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-3">
+        <ScrollReveal delayClass="reveal-delay-3" className="space-y-4">
           <CompanyCalendarWidget
             holidays={holidays}
             leaves={calendarLeaves}
             leaveTypes={leaveTypes}
           />
+          <UpcomingHolidaysWidget holidays={holidays} />
         </ScrollReveal>
       </div>
 

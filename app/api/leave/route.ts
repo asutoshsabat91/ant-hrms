@@ -123,30 +123,34 @@ export async function POST(req: Request) {
   }
 
   // 1. Holiday Overlap Check
-  const holidayOverlap = await prisma.holiday.findFirst({
-    where: {
-      date: { gte: start, lte: end },
-    },
-  });
-  if (holidayOverlap) {
-    return NextResponse.json({
-      error: `Cannot apply for leave on a holiday: ${holidayOverlap.name} (${format(holidayOverlap.date, "dd MMM yyyy")}).`
-    }, { status: 400 });
+  if (leaveType.code !== "WFH") {
+    const holidayOverlap = await prisma.holiday.findFirst({
+      where: {
+        date: { gte: start, lte: end },
+      },
+    });
+    if (holidayOverlap) {
+      return NextResponse.json({
+        error: `Cannot apply for leave on a holiday: ${holidayOverlap.name} (${format(holidayOverlap.date, "dd MMM yyyy")}).`
+      }, { status: 400 });
+    }
   }
 
   // 2. Notice Period Check
-  const now = new Date();
-  const diffMs = start.getTime() - now.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
+  if (leaveType.code !== "WFH") {
+    const now = new Date();
+    const diffMs = start.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
 
-  if (days === 1 && diffHours < 24) {
-    return NextResponse.json({ error: "A 1-day leave request must be submitted at least 24 hours in advance." }, { status: 400 });
-  }
-  if (days === 2 && diffHours < 48) {
-    return NextResponse.json({ error: "A 2-day leave request must be submitted at least 48 hours in advance." }, { status: 400 });
-  }
-  if (days >= 3 && diffHours < 168) { // 7 days = 168 hours
-    return NextResponse.json({ error: "Leave requests for 3 or more days must be submitted at least a week (7 days) in advance." }, { status: 400 });
+    if (days === 1 && diffHours < 24) {
+      return NextResponse.json({ error: "A 1-day leave request must be submitted at least 24 hours in advance." }, { status: 400 });
+    }
+    if (days === 2 && diffHours < 48) {
+      return NextResponse.json({ error: "A 2-day leave request must be submitted at least 48 hours in advance." }, { status: 400 });
+    }
+    if (days >= 3 && diffHours < 168) { // 7 days = 168 hours
+      return NextResponse.json({ error: "Leave requests for 3 or more days must be submitted at least a week (7 days) in advance." }, { status: 400 });
+    }
   }
 
   // 3. Optional Holiday limit check (2 days per year)
