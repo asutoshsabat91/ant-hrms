@@ -30,7 +30,7 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
 
     let allocated = lt.daysPerYear;
 
-    if (lt.code === "PAID_QUARTER" && employmentType === "EMPLOYEE") {
+    if (lt.code === "PAID_QUARTER" && employmentType === "INTERN") {
       const now = new Date();
       if (now.getFullYear() === year) {
         const startQuarter = Math.floor(now.getMonth() / 3) * 3;

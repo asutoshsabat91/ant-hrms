@@ -44,7 +44,7 @@ export function ApplyLeaveDialog({
   employmentType = "FULL_TIME",
 }: ApplyLeaveDialogProps) {
   const filteredLeaveTypes = useMemo(() => {
-    const isIntern = employmentType === "EMPLOYEE";
+    const isIntern = employmentType === "INTERN";
     const allowedCodes = isIntern
       ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH"]
       : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH"];
