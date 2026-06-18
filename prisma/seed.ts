@@ -181,11 +181,13 @@ async function main() {
     { name: "Paid/Quarter Leaves", code: "PAID_QUARTER", daysPerYear: 12, carryoverLimit: 0, isPaid: true, applicableTo: ["INTERN"] },
     { name: "Loss of Pay", code: "LOP", daysPerYear: 0, carryoverLimit: 0, isPaid: false, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
     { name: "Academic Leaves", code: "ACADEMIC", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["INTERN"] },
-    { name: "Earned Leaves", code: "EARNED", daysPerYear: 18, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Privilege Leave", code: "PL", daysPerYear: 21, carryoverLimit: 15, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Sick Leave", code: "SL", daysPerYear: 7, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Casual Leave", code: "CL", daysPerYear: 7, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
     { name: "Floater", code: "FLOATER", daysPerYear: 1, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
-    { name: "Bereavement Leave", code: "BEREAVEMENT", daysPerYear: 5, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
     { name: "Comp-off-Leave", code: "COMP_OFF", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
     { name: "Optional Holiday", code: "OPTIONAL_HOLIDAY", daysPerYear: 2, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN"] },
+    { name: "Work From Home", code: "WFH", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
   ];
 
 
@@ -193,7 +195,13 @@ async function main() {
     await prisma.leaveType.upsert({
       where: { code: lt.code },
       create: lt,
-      update: {},
+      update: {
+        name: lt.name,
+        daysPerYear: lt.daysPerYear,
+        carryoverLimit: lt.carryoverLimit,
+        isPaid: lt.isPaid,
+        applicableTo: lt.applicableTo,
+      },
     });
   }
 

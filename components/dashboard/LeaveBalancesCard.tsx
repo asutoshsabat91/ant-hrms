@@ -14,12 +14,13 @@ interface Props {
 }
 
 const COLORS: Record<string, string> = {
+  PL: "bg-violet-500",
+  SL: "bg-sky-400",
+  CL: "bg-amber-400",
   PAID_QUARTER: "bg-sky-400",
-  EARNED: "bg-violet-500",
-  FLOATER: "bg-amber-400",
   LOP: "bg-rose-400",
   ACADEMIC: "bg-blue-400",
-  BEREAVEMENT: "bg-purple-400",
+  FLOATER: "bg-amber-400",
   COMP_OFF: "bg-emerald-400",
   OPTIONAL_HOLIDAY: "bg-teal-400",
   WFH: "bg-emerald-400",
