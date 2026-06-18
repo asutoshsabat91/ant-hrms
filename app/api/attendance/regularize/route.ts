@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const employeeId = url.searchParams.get("employeeId");
 
-  const isAdmin = ["SUPER_ADMIN", "HR_ADMIN", "MANAGER"].includes(session.user.role);
+  const isAdmin = session.user.role === "ADMIN";
 
   try {
     let requests;

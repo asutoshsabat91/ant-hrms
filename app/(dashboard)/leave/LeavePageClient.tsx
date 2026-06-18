@@ -104,7 +104,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
   const openDialog = useCallback(() => setIsDialogOpen(true), []);
 
   const displayRequests = useMemo(() => {
-    return requests.length > 0 ? requests : (userRole === "SUPER_ADMIN" ? DEFAULT_REQUESTS : []);
+    return requests.length > 0 ? requests : (userRole === "ADMIN" ? DEFAULT_REQUESTS : []);
   }, [requests, userRole]);
 
   // Memoize balance cards — only recalculates when balances change
@@ -290,7 +290,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
             <table className="w-full border-collapse text-left text-sm text-zinc-500">
               <thead className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                 <tr>
-                  {userRole === "SUPER_ADMIN" ? (
+                  {userRole === "ADMIN" ? (
                     <th scope="col" className="px-6 py-4">Employee</th>
                   ) : (
                     <th scope="col" className="px-6 py-4">Reason</th>
@@ -300,7 +300,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                   <th scope="col" className="px-6 py-4">To</th>
                   <th scope="col" className="px-6 py-4">Days</th>
                   <th scope="col" className="px-6 py-4">Status</th>
-                  {userRole === "SUPER_ADMIN" && (
+                  {userRole === "ADMIN" && (
                     <>
                       <th scope="col" className="px-6 py-4 text-right w-40">Actions</th>
                       <th scope="col" className="px-6 py-4 w-10"></th>
@@ -322,7 +322,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
 
                   return (
                     <tr key={req.id} className="hover:bg-zinc-50/50 transition-colors">
-                      {userRole === "SUPER_ADMIN" ? (
+                      {userRole === "ADMIN" ? (
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9 border border-zinc-100">
@@ -367,7 +367,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                           </span>
                         )}
                       </td>
-                      {userRole === "SUPER_ADMIN" && (
+                      {userRole === "ADMIN" && (
                         <>
                           <td className="px-6 py-4 text-right">
                             {req.status === "PENDING" ? (
