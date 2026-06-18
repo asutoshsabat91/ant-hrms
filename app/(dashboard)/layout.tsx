@@ -25,10 +25,17 @@ export default async function DashboardLayout({
     // DB not connected
   }
 
+  // Serialize Date fields — Next.js cannot pass Date objects to client components
+  const safeEmployee = employee ? {
+    ...employee,
+    joiningDate: employee.joiningDate instanceof Date ? employee.joiningDate.toISOString() : String(employee.joiningDate),
+    dateOfBirth: employee.dateOfBirth instanceof Date ? employee.dateOfBirth.toISOString() : (employee.dateOfBirth ?? null),
+  } : null;
+
   return (
     <ResizableLayout
       sidebar={<Sidebar role={session.user.role} gender={employee?.gender} />}
-      topbar={<Topbar user={session.user} employee={employee} />}
+      topbar={<Topbar user={session.user} employee={safeEmployee} />}
     >
       {children}
     </ResizableLayout>

@@ -27,10 +27,10 @@ interface EmployeeProfile {
   managerId?: string | null;
   employmentType: string;
   status: string;
-  joiningDate: Date;
+  joiningDate: Date | string;
   phone?: string | null;
   personalEmail?: string | null;
-  dateOfBirth?: Date | null;
+  dateOfBirth?: Date | string | null;
   bloodGroup?: string | null;
   address?: string | null;
   city?: string | null;
