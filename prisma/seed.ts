@@ -110,13 +110,7 @@ async function main() {
       const isSuperAdmin = emp.officialEmail === "asutosh.sabat@theantbox.com";
       const isHrAdmin = emp.client === "Admin";
       
-      const role = isSuperAdmin 
-        ? "SUPER_ADMIN" 
-        : isHrAdmin 
-          ? "HR_ADMIN" 
-          : emp.empType === "FULL_TIME" 
-            ? "EMPLOYEE" 
-            : "INTERN";
+      const role = isSuperAdmin || isHrAdmin ? "ADMIN" : "EMPLOYEE";
             
       const deptId = isHrAdmin ? ops.id : eng.id;
       const empStatus = emp.client === "Out of System" ? "INACTIVE" : "ACTIVE";

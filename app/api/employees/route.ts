@@ -21,74 +21,76 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const employees = await prisma.employee.findMany({
+      include: { department: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(employees);
+  } catch (e) {
+    console.error("[EMPLOYEES GET]", e);
+    return NextResponse.json({ error: "Failed to fetch employees" }, { status: 500 });
   }
-
-  const employees = await prisma.employee.findMany({
-    include: { department: true },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return NextResponse.json(employees);
 }
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  try {
+    const session = await auth();
+    if (!session?.user || !["ADMIN"].includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-  const body = await req.json();
-  const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
+    const body = await req.json();
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const data = parsed.data;
-  const count = await prisma.employee.count();
-  const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
-  const joiningDate = new Date(data.joiningDate);
-  const compensation = data.ctc ? breakdownFromCTC(data.ctc) : null;
-  const tempPassword = data.password ?? "AntBox@2025";
-  const passwordHash = await bcrypt.hash(tempPassword, 12);
+    const data = parsed.data;
+    const count = await prisma.employee.count();
+    const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
+    const joiningDate = new Date(data.joiningDate);
+    const compensation = data.ctc ? breakdownFromCTC(data.ctc) : null;
+    const tempPassword = data.password ?? "AntBox@2025";
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
 
-  const result = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        email: data.email.toLowerCase(),
-        passwordHash,
-        role: "EMPLOYEE",
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email: data.email.toLowerCase(), passwordHash, role: "EMPLOYEE" },
+      });
+
+      const employee = await tx.employee.create({
+        data: {
+          userId: user.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email.toLowerCase(),
+          phone: data.phone,
+          employeeId,
+          designation: data.designation,
+          departmentId: data.departmentId,
+          managerId: data.managerId,
+          employmentType: data.employmentType,
+          status: "ONBOARDING",
+          joiningDate,
+          probationEnds: addMonths(joiningDate, 3),
+          ctc: data.ctc,
+          basicSalary: compensation?.basicSalary,
+          hra: compensation?.hra,
+          specialAllowance: compensation?.specialAllowance,
+          pf: compensation?.pf,
+        },
+        include: { department: true },
+      });
+
+      return employee;
     });
 
-    const employee = await tx.employee.create({
-      data: {
-        userId: user.id,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email.toLowerCase(),
-        phone: data.phone,
-        employeeId,
-        designation: data.designation,
-        departmentId: data.departmentId,
-        managerId: data.managerId,
-        employmentType: data.employmentType,
-        status: "ONBOARDING",
-        joiningDate,
-        probationEnds: addMonths(joiningDate, 3),
-        ctc: data.ctc,
-        basicSalary: compensation?.basicSalary,
-        hra: compensation?.hra,
-        specialAllowance: compensation?.specialAllowance,
-        pf: compensation?.pf,
-      },
-      include: { department: true },
-    });
-
-    return employee;
-  });
-
-  return NextResponse.json(result, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
+  } catch (e) {
+    console.error("[EMPLOYEES POST]", e);
+    return NextResponse.json({ error: "Failed to create employee" }, { status: 500 });
+  }
 }
