@@ -107,7 +107,7 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm lg:h-full">
+    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">

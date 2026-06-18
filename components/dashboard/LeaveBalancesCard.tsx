@@ -29,7 +29,7 @@ export function LeaveBalancesCard({ balances }: Props) {
   const displayBalances = balances || [];
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4 lg:h-full">
+    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
       <div className="flex items-center gap-2">
         <CalendarDays className="h-4 w-4 text-[var(--purple)]" />
         <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Leave Balances</span>

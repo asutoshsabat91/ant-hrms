@@ -167,21 +167,19 @@ export default async function DashboardPage() {
       </ScrollReveal>
 
       {/* Employee widgets row */}
-      <div className="grid gap-4 lg:grid-cols-3 lg:grid-rows-[auto_auto]">
-        <ScrollReveal delayClass="reveal-delay-1" className="lg:h-full">
+      <div className="grid gap-4 lg:grid-cols-3 items-start">
+        <ScrollReveal delayClass="reveal-delay-1">
           <AttendanceCard initialPunches={todayPunches} />
         </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2" className="lg:row-span-2 lg:h-full">
+        <ScrollReveal delayClass="reveal-delay-2">
           <LeaveBalancesCard balances={leaveBalances} />
         </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-3" className="lg:h-full">
+        <ScrollReveal delayClass="reveal-delay-3" className="space-y-4">
           <CompanyCalendarWidget
             holidays={holidays}
             leaves={calendarLeaves}
             leaveTypes={leaveTypes}
           />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-4" className="lg:col-start-3 lg:row-start-2 lg:h-full">
           <UpcomingHolidaysWidget holidays={holidays} />
         </ScrollReveal>
       </div>

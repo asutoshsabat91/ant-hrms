@@ -106,7 +106,7 @@ export function AttendanceCard({ initialPunches }: Props) {
   }, [nextType, officeConfig]);
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4 lg:h-full">
+    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
       {/* Header + clock */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -152,11 +152,14 @@ export function AttendanceCard({ initialPunches }: Props) {
         </div>
       )}
 
-      {/* Today's punch log */}
+      {/* Today's punch log — capped height with scroll */}
       {punches.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Today&apos;s Log</p>
-          <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Today&apos;s Log</p>
+            <span className="text-[9px] font-semibold text-zinc-300">{punches.length} entries</span>
+          </div>
+          <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1 scrollbar-thin">
             {punches.map((p) => (
               <div key={p.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-1.5">
                 <span className={`text-xs font-semibold ${p.punchType === "IN" ? "text-emerald-600" : "text-rose-500"}`}>
