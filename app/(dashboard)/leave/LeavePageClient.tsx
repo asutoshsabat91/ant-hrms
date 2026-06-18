@@ -145,7 +145,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
   const leavesTakenByEmployee = useMemo(() => {
     const map: Record<string, number> = {};
     for (const r of displayRequests) {
-      if (r.status === "APPROVED") {
+      if (r.status === "APPROVED" && r.employee?.employeeId) {
         const key = r.employee.employeeId;
         map[key] = (map[key] || 0) + (r.days || 0);
       }
@@ -310,11 +310,15 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {displayRequests.map((req) => {
-                  const name = `${req.employee.firstName} ${req.employee.lastName}`;
-                  const initials = `${req.employee.firstName[0]}${req.employee.lastName[0]}`;
-                  const startStr = format(new Date(req.startDate), "MMM dd");
-                  const endStr = format(new Date(req.endDate), "MMM dd");
-                  const totalLeavesTaken = leavesTakenByEmployee[req.employee.employeeId] || 0;
+                  if (!req) return null;
+                  const emp = req.employee || { firstName: "", lastName: "", employeeId: "" };
+                  const name = `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || "Unknown Employee";
+                  const initials = `${emp.firstName?.[0] || ""}${emp.lastName?.[0] || ""}`.toUpperCase() || "??";
+                  const startDateObj = req.startDate ? new Date(req.startDate) : null;
+                  const endDateObj = req.endDate ? new Date(req.endDate) : null;
+                  const startStr = startDateObj && !isNaN(startDateObj.getTime()) ? format(startDateObj, "MMM dd") : "—";
+                  const endStr = endDateObj && !isNaN(endDateObj.getTime()) ? format(endDateObj, "MMM dd") : "—";
+                  const totalLeavesTaken = emp.employeeId ? (leavesTakenByEmployee[emp.employeeId] || 0) : 0;
 
                   return (
                     <tr key={req.id} className="hover:bg-zinc-50/50 transition-colors">
@@ -329,7 +333,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                             <div>
                               <p className="font-bold text-zinc-900 leading-tight">{name}</p>
                               <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
-                                {req.employee.employeeId || "LV-100"}
+                                {emp.employeeId || "LV-100"}
                               </p>
                             </div>
                           </div>
