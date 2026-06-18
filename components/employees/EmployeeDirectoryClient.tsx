@@ -128,7 +128,7 @@ export function EmployeeDirectoryClient({ employees }: Props) {
               <option value="ALL">All Types</option>
               <option value="FULL_TIME">Full Time</option>
               <option value="PART_TIME">Part Time</option>
-              <option value="INTERN">Intern</option>
+              <option value="EMPLOYEE">Intern</option>
               <option value="CONTRACT">Contract</option>
             </select>
           </div>

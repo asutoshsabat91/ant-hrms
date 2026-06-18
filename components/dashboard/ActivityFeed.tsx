@@ -5,7 +5,7 @@ export interface ActivityItem {
   title: string;
   description: string;
   createdAt: Date;
-  type: "hire" | "leave" | "payroll" | "grievance" | "system";
+  type: "hire" | "leave" | "payroll" | "system";
 }
 
 export function ActivityFeed({ items }: { items: ActivityItem[] }) {
@@ -24,11 +24,6 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
       id: "3",
       title: "Maya Krishnan added a new employee Tanvi Bose",
       createdAt: new Date(Date.now() - 180 * 60000),
-    },
-    {
-      id: "4",
-      title: "Karthik Reddy raised a grievance GRV-11",
-      createdAt: new Date(Date.now() - 24 * 3600000),
     },
     {
       id: "5",

@@ -69,7 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           await prisma.user.create({
             data: {
               email: user.email.toLowerCase(),
-              role: "INTERN",
+              role: "EMPLOYEE",
               isActive: true,
             },
           });

@@ -32,10 +32,7 @@ function formatHours(value: number | null | undefined) {
 
 export default async function AttendancePage() {
   const session = await auth();
-  const isAdminOrManager = 
-    session?.user?.role === "SUPER_ADMIN" || 
-    session?.user?.role === "HR_ADMIN" || 
-    session?.user?.role === "MANAGER";
+  const isAdminOrManager = session?.user?.role === "ADMIN";
 
   const { weeklyRecords } = await getAttendanceOverview();
 

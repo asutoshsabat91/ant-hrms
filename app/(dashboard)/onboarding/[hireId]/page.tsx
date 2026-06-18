@@ -23,7 +23,7 @@ export default async function OnboardingDetailPage({
 
   if (!employee) notFound();
 
-  const isAdmin = session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "HR_ADMIN";
+  const isAdmin = session?.user?.role === "ADMIN";
   const isOwnProfile = employee.userId === session?.user?.id;
 
   const hasIdProof = employee.documents.some((d) =>

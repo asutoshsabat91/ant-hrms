@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden. Only Super Admins can import the holiday calendar." }, { status: 403 });
   }
 

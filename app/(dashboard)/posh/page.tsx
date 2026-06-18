@@ -8,7 +8,7 @@ export default async function POSHPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
 
   let reports: { id: string; subject: string; description: string; createdAt: string; employee?: { firstName: string; lastName: string; employeeId: string } }[] = [];
 

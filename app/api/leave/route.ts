@@ -45,7 +45,7 @@ export async function GET() {
   const leaveBalances = await getDynamicBalances(user.employee.id, user.employee.employmentType, currentYear);
 
   let approvalRequests: Awaited<ReturnType<typeof prisma.leaveRequest.findMany>> = [];
-  if (session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN") {
+  if (session.user.role === "ADMIN") {
     approvalRequests = await prisma.leaveRequest.findMany({
       where: { status: "PENDING" },
       include: {
@@ -55,7 +55,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 16,
     });
-  } else if (session.user.role === "MANAGER") {
+  } else if (session.user.role === "EMPLOYEE") {
     approvalRequests = await prisma.leaveRequest.findMany({
       where: {
         status: "PENDING",
@@ -282,7 +282,7 @@ export async function POST(req: Request) {
     }
 
     const hrUsers = await tx.user.findMany({
-      where: { role: { in: ["HR_ADMIN", "SUPER_ADMIN"] } },
+      where: { role: { in: ["ADMIN"] } },
     });
 
     hrUsers.forEach((hr) => {

@@ -93,7 +93,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
   } = useForm<FormValues>({
     resolver: zodResolver(wizardSchema),
     defaultValues: {
-      employmentType: "INTERN",
+      employmentType: "FULL_TIME",
       templateId: templates[0]?.id ?? "",
       joiningDate: new Date().toISOString().slice(0, 10),
       state: "Odisha",
@@ -182,7 +182,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
       setValue("designation", hire.designation || "");
       setValue("departmentId", hire.departmentId || "");
       setValue("managerId", hire.managerId || "");
-      setValue("employmentType", hire.employmentType || "INTERN");
+      setValue("employmentType", hire.employmentType || "EMPLOYEE");
       setValue("joiningDate", hire.joiningDate ? new Date(hire.joiningDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
 
       setPhotoPreview(hire.profilePhoto || null);
@@ -424,7 +424,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
               </FieldGroup>
               <FieldGroup label="Employment Type">
                 <select className={selectCls} {...register("employmentType")}>
-                  <option value="INTERN">Intern</option>
+                  <option value="EMPLOYEE">Intern</option>
                   <option value="FULL_TIME">Full-time</option>
                   <option value="PART_TIME">Part-time</option>
                   <option value="CONTRACT">Contract</option>
@@ -639,7 +639,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
             </FieldGroup>
             <FieldGroup label="Employment Type">
               <select className={selectCls} {...register("employmentType")}>
-                <option value="INTERN">Intern</option>
+                <option value="EMPLOYEE">Intern</option>
                 <option value="FULL_TIME">Full-time</option>
                 <option value="PART_TIME">Part-time</option>
                 <option value="CONTRACT">Contract</option>

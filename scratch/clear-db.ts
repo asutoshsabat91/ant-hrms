@@ -13,10 +13,7 @@ async function main() {
   await prisma.payrollLine.deleteMany({});
   await prisma.payrollRun.deleteMany({});
   await prisma.hRDocument.deleteMany({});
-  await prisma.iTTask.deleteMany({});
   await prisma.reimbursement.deleteMany({});
-  await prisma.grievanceComment.deleteMany({});
-  await prisma.grievance.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.performanceGoal.deleteMany({});
   await prisma.performanceReview.deleteMany({});

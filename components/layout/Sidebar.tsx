@@ -15,7 +15,6 @@ import {
   FileText,
   Briefcase,
   Calendar,
-  BarChart3,
   Settings,
   LogOut,
   DoorOpen,
@@ -24,41 +23,30 @@ import {
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
 
-const navItems: {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles?: Role[];
-}[] = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard },
-  { title: "Employees", href: "/employees", icon: Users, roles: ["SUPER_ADMIN", "HR_ADMIN"] },
-  { title: "Onboarding", href: "/onboarding", icon: UserPlus, roles: ["HR_ADMIN", "SUPER_ADMIN"] },
-  { title: "Separation", href: "/separation", icon: DoorOpen },
-  { title: "Offboarding", href: "/offboarding", icon: UserMinus, roles: ["HR_ADMIN", "SUPER_ADMIN"] },
-  { title: "Attendance", href: "/attendance", icon: Clock },
-  { title: "Leave", href: "/leave", icon: CalendarDays },
-  {
-    title: "Payroll",
-    href: "/payroll",
-    icon: Wallet,
-    roles: ["HR_ADMIN", "SUPER_ADMIN"],
-  },
-  { title: "Documents", href: "/documents", icon: FileText },
-  { title: "Portal", href: "/portal", icon: Briefcase },
-  { title: "POSH", href: "/posh", icon: ShieldCheck },
-  { title: "Calendar", href: "/calendar", icon: Calendar },
-  {
-    title: "Reports",
-    href: "/reports",
-    icon: BarChart3,
-    roles: ["HR_ADMIN", "SUPER_ADMIN", "MANAGER"],
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-    roles: ["SUPER_ADMIN"],
-  },
+const ADMIN_NAV = [
+  { title: "Dashboard",    href: "/",             icon: LayoutDashboard },
+  { title: "Employees",    href: "/employees",    icon: Users },
+  { title: "Onboarding",   href: "/onboarding",   icon: UserPlus },
+  { title: "Offboarding",  href: "/offboarding",  icon: UserMinus },
+  { title: "Attendance",   href: "/attendance",   icon: Clock },
+  { title: "Leave",        href: "/leave",        icon: CalendarDays },
+  { title: "Payroll",      href: "/payroll",      icon: Wallet },
+  { title: "Documents",    href: "/documents",    icon: FileText },
+  { title: "Portal",       href: "/portal",       icon: Briefcase },
+  { title: "Separation",   href: "/separation",   icon: DoorOpen },
+  { title: "POSH",         href: "/posh",         icon: ShieldCheck },
+  { title: "Calendar",     href: "/calendar",     icon: Calendar },
+  { title: "Settings",     href: "/settings",     icon: Settings },
+];
+
+const EMPLOYEE_NAV = [
+  { title: "My Dashboard",    href: "/",                        icon: LayoutDashboard },
+  { title: "Attendance",      href: "/attendance",              icon: Clock },
+  { title: "Leave",           href: "/leave",                   icon: CalendarDays },
+  { title: "My Payslips",     href: "/payroll",                 icon: Wallet },
+  { title: "Documents",       href: "/documents",               icon: FileText },
+  { title: "Reimbursements",  href: "/portal/reimbursements",   icon: Briefcase },
+  { title: "Calendar",        href: "/calendar",                icon: Calendar },
 ];
 
 interface SidebarProps {
@@ -69,31 +57,25 @@ interface SidebarProps {
 export function Sidebar({ role, gender }: SidebarProps) {
   const pathname = usePathname();
 
-  const visible = navItems.filter((item) => {
-    if (item.roles && !item.roles.includes(role)) return false;
+  const baseNav = role === "ADMIN" ? ADMIN_NAV : EMPLOYEE_NAV;
+  const visible = baseNav.filter((item) => {
     if (item.href === "/posh" && gender?.toUpperCase() !== "FEMALE") return false;
     return true;
   });
 
   return (
     <aside className="flex h-full w-full flex-col bg-[var(--sidebar-bg)]">
-      {/* Brand Logo Header */}
       <div className="flex h-16 items-center border-b border-[var(--border)] px-6 bg-transparent justify-start">
         <Image src="/logo.png" alt="AntBox Logo" width={110} height={28} className="object-contain brightness-0 invert" />
       </div>
 
-      {/* Section Header */}
       <div className="px-5 py-2 mt-4 text-[10px] font-bold tracking-wider text-[var(--neutral-400)] uppercase">
         Workspace
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
         {visible.map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link
@@ -121,7 +103,6 @@ export function Sidebar({ role, gender }: SidebarProps) {
         })}
       </nav>
 
-      {/* Sidebar Footer */}
       <div className="border-t border-[var(--border)] p-4 space-y-3">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -131,12 +112,8 @@ export function Sidebar({ role, gender }: SidebarProps) {
           <span>Sign out</span>
         </button>
         <div className="px-3">
-          <p className="text-[10px] font-medium text-[var(--neutral-400)]">
-            AntBox HRMS · v2.4
-          </p>
-          <p className="text-[10px] text-[var(--neutral-400)]/70">
-            Bhubaneswar, Odisha
-          </p>
+          <p className="text-[10px] font-medium text-[var(--neutral-400)]">AntBox HRMS · v3.0</p>
+          <p className="text-[10px] text-[var(--neutral-400)]/70">Bhubaneswar, Odisha</p>
         </div>
       </div>
     </aside>

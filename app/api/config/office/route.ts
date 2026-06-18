@@ -32,7 +32,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Super Admin only" }, { status: 403 });
   }
 

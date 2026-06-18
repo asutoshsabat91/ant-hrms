@@ -4,7 +4,7 @@ import { DocumentsHub } from "@/components/documents/DocumentsHub";
 
 export default async function DocumentsPage() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "HR_ADMIN";
+  const isAdmin = session?.user?.role === "ADMIN";
 
   let currentEmployeeId: string | null = null;
   if (!isAdmin && session?.user?.id) {

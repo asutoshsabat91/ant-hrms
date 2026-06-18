@@ -226,7 +226,7 @@ export function Topbar({ user, employee }: TopbarProps) {
                   {user.name}
                 </p>
                 <p className="text-[10px] font-bold text-[var(--purple)] uppercase tracking-wider leading-none mt-0.5">
-                  {user.role === "SUPER_ADMIN" ? "Super Admin" : user.role.replace("_", " ")}
+                  {user.role === "ADMIN" ? "Super Admin" : user.role.replace("_", " ")}
                 </p>
               </div>
               <Avatar className="h-8 w-8 border border-zinc-200">

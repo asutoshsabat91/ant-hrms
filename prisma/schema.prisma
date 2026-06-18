@@ -10,11 +10,8 @@ datasource db {
 }
 
 enum Role {
-  SUPER_ADMIN
-  HR_ADMIN
-  MANAGER
+  ADMIN
   EMPLOYEE
-  INTERN
 }
 
 enum EmploymentType {
@@ -81,24 +78,6 @@ enum DocumentType {
   OTHER
 }
 
-enum ITTaskType {
-  ACCOUNT_CREATION
-  ACCOUNT_DELETION
-  DEVICE_ALLOCATION
-  DEVICE_RETURN
-  SOFTWARE_ACCESS
-  SOFTWARE_REVOKE
-  EMAIL_CREATION
-  EMAIL_DELETION
-}
-
-enum ITTaskStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-}
-
 enum ReimbursementStatus {
   DRAFT
   SUBMITTED
@@ -120,21 +99,6 @@ enum SeparationStatus {
   CANCELLED
 }
 
-enum GrievanceStatus {
-  OPEN
-  UNDER_REVIEW
-  ESCALATED
-  RESOLVED
-  CLOSED
-}
-
-enum GrievancePriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
 enum NotificationType {
   ONBOARDING_TASK
   LEAVE_REQUEST
@@ -142,7 +106,6 @@ enum NotificationType {
   LEAVE_REJECTED
   PAYSLIP_READY
   DOCUMENT_READY
-  GRIEVANCE_UPDATE
   ATTENDANCE_ALERT
   BIRTHDAY
   WORK_ANNIVERSARY
@@ -164,13 +127,12 @@ model User {
   id            String         @id @default(cuid())
   email         String         @unique
   passwordHash  String?
-  role          Role           @default(INTERN)
+  role          Role           @default(EMPLOYEE)
   isActive      Boolean        @default(true)
   employee      Employee?
   accounts      Account[]
   sessions      Session[]
   notifications Notification[]
-  grievances    Grievance[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -277,8 +239,6 @@ model Employee {
   reviews          PerformanceReview[] @relation("ReviewSubject")
   reviewsGiven     PerformanceReview[] @relation("Reviewer")
   reimbursements   Reimbursement[]
-  grievances       Grievance[]
-  itTasks          ITTask[]
   poshReports      POSHReport[]
   separation       Separation?
   okToRehire       Boolean?
@@ -372,10 +332,12 @@ model AttendancePunch {
   employee     Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   punchType    PunchType
   punchedAt    DateTime
-  location     String?
-  device       String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  location      String?
+  device        String?
+  isAssumed     Boolean          @default(false)
+  assumedReason String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([attendanceId])
   @@index([employeeId, punchedAt])
@@ -492,21 +454,6 @@ model HRDocument {
   createdAt  DateTime     @default(now())
 }
 
-model ITTask {
-  id          String       @id @default(cuid())
-  employeeId  String
-  employee    Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  taskType    ITTaskType
-  status      ITTaskStatus @default(PENDING)
-  details     String?
-  triggeredBy String
-  assignedTo  String?
-  completedAt DateTime?
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-}
-
 model Reimbursement {
   id              String              @id @default(cuid())
   employeeId      String
@@ -527,38 +474,6 @@ model Reimbursement {
   rejectionReason String?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
-}
-
-model Grievance {
-  id          String            @id @default(cuid())
-  ticketNo    String            @unique
-  userId      String
-  user        User              @relation(fields: [userId], references: [id])
-  employeeId  String?
-  employee    Employee?         @relation(fields: [employeeId], references: [id])
-  subject     String
-  description String
-  category    String
-  priority    GrievancePriority @default(MEDIUM)
-  status      GrievanceStatus   @default(OPEN)
-  isAnonymous Boolean           @default(false)
-  assignedTo  String?
-  resolution  String?
-  resolvedAt  DateTime?
-  escalatedAt DateTime?
-  comments    GrievanceComment[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-}
-
-model GrievanceComment {
-  id          String    @id @default(cuid())
-  grievanceId String
-  grievance   Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
-  authorId    String
-  content     String
-  isInternal  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
 }
 
 model Notification {

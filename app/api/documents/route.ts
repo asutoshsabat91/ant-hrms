@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const employeeId = searchParams.get("employeeId");
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
 
   // Self-lookup: employee can only see their own docs
   let whereClause: Record<string, unknown> = {};
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   const { employeeId, type, title, issuedDate, description, fileUrl, fileData } = parsed.data;
 
   // Employees can only upload their own docs
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
   if (!isAdmin) {
     const emp = await prisma.employee.findFirst({ where: { userId: session.user.id } });
     if (!emp || emp.id !== employeeId) {
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
     // Notify admin
     const admins = await prisma.user.findMany({
-      where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } },
+      where: { role: { in: ["ADMIN"] } },
     });
     await prisma.notification.createMany({
       data: admins.map((a) => ({

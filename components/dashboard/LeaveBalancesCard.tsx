@@ -2,6 +2,17 @@
 
 import { CalendarDays } from "lucide-react";
 
+const COLORS: Record<string, string> = {
+  PAID_QUARTER: "bg-sky-400",
+  LOP: "bg-rose-400",
+  ACADEMIC: "bg-blue-400",
+  EARNED: "bg-emerald-400",
+  FLOATER: "bg-amber-400",
+  BEREAVEMENT: "bg-pink-400",
+  COMP_OFF: "bg-indigo-400",
+  OPTIONAL_HOLIDAY: "bg-violet-400",
+  WFH: "bg-emerald-300",
+};
 interface Balance {
   leaveType: { name: string; code: string };
   allocated: number;
@@ -13,18 +24,7 @@ interface Props {
   balances: Balance[];
 }
 
-const COLORS: Record<string, string> = {
-  PL: "bg-violet-500",
-  SL: "bg-sky-400",
-  CL: "bg-amber-400",
-  PAID_QUARTER: "bg-sky-400",
-  LOP: "bg-rose-400",
-  ACADEMIC: "bg-blue-400",
-  FLOATER: "bg-amber-400",
-  COMP_OFF: "bg-emerald-400",
-  OPTIONAL_HOLIDAY: "bg-teal-400",
-  WFH: "bg-emerald-400",
-};
+
 
 export function LeaveBalancesCard({ balances }: Props) {
   const displayBalances = balances || [];

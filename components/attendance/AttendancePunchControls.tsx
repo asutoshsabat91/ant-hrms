@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -20,6 +21,8 @@ type Punch = {
   id: string;
   punchType: PunchType;
   punchedAt: string;
+  isAssumed?: boolean;
+  assumedReason?: string | null;
 };
 
 type AttendancePayload = {
@@ -239,6 +242,17 @@ export function AttendancePunchControls() {
                 <h3 className="text-lg font-semibold text-[#1a1a1a]">Today&apos;s punches</h3>
                 <p className="text-sm text-[#4a4a4a]">Unlimited punch-in and punch-out cycles for the day.</p>
               </div>
+              {/* Assumed punch banner */}
+              {payload?.punches.some((p) => p.isAssumed) && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 flex gap-2 items-start">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-amber-800">Assumed punch detected</p>
+                    <p className="text-xs text-amber-600 mt-0.5">One or more punches were auto-filled. Contact HR if incorrect.</p>
+                  </div>
+                </div>
+              )}
+
               {!payload?.punches.length ? (
                 <div className="rounded-lg border border-[#8e43ac]/40 px-4 py-8 text-center">
                   <Clock3 className="mx-auto mb-3 h-8 w-8 text-[#8e43ac]" />
@@ -252,11 +266,20 @@ export function AttendancePunchControls() {
                     return (
                       <div
                         key={punch.id}
-                        className="grid grid-cols-[92px_1fr_auto] items-center gap-3 border-b border-[#8e43ac]/20 px-4 py-3 last:border-b-0"
+                        className={cn(
+                          "grid grid-cols-[92px_1fr_auto] items-center gap-3 border-b border-[#8e43ac]/20 px-4 py-3 last:border-b-0",
+                          punch.isAssumed && "bg-amber-50 border-amber-200"
+                        )}
                       >
-                        <span className="font-medium text-[#1a1a1a]">{formatTime(punch.punchedAt)}</span>
-                        <span className="text-sm text-[#4a4a4a]">
+                        <div className="flex items-center gap-1.5">
+                          {punch.isAssumed && <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0" />}
+                          <span className={cn("font-medium", punch.isAssumed ? "text-amber-800" : "text-[#1a1a1a]")}>
+                            {formatTime(punch.punchedAt)}
+                          </span>
+                        </div>
+                        <span className={cn("text-sm", punch.isAssumed ? "text-amber-700" : "text-[#4a4a4a]")}>
                           {punch.punchType === "IN" ? "Punch In" : "Punch Out"}
+                          {punch.isAssumed && <span className="ml-1 text-[10px] font-bold">(assumed)</span>}
                         </span>
                         {duration && (
                           <span className="rounded border border-[#8e43ac]/40 px-2 py-1 text-xs font-medium text-[#8e43ac]">

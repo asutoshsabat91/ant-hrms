@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 // Admin triggers a notification to the employee to complete a specific onboarding step
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || !["SUPER_ADMIN", "HR_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

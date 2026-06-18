@@ -1,0 +1,19 @@
+name: Daily Attendance Cron
+
+on:
+  schedule:
+    # 10:00 PM IST = 16:30 UTC — runs after office hours to fix missed punch-outs
+    - cron: "30 16 * * 1-5"
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  fix-incomplete-attendance:
+    name: Fix Incomplete Attendance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix missed punch-outs
+        run: |
+          curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/fix-incomplete-attendance" \
+            | jq .

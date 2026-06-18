@@ -11,7 +11,7 @@ export default async function SettingsPage() {
     include: { employee: true },
   });
 
-  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const isSuperAdmin = session?.user?.role === "ADMIN";
   let officeLat = 20.352346;
   let officeLon = 85.816088;
   let officeRadius = 200;

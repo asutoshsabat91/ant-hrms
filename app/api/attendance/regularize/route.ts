@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     });
 
     // Notify admins
-    const admins = await prisma.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+    const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN"] } } });
     await prisma.notification.createMany({
       data: admins.map((admin) => ({
         userId: admin.id,
@@ -137,7 +137,7 @@ function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[])
 
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session?.user || !["SUPER_ADMIN", "HR_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

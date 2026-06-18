@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const emp = await prisma.employee.findUnique({ where: { id: employeeId }, include: { user: true } });
   if (!emp) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
   if (!isAdmin && emp.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   // Store linkedIn and spotify in the address/notes field temporarily (or we could add schema fields)
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   });
 
   // Notify admins to create the ID card
-  const admins = await prisma.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+  const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN"] } } });
   await prisma.notification.createMany({
     data: admins.map((a) => ({
       userId: a.id,

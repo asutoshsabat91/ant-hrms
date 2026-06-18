@@ -24,7 +24,7 @@ const initiateSchema = z.object({
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || !["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -55,27 +55,6 @@ export async function POST(req: Request) {
     });
 
     await createOffboardingChecklist(tx, employeeId, lastDay, issuesLetters, reason, notes, interviewDate);
-
-    await tx.iTTask.createMany({
-      data: [
-        {
-          employeeId,
-          taskType: "ACCOUNT_DELETION",
-          status: "PENDING",
-          details: `Revoke company email and connected accounts for ${employee.firstName} ${employee.lastName}`,
-          triggeredBy: "OFFBOARDING",
-          assignedTo: "IT Admin",
-        },
-        {
-          employeeId,
-          taskType: "DEVICE_RETURN",
-          status: "PENDING",
-          details: "Collect company laptop / device and confirm return",
-          triggeredBy: "OFFBOARDING",
-          assignedTo: "IT Admin",
-        },
-      ],
-    });
 
     return updatedEmployee;
   });

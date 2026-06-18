@@ -168,7 +168,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || !["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -204,15 +204,31 @@ export async function POST(req: Request) {
           endDate: { gte: periodStart },
         },
       },
+      attendanceRecords: {
+        where: {
+          workDate: { gte: periodStart, lte: periodEnd },
+        },
+        select: { workDate: true, status: true },
+      },
     },
   });
 
   const lines = employees.map((employee) => {
+    // LOP from attendance: days that are not PRESENT, ON_LEAVE, HOLIDAY, WFH, or HALF_DAY
+    const attendedDays = new Set(
+      employee.attendanceRecords
+        .filter((r) => ["PRESENT", "ON_LEAVE", "HOLIDAY", "WFH", "HALF_DAY"].includes(r.status))
+        .map((r) => r.workDate.toISOString().split("T")[0])
+    );
+    const attendanceLopDays = Math.max(workingDays - attendedDays.size, 0);
+
+    // Fallback to leave-based LOP if no attendance data
     const leaveDays = employee.leaveRequests.reduce((total, leave) => {
       return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
     }, 0);
+    const lopDaysResolved = employee.attendanceRecords.length > 0 ? attendanceLopDays : leaveDays;
 
-    const paidDays = Math.max(workingDays - leaveDays, 0);
+    const paidDays = Math.max(workingDays - lopDaysResolved, 0);
     const payroll = calculatePayroll(
       {
         basicSalary: employee.basicSalary,

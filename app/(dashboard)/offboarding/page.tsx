@@ -13,7 +13,7 @@ export default async function OffboardingPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
   const { employeeId: defaultEmpId } = await searchParams;
 
   const [availableEmployees, offboardingEmployees] = await Promise.all([

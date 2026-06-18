@@ -5,7 +5,7 @@ import { ReimbursementPortal } from "@/components/reimbursements/ReimbursementPo
 
 export default async function ReimbursementsPage() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "HR_ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const user = await prisma.user.findUnique({
     where: { id: session?.user?.id ?? "" },

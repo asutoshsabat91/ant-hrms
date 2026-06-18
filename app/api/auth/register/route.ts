@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       data: {
         email: corpEmail,
         passwordHash,
-        role: "INTERN",
+        role: "EMPLOYEE",
         employee: {
           create: {
             firstName,

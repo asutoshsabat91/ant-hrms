@@ -8,7 +8,7 @@ export async function PATCH(req: Request) {
 
   const { bankName, bankAccountNo, ifscCode, pan, uan, targetEmployeeId } = await req.json();
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
 
   let employeeId = targetEmployeeId;
 

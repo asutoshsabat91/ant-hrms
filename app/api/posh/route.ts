@@ -6,7 +6,7 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
 
   if (isAdmin) {
     const reports = await prisma.pOSHReport.findMany({
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
   // Notify HR admins privately
   const admins = await prisma.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } },
+    where: { role: { in: ["ADMIN"] } },
   });
   await prisma.notification.createMany({
     data: admins.map((a) => ({

@@ -227,7 +227,7 @@ export function SeparationPortal({ isAdmin, mySeparation: initial, allSeparation
           {sep.status === "PENDING" && (
             <div className="flex flex-wrap gap-2 items-end">
               {/* For full-time employees: show custom LWD date picker */}
-              {sep.employee && !["INTERN"].includes(sep.noticeDays <= 10 ? "INTERN" : "FT") && sep.noticeDays > 10 && (
+              {sep.employee && !["EMPLOYEE"].includes(sep.noticeDays <= 10 ? "EMPLOYEE" : "FT") && sep.noticeDays > 10 && (
                 <div>
                   <p className="text-[10px] text-zinc-400 mb-1">Custom Last Working Day <span className="text-zinc-300">(optional — defaults to {sep.noticeDays}d notice)</span></p>
                   <input

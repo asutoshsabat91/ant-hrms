@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 
 export default async function CalendarPage() {
   const session = await auth();
-  const canManage = !!session?.user && ["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role);
-  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const canManage = !!session?.user && ["ADMIN"].includes(session.user.role);
+  const isSuperAdmin = session?.user?.role === "ADMIN";
   const { upcomingHolidays, upcomingLeaves, upcomingBirthdays, horizon } = await getCalendarOverview();
 
   return (

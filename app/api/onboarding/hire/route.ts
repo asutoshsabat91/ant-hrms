@@ -56,7 +56,7 @@ const DEFAULT_TASKS: Array<{
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user || !["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -79,7 +79,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || !["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
       await prisma.user.update({
         where: { id: existingEmployee.userId },
         data: {
-          role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
+          role: "EMPLOYEE",
         },
       });
 
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
         const user = await tx.user.create({
           data: {
             email: data.email!.toLowerCase(),
-            role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
+            role: "EMPLOYEE",
             isActive: true,
           },
         });
@@ -232,7 +232,7 @@ export async function POST(req: Request) {
         });
 
         // Notify admins
-        const admins = await tx.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+        const admins = await tx.user.findMany({ where: { role: { in: ["ADMIN"] } } });
         await tx.notification.createMany({
           data: admins.map((a) => ({
             userId: a.id,
@@ -272,7 +272,7 @@ export async function POST(req: Request) {
       const user = await tx.user.create({
         data: {
           email: data.email!.toLowerCase(),
-          role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
+          role: "EMPLOYEE",
           isActive: true,
         },
       });
@@ -330,7 +330,7 @@ export async function POST(req: Request) {
       });
 
       // Notify admins
-      const admins = await tx.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+      const admins = await tx.user.findMany({ where: { role: { in: ["ADMIN"] } } });
       await tx.notification.createMany({
         data: admins.map((a) => ({
           userId: a.id,

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const { employeeId, bankName, bankAccountNo, ifscCode, pan, uan } = await req.json();
 
   // Employee can only update their own banking details; admin can update any
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
   const emp = await prisma.employee.findUnique({ where: { id: employeeId }, include: { user: true } });
   if (!emp) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
   if (!isAdmin && emp.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   });
 
   // Notify admins that banking details submitted
-  const admins = await prisma.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+  const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN"] } } });
   await prisma.notification.createMany({
     data: admins.map((a) => ({
       userId: a.id,

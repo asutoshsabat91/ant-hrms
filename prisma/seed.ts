@@ -74,7 +74,7 @@ async function main() {
     create: {
       email: "admin@theantbox.com",
       passwordHash,
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
       employee: {
         create: {
           firstName: "Admin",
@@ -93,7 +93,7 @@ async function main() {
         },
       },
     },
-    update: { passwordHash, role: "SUPER_ADMIN" },
+    update: { passwordHash, role: "ADMIN" },
   });
 
   const eng = await prisma.department.findUniqueOrThrow({ where: { code: "ENG" } });
@@ -178,15 +178,18 @@ async function main() {
 
 
   const leaveTypes = [
+    // Intern leave types
     { name: "Paid/Quarter Leaves", code: "PAID_QUARTER", daysPerYear: 12, carryoverLimit: 0, isPaid: true, applicableTo: ["INTERN"] },
     { name: "Loss of Pay", code: "LOP", daysPerYear: 0, carryoverLimit: 0, isPaid: false, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
     { name: "Academic Leaves", code: "ACADEMIC", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["INTERN"] },
-    { name: "Privilege Leave", code: "PL", daysPerYear: 21, carryoverLimit: 15, isPaid: true, applicableTo: ["FULL_TIME"] },
-    { name: "Sick Leave", code: "SL", daysPerYear: 7, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
-    { name: "Casual Leave", code: "CL", daysPerYear: 7, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    // Full‑Time leave types
+    { name: "Earned Leaves", code: "EARNED", daysPerYear: 18, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
     { name: "Floater", code: "FLOATER", daysPerYear: 1, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Bereavement", code: "BEREAVEMENT", daysPerYear: 5, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
     { name: "Comp-off-Leave", code: "COMP_OFF", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    // Optional holiday for both
     { name: "Optional Holiday", code: "OPTIONAL_HOLIDAY", daysPerYear: 2, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN"] },
+    // Work From Home (non‑accrual)
     { name: "Work From Home", code: "WFH", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
   ];
 

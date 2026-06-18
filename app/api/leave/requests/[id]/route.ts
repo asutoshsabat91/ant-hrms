@@ -50,8 +50,8 @@ export async function PATCH(
   }
 
   const currentEmployee = user.employee;
-  const isManager = session.user.role === "MANAGER";
-  const isHr = ["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  const isManager = session.user.role === "EMPLOYEE";
+  const isHr = ["ADMIN"].includes(session.user.role);
 
   if (isManager && request.employee.managerId !== currentEmployee.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

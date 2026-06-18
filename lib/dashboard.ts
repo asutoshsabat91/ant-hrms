@@ -8,7 +8,7 @@ export async function getDashboardStats() {
   const dayStart = startOfDay(today);
   const dayEnd = endOfDay(today);
 
-  const [activeCount, onLeaveToday, presentToday, openGrievances] = await Promise.all([
+  const [activeCount, onLeaveToday, presentToday] = await Promise.all([
     prisma.employee.count({ where: { status: "ACTIVE" } }),
     prisma.leaveRequest.count({
       where: {
@@ -23,9 +23,6 @@ export async function getDashboardStats() {
         status: "PRESENT",
       },
     }),
-    prisma.grievance.count({
-      where: { status: { in: ["OPEN", "UNDER_REVIEW", "ESCALATED"] } },
-    }),
   ]);
 
   const total = activeCount + onLeaveToday || 1;
@@ -36,14 +33,13 @@ export async function getDashboardStats() {
     activeCount,
     onLeaveToday,
     presentToday,
-    openGrievances,
     presentPct,
     leavePct,
   };
 }
 
 export async function getRecentActivity(): Promise<ActivityItem[]> {
-  const [hires, leaves, grievances] = await Promise.all([
+  const [hires, leaves] = await Promise.all([
     prisma.employee.findMany({
       where: { status: "ONBOARDING" },
       orderBy: { createdAt: "desc" },
@@ -52,13 +48,8 @@ export async function getRecentActivity(): Promise<ActivityItem[]> {
     }),
     prisma.leaveRequest.findMany({
       orderBy: { updatedAt: "desc" },
-      take: 3,
+      take: 5,
       include: { employee: true, leaveType: true },
-    }),
-    prisma.grievance.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 2,
-      select: { id: true, ticketNo: true, subject: true, createdAt: true },
     }),
   ]);
 
@@ -76,13 +67,6 @@ export async function getRecentActivity(): Promise<ActivityItem[]> {
       description: `${l.employee.firstName} — ${l.leaveType.name}`,
       createdAt: l.updatedAt,
       type: "leave" as const,
-    })),
-    ...grievances.map((g) => ({
-      id: g.id,
-      title: g.ticketNo,
-      description: g.subject,
-      createdAt: g.createdAt,
-      type: "grievance" as const,
     })),
   ];
 
@@ -105,12 +89,7 @@ export async function getWeekCelebrations(): Promise<BirthdayEntry[]> {
       const bday = new Date(emp.dateOfBirth);
       bday.setFullYear(new Date().getFullYear());
       if (isWithinInterval(bday, { start: weekStart, end: weekEnd })) {
-        entries.push({
-          id: emp.id,
-          name: `${emp.firstName} ${emp.lastName}`,
-          date: bday,
-          type: "birthday",
-        });
+        entries.push({ id: emp.id, name: `${emp.firstName} ${emp.lastName}`, date: bday, type: "birthday" });
       }
     }
     const join = new Date(emp.joiningDate);
@@ -119,13 +98,7 @@ export async function getWeekCelebrations(): Promise<BirthdayEntry[]> {
     if (isWithinInterval(anniversary, { start: weekStart, end: weekEnd })) {
       const years = new Date().getFullYear() - join.getFullYear();
       if (years > 0) {
-        entries.push({
-          id: `${emp.id}-ann`,
-          name: `${emp.firstName} ${emp.lastName}`,
-          date: anniversary,
-          type: "anniversary",
-          years,
-        });
+        entries.push({ id: `${emp.id}-ann`, name: `${emp.firstName} ${emp.lastName}`, date: anniversary, type: "anniversary", years });
       }
     }
   }

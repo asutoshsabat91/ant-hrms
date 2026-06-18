@@ -16,7 +16,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
   if (!record) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
   const isOwner = record.employee.userId === session.user.id;
 
   let update: Record<string, unknown> = {};

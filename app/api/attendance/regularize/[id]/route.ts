@@ -20,7 +20,7 @@ function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[])
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user || !["SUPER_ADMIN", "HR_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -16,7 +16,7 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
 
   let employeeId: string | undefined;
   if (!isAdmin) {
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
   // Notify admins on new procurement request
   if (type === "PROCUREMENT") {
     const admins = await prisma.user.findMany({
-      where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } },
+      where: { role: { in: ["ADMIN"] } },
     });
     await prisma.notification.createMany({
       data: admins.map((a) => ({

@@ -24,7 +24,7 @@ const DEFAULT_TASKS: Array<{
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user || !["SUPER_ADMIN", "HR_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         const user = await tx.user.create({
           data: {
             email: data.email.toLowerCase(),
-            role: data.employmentType === "INTERN" ? "INTERN" : "EMPLOYEE",
+            role: "EMPLOYEE",
             isActive: true,
           },
         });
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     }
 
     // Notify admins in bulk
-    const admins = await prisma.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "HR_ADMIN"] } } });
+    const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN"] } } });
     await prisma.notification.createMany({
       data: admins.flatMap((a) =>
         createdEmployees.map((emp) => ({
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session?.user || !["SUPER_ADMIN", "HR_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

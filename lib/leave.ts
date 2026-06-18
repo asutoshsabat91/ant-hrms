@@ -30,7 +30,7 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
 
     let allocated = lt.daysPerYear;
 
-    if (lt.code === "PAID_QUARTER" && employmentType === "INTERN") {
+    if (lt.code === "PAID_QUARTER" && employmentType === "EMPLOYEE") {
       const now = new Date();
       if (now.getFullYear() === year) {
         const startQuarter = Math.floor(now.getMonth() / 3) * 3;
@@ -70,7 +70,7 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
 
 export async function getLeaveOverview(userId?: string, userRole?: string) {
   const currentYear = new Date().getFullYear();
-  const isSuperAdmin = userRole === "SUPER_ADMIN" || userRole === "HR_ADMIN";
+  const isSuperAdmin = userRole === "ADMIN" || userRole === "ADMIN";
 
   let employeeId: string | undefined = undefined;
   let employmentType = "FULL_TIME";

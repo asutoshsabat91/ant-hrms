@@ -19,6 +19,7 @@ export async function POST(req: Request) {
 
   let record = await prisma.attendanceRecord.findUnique({
     where: { employeeId_workDate: { employeeId: employee.id, workDate: today } },
+    include: { punches: { orderBy: { punchedAt: "asc" } } },
   });
 
   if (!record) {
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
         status: "PRESENT",
         checkIn: punchType === "IN" ? new Date() : undefined,
       },
+      include: { punches: { orderBy: { punchedAt: "asc" } } },
     });
   } else if (punchType === "IN" && !record.checkIn) {
     await prisma.attendanceRecord.update({
@@ -47,13 +49,48 @@ export async function POST(req: Request) {
   }
 
   const locationStr = latitude && longitude ? `${latitude.toFixed(5)},${longitude.toFixed(5)}` : null;
+  const now = new Date();
+
+  // ── Missed punch-in detection ──────────────────────────────────────────────
+  // If punching OUT but no prior IN punch exists today, auto-create an assumed punch-in at 9 AM IST
+  if (punchType === "OUT") {
+    const hasPunchIn = record.punches.some((p) => p.punchType === "IN");
+    if (!hasPunchIn) {
+      // 9:00 AM IST = 03:30 UTC
+      const assumedIn = new Date(today);
+      assumedIn.setUTCHours(3, 30, 0, 0);
+      // Only assume if assumed time is before now
+      if (assumedIn < now) {
+        await prisma.attendancePunch.create({
+          data: {
+            attendanceId: record.id,
+            employeeId: employee.id,
+            punchType: "IN",
+            punchedAt: assumedIn,
+            isAssumed: true,
+            assumedReason: "AUTO: No punch-in found. Defaulted to 9:00 AM.",
+          },
+        });
+        // Notify the employee
+        await prisma.notification.create({
+          data: {
+            userId: session.user.id,
+            type: "ATTENDANCE_ALERT",
+            title: "Punch-in assumed",
+            body: "We couldn't find your punch-in today. Your start time has been set to 9:00 AM. Contact HR if incorrect.",
+            link: "/attendance",
+          },
+        });
+      }
+    }
+  }
 
   const punch = await prisma.attendancePunch.create({
     data: {
       attendanceId: record.id,
       employeeId: employee.id,
       punchType,
-      punchedAt: new Date(),
+      punchedAt: now,
       location: locationStr,
     },
   });

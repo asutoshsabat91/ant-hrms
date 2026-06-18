@@ -8,7 +8,7 @@ export default async function SeparationPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const isAdmin = session.user.role === "SUPER_ADMIN" || session.user.role === "HR_ADMIN";
+  const isAdmin = session.user.role === "ADMIN";
 
   let mySeparation = null;
   let allSeparations: unknown[] = [];

@@ -5,13 +5,12 @@ import type { Role } from "@prisma/client";
 
 const publicPaths = ["/login", "/register", "/api/auth"];
 
-const roleRoutes: Record<string, Role[]> = {
-  "/employees": ["SUPER_ADMIN"],
-  "/payroll": ["HR_ADMIN", "SUPER_ADMIN"],
-  "/it-ops": ["HR_ADMIN", "SUPER_ADMIN"],
-  "/reports": ["HR_ADMIN", "SUPER_ADMIN", "MANAGER"],
-  "/settings": ["SUPER_ADMIN"],
-};
+const adminOnlyRoutes = [
+  "/employees", "/onboarding", "/offboarding", "/payroll",
+  "/settings", "/separation",
+  "/api/employees", "/api/payroll", "/api/onboarding", "/api/offboarding",
+  "/api/separation",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -45,10 +44,8 @@ export async function middleware(req: NextRequest) {
 
   const role = token.role as Role | undefined;
 
-  for (const [route, allowed] of Object.entries(roleRoutes)) {
-    if (pathname.startsWith(route) && role && !allowed.includes(role)) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+  if (role === "EMPLOYEE" && adminOnlyRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();
