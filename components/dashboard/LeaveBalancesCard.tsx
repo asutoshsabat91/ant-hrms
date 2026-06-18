@@ -14,15 +14,18 @@ interface Props {
 }
 
 const COLORS: Record<string, string> = {
-  SL: "bg-sky-400",
-  PL: "bg-violet-500",
-  PTL: "bg-amber-400",
+  PAID_QUARTER: "bg-sky-400",
+  EARNED: "bg-violet-500",
+  FLOATER: "bg-amber-400",
   LOP: "bg-rose-400",
-  WFH: "bg-emerald-400",
+  ACADEMIC: "bg-blue-400",
+  BEREAVEMENT: "bg-purple-400",
+  COMP_OFF: "bg-emerald-400",
+  OPTIONAL_HOLIDAY: "bg-teal-400",
 };
 
 export function LeaveBalancesCard({ balances }: Props) {
-  const displayBalances = balances.filter((b) => b.allocated > 0 || b.leaveType.code === "WFH");
+  const displayBalances = balances;
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
@@ -44,9 +47,13 @@ export function LeaveBalancesCard({ balances }: Props) {
               <div key={b.leaveType.code} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-zinc-700">{b.leaveType.name}</span>
-                  {b.allocated > 0 && (
+                  {b.allocated > 0 ? (
                     <span className="text-[10px] font-semibold text-zinc-400">
                       {remaining} / {b.allocated} left
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-zinc-400">
+                      {b.used + b.pending} taken
                     </span>
                   )}
                 </div>
@@ -66,3 +73,4 @@ export function LeaveBalancesCard({ balances }: Props) {
     </div>
   );
 }
+

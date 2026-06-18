@@ -7,18 +7,24 @@ import path from "path";
 const prisma = new PrismaClient();
 
 
-const INDIAN_HOLIDAYS_2025 = [
-  { name: "Republic Day", date: "2025-01-26" },
-  { name: "Holi", date: "2025-03-14" },
-  { name: "Good Friday", date: "2025-04-18" },
-  { name: "Eid ul-Fitr", date: "2025-03-30" },
-  { name: "Ambedkar Jayanti", date: "2025-04-14" },
-  { name: "Independence Day", date: "2025-08-15" },
-  { name: "Gandhi Jayanti", date: "2025-10-02" },
-  { name: "Dussehra", date: "2025-10-02" },
-  { name: "Diwali", date: "2025-10-20" },
-  { name: "Christmas", date: "2025-12-25" },
+const ANTBOX_HOLIDAYS_2026 = [
+  { name: "New Year's Day", date: "2026-01-01", type: "MANDATORY", description: "Mandatory" },
+  { name: "Makar Sankranti", date: "2026-01-14", type: "OPTIONAL", description: "Optional (Any 2)" },
+  { name: "Republic Day", date: "2026-01-26", type: "MANDATORY", description: "Mandatory" },
+  { name: "Holi", date: "2026-03-04", type: "MANDATORY", description: "Mandatory" },
+  { name: "Ramzan Id/Eid-ul-Fitr", date: "2026-03-20", type: "MANDATORY", description: "Mandatory" },
+  { name: "Uktal Diwas", date: "2026-04-01", type: "MANDATORY", description: "Mandatory" },
+  { name: "Good Friday", date: "2026-04-03", type: "OPTIONAL", description: "Optional (Any 2)" },
+  { name: "Bakri Eid", date: "2026-05-27", type: "OPTIONAL", description: "Optional (Any 2)" },
+  { name: "Raja Sankranti", date: "2026-06-16", type: "OPTIONAL", description: "Optional (Any 2)" },
+  { name: "Rath Yatra Day", date: "2026-07-16", type: "MANDATORY", description: "Mandatory" },
+  { name: "Ganesh Chaturthi", date: "2026-09-14", type: "MANDATORY", description: "Mandatory" },
+  { name: "Gandhi Jayanti", date: "2026-10-02", type: "MANDATORY", description: "Mandatory" },
+  { name: "Durga Puja(Maha", date: "2026-10-19", type: "OPTIONAL", description: "Optional (Any 2)" },
+  { name: "Dussehra", date: "2026-10-21", type: "MANDATORY", description: "Mandatory" },
+  { name: "Christmas", date: "2026-12-25", type: "MANDATORY", description: "Mandatory" },
 ];
+
 
 const DEFAULT_ONBOARDING_TASKS: {
   title: string;
@@ -172,11 +178,16 @@ async function main() {
 
 
   const leaveTypes = [
-    { name: "Sick Leave", code: "SL", daysPerYear: 7, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
-    { name: "Privilege Leave", code: "PL", daysPerYear: 21, carryoverLimit: 15, isPaid: true, applicableTo: ["FULL_TIME", "CONTRACT"] },
+    { name: "Paid/Quarter Leaves", code: "PAID_QUARTER", daysPerYear: 12, carryoverLimit: 0, isPaid: true, applicableTo: ["INTERN"] },
     { name: "Loss of Pay", code: "LOP", daysPerYear: 0, carryoverLimit: 0, isPaid: false, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
-    { name: "Work From Home", code: "WFH", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
+    { name: "Academic Leaves", code: "ACADEMIC", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["INTERN"] },
+    { name: "Earned Leaves", code: "EARNED", daysPerYear: 18, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Floater", code: "FLOATER", daysPerYear: 1, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Bereavement Leave", code: "BEREAVEMENT", daysPerYear: 5, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Comp-off-Leave", code: "COMP_OFF", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME"] },
+    { name: "Optional Holiday", code: "OPTIONAL_HOLIDAY", daysPerYear: 2, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN"] },
   ];
+
 
   for (const lt of leaveTypes) {
     await prisma.leaveType.upsert({
@@ -217,17 +228,18 @@ async function main() {
     }
   }
 
-  for (const h of INDIAN_HOLIDAYS_2025) {
+  for (const h of ANTBOX_HOLIDAYS_2026) {
     const date = new Date(h.date);
     const existing = await prisma.holiday.findFirst({
       where: { name: h.name, date },
     });
     if (!existing) {
       await prisma.holiday.create({
-        data: { name: h.name, date, type: "NATIONAL" },
+        data: { name: h.name, date, type: h.type, description: h.description },
       });
     }
   }
+
 
   const template = await prisma.onboardingTemplate.upsert({
     where: { id: "default-intern-template" },

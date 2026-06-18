@@ -16,7 +16,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { TribeRadarWidget } from "@/components/dashboard/TribeRadarWidget";
 import { ScrollIndicator } from "@/components/dashboard/ScrollIndicator";
 import { getDashboardStats, getRecentActivity } from "@/lib/dashboard";
-
+import { getDynamicBalances } from "@/lib/leave";
 import type { Employee } from "@prisma/client";
 import type { ActivityItem } from "@/components/dashboard/ActivityFeed";
 
@@ -57,14 +57,10 @@ export default async function DashboardPage() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const [attendanceRecord, balances, holidayData, leaveTypeData, recentLeaves] = await Promise.all([
+        const [attendanceRecord, holidayData, leaveTypeData, recentLeaves] = await Promise.all([
           prisma.attendanceRecord.findUnique({
             where: { employeeId_workDate: { employeeId: employee.id, workDate: today } },
             include: { punches: { orderBy: { punchedAt: "asc" } } },
-          }),
-          prisma.leaveBalance.findMany({
-            where: { employeeId: employee.id, year: new Date().getFullYear() },
-            include: { leaveType: { select: { name: true, code: true } } },
           }),
           prisma.holiday.findMany({
             where: {
@@ -81,6 +77,8 @@ export default async function DashboardPage() {
             include: { leaveType: { select: { code: true, name: true } } },
           }),
         ]);
+
+        const balances = await getDynamicBalances(employee.id, employee.employmentType, new Date().getFullYear());
 
         todayPunches = (attendanceRecord?.punches ?? []).map((p) => ({
           id: p.id,
@@ -102,6 +100,7 @@ export default async function DashboardPage() {
         }));
 
         leaveTypes = leaveTypeData;
+
 
         // Expand multi-day leaves into individual days
         for (const lr of recentLeaves) {

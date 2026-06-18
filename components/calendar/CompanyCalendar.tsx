@@ -41,7 +41,7 @@ const categoryStyles: Record<string, { background: string; border: string }> = {
   BIRTHDAY: { background: "#E0E7FF", border: "#6366F1" },
 };
 
-export function CompanyCalendar({ canManage }: { canManage?: boolean }) {
+export function CompanyCalendar({ canManage, isSuperAdmin }: { canManage?: boolean; isSuperAdmin?: boolean }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +55,104 @@ export function CompanyCalendar({ canManage }: { canManage?: boolean }) {
 
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<"month" | "week" | "day">("month");
+
+  const showReminder = useMemo(() => {
+    const today = new Date();
+    const month = today.getMonth(); // 11 is Dec, 0 is Jan
+    const date = today.getDate();
+    return (month === 11 && date >= 27) || (month === 0 && date <= 7);
+  }, []);
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (lines.length <= 1) {
+        alert("The CSV file is empty or only contains headers.");
+        return;
+      }
+
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result.map(val => {
+          if (val.startsWith('"') && val.endsWith('"')) {
+            return val.slice(1, -1).replace(/""/g, '"');
+          }
+          return val;
+        });
+      };
+
+      const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+      let nameIdx = headers.findIndex(h => h.includes("name") || h.includes("title"));
+      let descIdx = headers.findIndex(h => h.includes("desc"));
+      let dateIdx = headers.findIndex(h => h.includes("date"));
+
+      if (nameIdx === -1) nameIdx = 0;
+      if (descIdx === -1) descIdx = 1;
+      if (dateIdx === -1) dateIdx = 2;
+
+      const importedHolidays = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        if (values.length < 2) continue;
+
+        const name = values[nameIdx] || "";
+        const description = values[descIdx] || "";
+        const date = values[dateIdx] || "";
+
+        if (name && date) {
+          importedHolidays.push({ name, description, date });
+        }
+      }
+
+      if (importedHolidays.length === 0) {
+        alert("No valid holidays found in the CSV file.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/calendar/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ holidays: importedHolidays }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message || "Holidays imported successfully!");
+          fetchEvents(currentDate);
+        } else {
+          alert(data.error || "Failed to import holidays.");
+        }
+      } catch {
+        alert("An error occurred during import.");
+      }
+    };
+    reader.readAsText(file);
+
+    e.target.value = "";
+  };
+
 
   const handleNavigate = (action: "PREV" | "NEXT" | "TODAY") => {
     let nextDate = new Date(currentDate);
@@ -199,14 +297,53 @@ export function CompanyCalendar({ canManage }: { canManage?: boolean }) {
             <CardTitle>Company calendar</CardTitle>
             <CardDescription>Month view of holidays, leave, and key events.</CardDescription>
           </div>
-          {canManage && (
-            <Button variant="secondary" onClick={() => setShowForm((current) => !current)}>
-              {showForm ? "Hide event form" : "Add event"}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && (
+              <label className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 transition-all duration-300 hover:bg-zinc-50 hover:border-zinc-300 hover:-translate-y-0.5 shadow-sm cursor-pointer select-none">
+                <span>Import Holidays CSV</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleCSVImport}
+                />
+              </label>
+            )}
+            {canManage && (
+              <Button variant="secondary" onClick={() => setShowForm((current) => !current)}>
+                {showForm ? "Hide event form" : "Add event"}
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
+        {showReminder && (
+          <div className="mb-6 rounded-2xl border border-violet-100 bg-violet-50/50 p-4 text-violet-900 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📅</span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-violet-700">Calendar Setup Reminder</p>
+                <p className="text-sm font-medium mt-0.5 text-violet-800">
+                  {"It's time to import the holiday calendar for the upcoming year ("}{new Date().getFullYear() + 1}{")!"}
+                </p>
+
+              </div>
+            </div>
+            {isSuperAdmin && (
+              <label className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-700 transition-colors shadow-sm cursor-pointer select-none">
+                <span>Import CSV Now</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleCSVImport}
+                />
+              </label>
+            )}
+          </div>
+        )}
+
         {showForm && (
           <div className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
             <div className="grid gap-4 lg:grid-cols-3">

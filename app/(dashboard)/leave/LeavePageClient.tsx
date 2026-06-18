@@ -34,6 +34,7 @@ interface LeaveBalanceItem {
   };
   allocated?: number;
   used?: number;
+  pending?: number;
 }
 
 interface LeaveRequestItem {
@@ -68,6 +69,7 @@ interface LeavePageClientProps {
   };
   leaveTypes: LeaveTypeItem[];
   userRole: string;
+  employmentType: string;
 }
 
 // Static mock data — defined outside component so it never re-creates
@@ -75,7 +77,7 @@ const DEFAULT_REQUESTS: LeaveRequestItem[] = [
   {
     id: "mock-1",
     employee: { firstName: "Karthik", lastName: "Reddy", employeeId: "LV-101" },
-    leaveType: { name: "Earned Leave" },
+    leaveType: { name: "Earned Leaves" },
     startDate: "2026-06-10",
     endDate: "2026-06-14",
     days: 5,
@@ -85,36 +87,16 @@ const DEFAULT_REQUESTS: LeaveRequestItem[] = [
   {
     id: "mock-2",
     employee: { firstName: "Ishita", lastName: "Sen", employeeId: "LV-102" },
-    leaveType: { name: "Sick Leave" },
+    leaveType: { name: "Paid/Quarter Leaves" },
     startDate: "2026-06-06",
     endDate: "2026-06-06",
     days: 1,
     status: "APPROVED",
     reason: "Severe fever and doctor appointment",
   },
-  {
-    id: "mock-3",
-    employee: { firstName: "Devansh", lastName: "Bhatia", employeeId: "LV-103" },
-    leaveType: { name: "Casual Leave" },
-    startDate: "2026-06-20",
-    endDate: "2026-06-21",
-    days: 2,
-    status: "PENDING",
-    reason: "Urgent personal work at home town",
-  },
-  {
-    id: "mock-4",
-    employee: { firstName: "Maya", lastName: "Krishnan", employeeId: "LV-104" },
-    leaveType: { name: "Sprint Leave" },
-    startDate: "2026-07-02",
-    endDate: "2026-07-05",
-    days: 4,
-    status: "APPROVED",
-    reason: "Moving houses and setup",
-  },
 ];
 
-export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePageClientProps) {
+export function LeavePageClient({ initialData, leaveTypes, userRole, employmentType }: LeavePageClientProps) {
   const [requests, setRequests] = useState<LeaveRequestItem[]>(initialData.recentRequests);
   const [balances, setBalances] = useState<LeaveBalanceItem[]>(initialData.leaveBalances);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -132,32 +114,30 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
       if (balance) {
         const allocated = balance.allocated || 0;
         const used = balance.used || 0;
-        const remaining = allocated - used;
-        return { allocated, used, remaining, percent: allocated > 0 ? (remaining / allocated) * 100 : 75 };
+        const pending = balance.pending || 0;
+        const remaining = Math.max(0, allocated - used - pending);
+        return { allocated, used, pending, remaining, percent: allocated > 0 ? (remaining / allocated) * 100 : 0 };
       }
-      if (typeCode === "PL") return { allocated: 24, used: 6, remaining: 18, percent: 75 };
-      if (typeCode === "SL") return { allocated: 12, used: 3, remaining: 9, percent: 75 };
-      if (typeCode === "CL") return { allocated: 8, used: 2, remaining: 6, percent: 75 };
-      if (typeCode === "WFH") return { allocated: 0, used: 0, remaining: 0, percent: 0 };
-      return { allocated: 5, used: 0, remaining: 5, percent: 100 };
+      return { allocated: 0, used: 0, pending: 0, remaining: 0, percent: 0 };
     };
 
-    if (userRole === "SUPER_ADMIN") {
+    if (employmentType === "INTERN") {
       return [
-        { label: "EARNED LEAVE", code: "PL", ...getInfo("PL") },
-        { label: "SICK LEAVE", code: "SL", ...getInfo("SL") },
-        { label: "CASUAL LEAVE", code: "CL", ...getInfo("CL") },
-        { label: "SPRINT LEAVE", code: "SPRINT", ...getInfo("SPRINT") },
+        { label: "PAID/QUARTER LEAVES", code: "PAID_QUARTER", ...getInfo("PAID_QUARTER"), isUnlimited: false },
+        { label: "LOSS OF PAY", code: "LOP", ...getInfo("LOP"), isUnlimited: true },
+        { label: "ACADEMIC LEAVES", code: "ACADEMIC", ...getInfo("ACADEMIC"), isUnlimited: true },
+        { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
       ];
     }
 
     return [
-      { label: "EARNED LEAVE", code: "PL", ...getInfo("PL") },
-      { label: "SICK LEAVE", code: "SL", ...getInfo("SL") },
-      { label: "CASUAL LEAVE", code: "CL", ...getInfo("CL") },
-      { label: "WORK FROM HOME (WFH)", code: "WFH", ...getInfo("WFH") },
+      { label: "EARNED LEAVES", code: "EARNED", ...getInfo("EARNED"), isUnlimited: false },
+      { label: "FLOATER", code: "FLOATER", ...getInfo("FLOATER"), isUnlimited: false },
+      { label: "BEREAVEMENT LEAVE", code: "BEREAVEMENT", ...getInfo("BEREAVEMENT"), isUnlimited: false },
+      { label: "COMP-OFF LEAVE", code: "COMP_OFF", ...getInfo("COMP_OFF"), isUnlimited: true },
+      { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
     ];
-  }, [balances, userRole]);
+  }, [balances, employmentType]);
 
   // Memoize the leave-taken map — only recalculates when displayRequests changes
   const leavesTakenByEmployee = useMemo(() => {
@@ -235,10 +215,11 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
         </button>
       </div>
 
+
       {/* Balance Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {balancesData.map((item) => {
-          if (item.code === "WFH") {
+          if (item.isUnlimited) {
             return (
               <div
                 key={item.label}
@@ -250,12 +231,12 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
                   </p>
                   <p className="text-2xl font-bold text-zinc-950 mt-1.5">
                     {item.used}{" "}
-                    <span className="text-xs font-medium text-zinc-400">days taken</span>
+                    <span className="text-xs font-medium text-zinc-400">days used</span>
                   </p>
                 </div>
                 <div className="mt-3">
                   <p className="text-[10px] font-semibold text-zinc-400">
-                    Tracked work from home days
+                    Unlimited leave category
                   </p>
                 </div>
               </div>
@@ -290,6 +271,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
             </div>
           );
         })}
+
       </div>
 
       {/* Table Section */}
@@ -471,7 +453,9 @@ export function LeavePageClient({ initialData, leaveTypes, userRole }: LeavePage
         onOpenChange={setIsDialogOpen}
         leaveTypes={leaveTypes}
         onSuccess={handleSuccess}
+        employmentType={employmentType}
       />
+
     </div>
   );
 }

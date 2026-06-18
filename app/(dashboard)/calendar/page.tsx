@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 export default async function CalendarPage() {
   const session = await auth();
   const canManage = !!session?.user && ["HR_ADMIN", "SUPER_ADMIN"].includes(session.user.role);
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
   const { upcomingHolidays, upcomingLeaves, upcomingBirthdays, horizon } = await getCalendarOverview();
 
   return (
@@ -98,7 +99,8 @@ export default async function CalendarPage() {
         </Card>
       </div>
 
-      <CompanyCalendar canManage={canManage} />
+      <CompanyCalendar canManage={canManage} isSuperAdmin={isSuperAdmin} />
     </div>
   );
 }
+

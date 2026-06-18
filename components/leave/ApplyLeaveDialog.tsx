@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { differenceInCalendarDays } from "date-fns";
 import { X } from "lucide-react";
@@ -33,6 +33,7 @@ interface ApplyLeaveDialogProps {
   onOpenChange: (open: boolean) => void;
   leaveTypes: LeaveTypeItem[];
   onSuccess: (freshRequests: LeaveRequestItem[], freshBalances: LeaveBalanceItem[]) => void;
+  employmentType?: string;
 }
 
 export function ApplyLeaveDialog({
@@ -40,8 +41,21 @@ export function ApplyLeaveDialog({
   onOpenChange,
   leaveTypes,
   onSuccess,
+  employmentType = "FULL_TIME",
 }: ApplyLeaveDialogProps) {
-  const [selectedTypeId, setSelectedTypeId] = useState(leaveTypes[0]?.id || "");
+  const filteredLeaveTypes = useMemo(() => {
+    const isIntern = employmentType === "INTERN";
+    const allowedCodes = isIntern
+      ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY"]
+      : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY"];
+    
+    return leaveTypes.filter((type) => {
+      const code = type.code || "";
+      return allowedCodes.includes(code);
+    });
+  }, [leaveTypes, employmentType]);
+
+  const [selectedTypeId, setSelectedTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
@@ -50,17 +64,22 @@ export function ApplyLeaveDialog({
   const [mounted, setMounted] = useState(false);
   const firstInputRef = useRef<HTMLSelectElement>(null);
 
+  // Focus first field and set default selected type when opening
+  useEffect(() => {
+    if (isOpen) {
+      if (filteredLeaveTypes.length > 0) {
+        setSelectedTypeId(filteredLeaveTypes[0].id);
+      }
+      if (firstInputRef.current) {
+        setTimeout(() => firstInputRef.current?.focus(), 50);
+      }
+    }
+  }, [isOpen, filteredLeaveTypes]);
+
   // Only portal-render on the client
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Focus first field when opening
-  useEffect(() => {
-    if (isOpen && firstInputRef.current) {
-      setTimeout(() => firstInputRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
@@ -97,8 +116,8 @@ export function ApplyLeaveDialog({
     setEndDate("");
     setReason("");
     setFormError(null);
-    setSelectedTypeId(leaveTypes[0]?.id || "");
-  }, [leaveTypes]);
+    setSelectedTypeId(filteredLeaveTypes[0]?.id || "");
+  }, [filteredLeaveTypes]);
 
   const handleClose = useCallback(() => {
     resetForm();
@@ -227,13 +246,14 @@ export function ApplyLeaveDialog({
               onChange={(e) => setSelectedTypeId(e.target.value)}
               style={inputStyle}
             >
-              {leaveTypes.map((type) => (
+              {filteredLeaveTypes.map((type) => (
                 <option key={type.id} value={type.id}>
                   {type.name}
                 </option>
               ))}
             </select>
           </div>
+
 
           {/* Date Range */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>

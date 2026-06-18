@@ -370,7 +370,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                       <tbody className="divide-y divide-zinc-100">
                         {rows.map((row, index) => (
                           <tr key={index} className="hover:bg-zinc-50/50 transition-colors">
-                            <td className="p-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="text"
                                 className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 outline-none focus:border-zinc-900"
@@ -379,7 +379,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                 onChange={(e) => updateRow(index, "firstName", e.target.value)}
                               />
                             </td>
-                            <td className="p-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="text"
                                 className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 outline-none focus:border-zinc-900"
@@ -388,7 +388,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                 onChange={(e) => updateRow(index, "lastName", e.target.value)}
                               />
                             </td>
-                            <td className="p-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="email"
                                 className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 outline-none focus:border-zinc-900"
@@ -397,7 +397,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                 onChange={(e) => updateRow(index, "email", e.target.value)}
                               />
                             </td>
-                            <td className="p-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="text"
                                 className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 outline-none focus:border-zinc-900"
@@ -406,7 +406,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                 onChange={(e) => updateRow(index, "designation", e.target.value)}
                               />
                             </td>
-                            <td className="p-2">
+                            <td className="px-3 py-2">
                               <select
                                 className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 outline-none focus:border-zinc-900"
                                 value={row.departmentId}
@@ -419,7 +419,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                 ))}
                               </select>
                             </td>
-                            <td className="p-2">
+                            <td className="px-3 py-2">
                               <input
                                 type="date"
                                 className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 outline-none focus:border-zinc-900"
@@ -427,7 +427,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                 onChange={(e) => updateRow(index, "joiningDate", e.target.value)}
                               />
                             </td>
-                            <td className="p-2 text-center">
+                            <td className="px-3 py-2 text-center">
                               <button
                                 onClick={() => removeRow(index)}
                                 disabled={rows.length === 1}
@@ -513,7 +513,7 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                             );
                             return (
                               <tr key={emp.id} className="hover:bg-zinc-50/50 transition-colors">
-                                <td className="p-3 text-center">
+                                <td className="px-4 py-3 text-center">
                                   <input
                                     type="checkbox"
                                     checked={selectedEmployees.includes(emp.id)}
@@ -521,16 +521,16 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                                     className="rounded border-zinc-300"
                                   />
                                 </td>
-                                <td className="px-6 py-3 font-semibold text-zinc-900">{emp.employeeId}</td>
-                                <td className="px-6 py-3 font-bold text-zinc-900">
+                                <td className="px-4 py-3 font-semibold text-zinc-900">{emp.employeeId}</td>
+                                <td className="px-4 py-3 font-bold text-zinc-900">
                                   {emp.firstName} {emp.lastName}
                                 </td>
-                                <td className="px-6 py-3 text-zinc-600">{emp.designation}</td>
-                                <td className="px-6 py-3 text-zinc-600">{emp.department.name}</td>
-                                <td className="px-6 py-3 text-zinc-600">
+                                <td className="px-4 py-3 text-zinc-600">{emp.designation}</td>
+                                <td className="px-4 py-3 text-zinc-600">{emp.department.name}</td>
+                                <td className="px-4 py-3 text-zinc-600">
                                   {new Date(emp.joiningDate).toDateString()}
                                 </td>
-                                <td className="px-6 py-3">
+                                <td className="px-4 py-3">
                                   {isRequested ? (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
                                       Requested
