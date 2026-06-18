@@ -10,25 +10,35 @@ export default async function LeavePage() {
   const userRole = session?.user?.role || "EMPLOYEE";
   const userId = session?.user?.id || "";
 
-  const rawData = await getLeaveOverview(userId, userRole);
+  let rawData;
+  try {
+    rawData = await getLeaveOverview(userId, userRole);
+  } catch (e) {
+    console.error("[LeavePage] getLeaveOverview failed:", e);
+    rawData = { year: new Date().getFullYear(), leaveBalances: [], counts: {}, recentRequests: [] };
+  }
 
   // Serialize to plain objects — Next.js can't pass Date/Prisma objects to client components
   const initialData = {
     year: rawData.year,
     leaveBalances: rawData.leaveBalances,
     counts: rawData.counts,
-    recentRequests: rawData.recentRequests.map((r) => ({
+    recentRequests: (rawData.recentRequests ?? []).map((r: {
+      id: string; days: number; status: string; reason?: string | null;
+      startDate: Date; endDate: Date;
+      leaveType?: { name: string }; employee?: { firstName: string; lastName: string; employeeId: string };
+    }) => ({
       id: r.id,
       days: r.days,
       status: r.status,
       reason: r.reason ?? undefined,
-      startDate: r.startDate.toISOString(),
-      endDate: r.endDate.toISOString(),
-      leaveType: { name: (r as { leaveType?: { name: string } }).leaveType?.name ?? "" },
+      startDate: r.startDate instanceof Date ? r.startDate.toISOString() : String(r.startDate),
+      endDate: r.endDate instanceof Date ? r.endDate.toISOString() : String(r.endDate),
+      leaveType: { name: r.leaveType?.name ?? "" },
       employee: {
-        firstName: (r as { employee?: { firstName: string } }).employee?.firstName ?? "",
-        lastName: (r as { employee?: { lastName: string } }).employee?.lastName ?? "",
-        employeeId: (r as { employee?: { employeeId: string } }).employee?.employeeId ?? "",
+        firstName: r.employee?.firstName ?? "",
+        lastName: r.employee?.lastName ?? "",
+        employeeId: r.employee?.employeeId ?? "",
       },
     })),
   };
