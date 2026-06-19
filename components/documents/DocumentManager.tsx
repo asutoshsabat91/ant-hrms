@@ -64,7 +64,29 @@ export function DocumentManager({ documents: initialDocuments, employees }: Docu
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error || "Unable to create document.");
+        let errorMsg = "Unable to create document.";
+        if (payload.error) {
+          if (typeof payload.error === "string") {
+            errorMsg = payload.error;
+          } else if (typeof payload.error === "object") {
+            if (payload.error.fieldErrors) {
+              const fields = Object.entries(payload.error.fieldErrors)
+                .map(([field, msgs]) => {
+                  const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+                  return `${fieldName}: ${(msgs as string[]).join(", ")}`;
+                })
+                .join("; ");
+              if (fields) errorMsg = fields;
+            } else if (payload.error.formErrors && Array.isArray(payload.error.formErrors) && payload.error.formErrors.length > 0) {
+              errorMsg = payload.error.formErrors.join(", ");
+            } else if (payload.error.message) {
+              errorMsg = payload.error.message;
+            } else {
+              errorMsg = JSON.stringify(payload.error);
+            }
+          }
+        }
+        setError(errorMsg);
         return;
       }
       setDocuments((current) => [
