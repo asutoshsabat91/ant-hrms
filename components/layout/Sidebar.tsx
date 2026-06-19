@@ -93,7 +93,18 @@ export function Sidebar({ role, gender }: SidebarProps) {
               active = pathname === itemPath;
             }
           } else {
-            active = pathname.startsWith(item.href);
+            const isPrefixed = pathname.startsWith(item.href);
+            if (isPrefixed) {
+              const hasLongerMatch = visible.some(
+                (other) =>
+                  other.href !== item.href &&
+                  pathname.startsWith(other.href) &&
+                  other.href.length > item.href.length
+              );
+              active = !hasLongerMatch;
+            } else {
+              active = false;
+            }
           }
           const Icon = item.icon;
           return (
