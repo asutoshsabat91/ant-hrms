@@ -70,6 +70,11 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
 
   async function submitLeave() {
     if (!selected || !leaveTypeId) return;
+    const finalReason = reason.trim() || "Requested via calendar";
+    if (finalReason.length < 5) {
+      setError("Reason must be at least 5 characters long.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -81,12 +86,34 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
           startDate: format(selected, "yyyy-MM-dd"),
           endDate: format(selected, "yyyy-MM-dd"),
           days: 1,
-          reason: reason || "Requested via calendar",
+          reason: finalReason,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Could not submit request.");
+        let errorMsg = "Could not submit request.";
+        if (data.error) {
+          if (typeof data.error === "string") {
+            errorMsg = data.error;
+          } else if (typeof data.error === "object") {
+            if (data.error.fieldErrors) {
+              const fields = Object.entries(data.error.fieldErrors)
+                .map(([field, msgs]) => {
+                  const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+                  return `${fieldName}: ${(msgs as string[]).join(", ")}`;
+                })
+                .join("; ");
+              if (fields) errorMsg = fields;
+            } else if (data.error.formErrors && Array.isArray(data.error.formErrors) && data.error.formErrors.length > 0) {
+              errorMsg = data.error.formErrors.join(", ");
+            } else if (data.error.message) {
+              errorMsg = data.error.message;
+            } else {
+              errorMsg = JSON.stringify(data.error);
+            }
+          }
+        }
+        setError(errorMsg);
         return;
       }
       const lt = leaveTypes.find((t) => t.id === leaveTypeId);
