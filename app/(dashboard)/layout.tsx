@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { ResizableLayout } from "@/components/layout/ResizableLayout";
+import { SecurityHandler } from "@/components/layout/SecurityHandler";
 
 export default async function DashboardLayout({
   children,
@@ -33,11 +34,14 @@ export default async function DashboardLayout({
   } : null;
 
   return (
-    <ResizableLayout
-      sidebar={<Sidebar role={session.user.role} gender={employee?.gender} />}
-      topbar={<Topbar user={session.user} employee={safeEmployee} />}
-    >
-      {children}
-    </ResizableLayout>
+    <>
+      <SecurityHandler />
+      <ResizableLayout
+        sidebar={<Sidebar role={session.user.role} gender={employee?.gender} />}
+        topbar={<Topbar user={session.user} employee={safeEmployee} />}
+      >
+        {children}
+      </ResizableLayout>
+    </>
   );
 }

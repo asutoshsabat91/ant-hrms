@@ -38,16 +38,24 @@ export async function middleware(req: NextRequest) {
   if (!token) {
     const login = new URL("/login", req.url);
     login.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(login);
+    const redirectRes = NextResponse.redirect(login);
+    redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return redirectRes;
   }
 
   const role = token.role as Role | undefined;
 
   if (role === "EMPLOYEE" && adminOnlyRoutes.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(new URL("/", req.url));
+    const redirectRes = NextResponse.redirect(new URL("/", req.url));
+    redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return redirectRes;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  return response;
 }
 
 export const config = {
