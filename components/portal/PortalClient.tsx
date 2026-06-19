@@ -354,13 +354,20 @@ export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-            EMPLOYEE SELF-SERVICE (ESS)
+            {isAdmin ? "EMPLOYEE SELF-SERVICE (ESS)" : "PERSONAL PROFILE"}
           </p>
           <h2 className="text-3xl font-extrabold text-zinc-950 mt-1">
-            Self-Service <span className="italic-serif text-4xl font-light">Portal</span>
+            {isAdmin ? (
+              <>Self-Service <span className="italic-serif text-4xl font-light">Portal</span></>
+            ) : (
+              <>Personal <span className="italic-serif text-4xl font-light">Info</span></>
+            )}
           </h2>
           <p className="text-xs text-zinc-400 font-medium mt-1">
-            Declare investments, track annual TDS deductions, view/download monthly salary slips, and check EPF logs.
+            {isAdmin 
+              ? "Declare investments, track annual TDS deductions, view/download monthly salary slips, and check EPF logs."
+              : "Please complete and update your personal details for official company records."
+            }
           </p>
         </div>
 

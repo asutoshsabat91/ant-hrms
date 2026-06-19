@@ -47,61 +47,74 @@ export function EmployeeDashboard({
         </div>
       </ScrollReveal>
 
-      {/* Attendance + Leave + Calendar */}
-      <div className="grid gap-4 lg:grid-cols-3 items-start">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <DashboardAttendanceLogs punches={todayPunches} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
-          <LeaveBalancesCard balances={leaveBalances} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-3" className="space-y-4">
-          <CompanyCalendarWidget holidays={holidays} leaves={calendarLeaves} leaveTypes={leaveTypes} />
-          <UpcomingHolidaysWidget holidays={holidays} />
-        </ScrollReveal>
-      </div>
-
-      {/* Recent Payslips */}
-      {recentPayslips.length > 0 && (
-        <ScrollReveal>
-          <div className="rounded-xl border border-[var(--border)] bg-white p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Recent Payslips</p>
-              <Link href="/portal?tab=payslips" className="text-[10px] font-semibold text-[var(--purple)]">All payslips →</Link>
-            </div>
-            <div className="space-y-2">
-              {recentPayslips.map((p, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-zinc-400" />
-                    <span className="text-xs font-medium text-zinc-700">
-                      {MONTH_NAMES[p.month - 1]} {p.year}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-zinc-900 flex items-center gap-0.5">
-                      <IndianRupee className="h-3 w-3" />
-                      {p.netPay.toLocaleString("en-IN")}
-                    </span>
-                    {p.payslipUrl ? (
-                      <a href={p.payslipUrl} target="_blank" rel="noreferrer"
-                        className="text-[10px] font-semibold text-[var(--purple)] hover:underline">
-                        Download
-                      </a>
-                    ) : (
-                      <span className="text-[10px] text-zinc-300">Pending</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Balanced 2-Column Dashboard Layout */}
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
+        {/* Left main content column */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ScrollReveal delayClass="reveal-delay-1">
+              <DashboardAttendanceLogs punches={todayPunches} />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-2">
+              <LeaveBalancesCard balances={leaveBalances} />
+            </ScrollReveal>
           </div>
-        </ScrollReveal>
-      )}
 
-      <ScrollReveal delayClass="reveal-delay-4" className="pt-2">
-        <QuickActions isAdmin={false} />
-      </ScrollReveal>
+          {/* Quick Access */}
+          <ScrollReveal delayClass="reveal-delay-3" className="space-y-3">
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Quick Access</p>
+            <QuickActions isAdmin={false} />
+          </ScrollReveal>
+
+          {/* Recent Payslips */}
+          {recentPayslips.length > 0 && (
+            <ScrollReveal>
+              <div className="rounded-xl border border-[var(--border)] bg-white p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Recent Payslips</p>
+                  <Link href="/portal?tab=payslips" className="text-[10px] font-semibold text-[var(--purple)]">All payslips →</Link>
+                </div>
+                <div className="space-y-2">
+                  {recentPayslips.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-50 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-3.5 w-3.5 text-zinc-400" />
+                        <span className="text-xs font-medium text-zinc-700">
+                          {MONTH_NAMES[p.month - 1]} {p.year}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-zinc-900 flex items-center gap-0.5">
+                          <IndianRupee className="h-3 w-3" />
+                          {p.netPay.toLocaleString("en-IN")}
+                        </span>
+                        {p.payslipUrl ? (
+                          <a href={p.payslipUrl} target="_blank" rel="noreferrer"
+                            className="text-[10px] font-semibold text-[var(--purple)] hover:underline">
+                            Download
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-zinc-300">Pending</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollReveal>
+          )}
+        </div>
+
+        {/* Right sidebar column */}
+        <div className="space-y-4">
+          <ScrollReveal delayClass="reveal-delay-4">
+            <CompanyCalendarWidget holidays={holidays} leaves={calendarLeaves} leaveTypes={leaveTypes} />
+          </ScrollReveal>
+          <ScrollReveal delayClass="reveal-delay-5">
+            <UpcomingHolidaysWidget holidays={holidays} />
+          </ScrollReveal>
+        </div>
+      </div>
     </div>
   );
 }
