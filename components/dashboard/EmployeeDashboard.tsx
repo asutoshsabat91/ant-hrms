@@ -67,7 +67,7 @@ export function EmployeeDashboard({
           <div className="rounded-xl border border-[var(--border)] bg-white p-5">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Recent Payslips</p>
-              <Link href="/payroll" className="text-[10px] font-semibold text-[var(--purple)]">All payslips →</Link>
+              <Link href="/portal?tab=payslips" className="text-[10px] font-semibold text-[var(--purple)]">All payslips →</Link>
             </div>
             <div className="space-y-2">
               {recentPayslips.map((p, i) => (

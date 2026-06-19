@@ -43,9 +43,10 @@ const EMPLOYEE_NAV = [
   { title: "My Dashboard",    href: "/",                        icon: LayoutDashboard },
   { title: "Attendance",      href: "/attendance",              icon: Clock },
   { title: "Leave",           href: "/leave",                   icon: CalendarDays },
-  { title: "My Payslips",     href: "/payroll",                 icon: Wallet },
+  { title: "My Payslips",     href: "/portal?tab=payslips",     icon: Wallet },
   { title: "Documents",       href: "/documents",               icon: FileText },
   { title: "Reimbursements",  href: "/portal/reimbursements",   icon: Briefcase },
+  { title: "Separation",      href: "/separation",              icon: DoorOpen },
   { title: "Calendar",        href: "/calendar",                icon: Calendar },
 ];
 
@@ -75,7 +76,25 @@ export function Sidebar({ role, gender }: SidebarProps) {
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
         {visible.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const [itemPath, itemQuery] = item.href.split("?");
+          let active = false;
+          if (item.href === "/") {
+            active = pathname === "/";
+          } else if (itemQuery) {
+            if (typeof window !== "undefined") {
+              const searchParams = new URLSearchParams(window.location.search);
+              const itemParams = new URLSearchParams(itemQuery);
+              let allMatch = pathname === itemPath;
+              itemParams.forEach((val, key) => {
+                if (searchParams.get(key) !== val) allMatch = false;
+              });
+              active = allMatch;
+            } else {
+              active = pathname === itemPath;
+            }
+          } else {
+            active = pathname.startsWith(item.href);
+          }
           const Icon = item.icon;
           return (
             <Link

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   AlertCircle,
   CheckCircle2,
@@ -20,9 +21,31 @@ interface PortalClientProps {
 }
 
 export function PortalClient({ employee }: PortalClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
   const [activeTab, setActiveTab] = useState<
     "overview" | "personal" | "tax-declaration" | "hra" | "payslips" | "epf"
   >("overview");
+
+  useEffect(() => {
+    if (
+      tabParam === "payslips" ||
+      tabParam === "personal" ||
+      tabParam === "tax-declaration" ||
+      tabParam === "hra" ||
+      tabParam === "epf" ||
+      tabParam === "overview"
+    ) {
+      setActiveTab(tabParam as "overview" | "personal" | "tax-declaration" | "hra" | "payslips" | "epf");
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    router.push(`/portal?tab=${tab}`);
+  };
 
   // Personal Info form states
   const [firstName, setFirstName] = useState(employee.firstName || "");
@@ -357,7 +380,7 @@ export function PortalClient({ employee }: PortalClientProps) {
       {/* Tabs list */}
       <div className="flex border-b border-zinc-200 gap-6 text-xs font-bold uppercase tracking-wider text-zinc-400">
         <button
-          onClick={() => setActiveTab("overview")}
+          onClick={() => handleTabChange("overview")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "overview"
               ? "border-zinc-900 text-zinc-900"
@@ -367,7 +390,7 @@ export function PortalClient({ employee }: PortalClientProps) {
           Overview
         </button>
         <button
-          onClick={() => setActiveTab("personal")}
+          onClick={() => handleTabChange("personal")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "personal"
               ? "border-zinc-900 text-zinc-900"
@@ -377,7 +400,7 @@ export function PortalClient({ employee }: PortalClientProps) {
           Personal
         </button>
         <button
-          onClick={() => setActiveTab("tax-declaration")}
+          onClick={() => handleTabChange("tax-declaration")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "tax-declaration"
               ? "border-zinc-900 text-zinc-900"
@@ -387,7 +410,7 @@ export function PortalClient({ employee }: PortalClientProps) {
           IT Declarations
         </button>
         <button
-          onClick={() => setActiveTab("hra")}
+          onClick={() => handleTabChange("hra")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "hra"
               ? "border-zinc-900 text-zinc-900"
@@ -397,7 +420,7 @@ export function PortalClient({ employee }: PortalClientProps) {
           HRA Rent
         </button>
         <button
-          onClick={() => setActiveTab("payslips")}
+          onClick={() => handleTabChange("payslips")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "payslips"
               ? "border-zinc-900 text-zinc-900"
@@ -407,7 +430,7 @@ export function PortalClient({ employee }: PortalClientProps) {
           Payslips & Form 16
         </button>
         <button
-          onClick={() => setActiveTab("epf")}
+          onClick={() => handleTabChange("epf")}
           className={`pb-3 border-b-2 transition-all duration-200 ${
             activeTab === "epf"
               ? "border-zinc-900 text-zinc-900"

@@ -7,9 +7,8 @@ const publicPaths = ["/login", "/register", "/api/auth"];
 
 const adminOnlyRoutes = [
   "/employees", "/onboarding", "/offboarding", "/payroll",
-  "/settings", "/separation",
+  "/settings",
   "/api/employees", "/api/payroll", "/api/onboarding", "/api/offboarding",
-  "/api/separation",
 ];
 
 export async function middleware(req: NextRequest) {
