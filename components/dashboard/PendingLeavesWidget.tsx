@@ -29,9 +29,9 @@ export function PendingLeavesWidget({ leaves, count }: { leaves: PendingLeave[];
             <div key={leave.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-amber-100">
               <div>
                 <p className="text-xs font-semibold text-zinc-800">
-                  {leave.employee.firstName} {leave.employee.lastName}
+                  {leave.employee?.firstName || ""} {leave.employee?.lastName || ""}
                 </p>
-                <p className="text-[10px] text-zinc-400">{leave.leaveType.name} · {leave.days}d</p>
+                <p className="text-[10px] text-zinc-400">{(leave.leaveType?.name) || "Leave"} · {leave.days}d</p>
               </div>
               <Link href={`/leave`} className="text-[10px] font-bold text-[var(--purple)] hover:underline">
                 Review →

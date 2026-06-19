@@ -344,7 +344,7 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                         </td>
                       )}
                       <td className="px-6 py-4 text-xs font-semibold text-zinc-900">
-                        {req.leaveType.name}
+                        {req.leaveType?.name || "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-xs font-medium text-zinc-900">{startStr}</td>
                       <td className="px-6 py-4 text-xs font-medium text-zinc-900">{endStr}</td>
