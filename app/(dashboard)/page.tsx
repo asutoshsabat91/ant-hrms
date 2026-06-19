@@ -195,7 +195,7 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-3 mt-2 md:mt-0">
           <a
-            href="/api/attendance/export"
+            href="/api/reports/export"
             download="AntBox_Status_Report.csv"
             className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition-all duration-300 hover:bg-zinc-50 hover:border-zinc-300 hover:-translate-y-0.5 shadow-sm"
           >
