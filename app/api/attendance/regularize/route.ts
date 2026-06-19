@@ -70,52 +70,60 @@ export async function POST(req: Request) {
 
     const parsedDate = new Date(date);
 
-    // Check existing
-    const existing = await prisma.regularizationRequest.findFirst({
-      where: { employeeId: emp.id, date: parsedDate },
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Acquire row lock
+      await tx.$executeRaw`SELECT * FROM "Employee" WHERE id = ${emp.id} FOR UPDATE`;
+
+      // 2. Check existing
+      const existing = await tx.regularizationRequest.findFirst({
+        where: { employeeId: emp.id, date: parsedDate },
+      });
+      if (existing) {
+        throw new Error("A regularization request already exists for this date.");
+      }
+
+      let clockInDate = null;
+      let clockOutDate = null;
+
+      if (clockIn) {
+        clockInDate = new Date(`${date}T${clockIn}:00`);
+      }
+      if (clockOut) {
+        clockOutDate = new Date(`${date}T${clockOut}:00`);
+      }
+
+      const request = await tx.regularizationRequest.create({
+        data: {
+          employeeId: emp.id,
+          date: parsedDate,
+          type,
+          clockIn: clockInDate,
+          clockOut: clockOutDate,
+          reason,
+          status: "PENDING",
+        },
+      });
+
+      // Notify admins
+      const admins = await tx.user.findMany({ where: { role: { in: ["ADMIN"] } } });
+      await tx.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: "ATTENDANCE_REGULARIZATION" as const,
+          title: "Attendance Regularization Request",
+          body: `${emp.firstName} ${emp.lastName} requested regularization for ${date}.`,
+          link: "/attendance",
+        })),
+      });
+
+      return request;
     });
-    if (existing) {
-      return NextResponse.json({ error: "A regularization request already exists for this date." }, { status: 400 });
-    }
 
-    let clockInDate = null;
-    let clockOutDate = null;
-
-    if (clockIn) {
-      clockInDate = new Date(`${date}T${clockIn}:00`);
-    }
-    if (clockOut) {
-      clockOutDate = new Date(`${date}T${clockOut}:00`);
-    }
-
-    const request = await prisma.regularizationRequest.create({
-      data: {
-        employeeId: emp.id,
-        date: parsedDate,
-        type,
-        clockIn: clockInDate,
-        clockOut: clockOutDate,
-        reason,
-        status: "PENDING",
-      },
-    });
-
-    // Notify admins
-    const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN"] } } });
-    await prisma.notification.createMany({
-      data: admins.map((admin) => ({
-        userId: admin.id,
-        type: "ATTENDANCE_REGULARIZATION" as const,
-        title: "Attendance Regularization Request",
-        body: `${emp.firstName} ${emp.lastName} requested regularization for ${date}.`,
-        link: "/attendance",
-      })),
-    });
-
-    return NextResponse.json({ success: true, request });
+    return NextResponse.json({ success: true, request: result });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    const isValidationError = err instanceof Error && !msg.includes("prisma") && !msg.includes("raw");
+    return NextResponse.json({ error: msg }, { status: isValidationError ? 400 : 500 });
   }
 }
 

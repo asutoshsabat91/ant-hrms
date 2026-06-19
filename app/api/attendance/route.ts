@@ -123,6 +123,9 @@ export async function POST(req: Request) {
   const device = typeof body?.device === "string" ? body.device.trim() : "Web";
 
   const result = await prisma.$transaction(async (tx) => {
+    // Acquire a row-level lock on the Employee table to serialize concurrent punch attempts for this employee
+    await tx.$executeRaw`SELECT * FROM "Employee" WHERE id = ${user.employee!.id} FOR UPDATE`;
+
     const record = await tx.attendanceRecord.upsert({
       where: {
         employeeId_workDate: {

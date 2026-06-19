@@ -122,132 +122,124 @@ export async function POST(req: Request) {
   if (days <= 0) {
     return NextResponse.json({ error: "Leave must be at least one day." }, { status: 400 });
   }
-
-  // 1. Holiday Overlap Check
-  if (leaveType.code !== "WFH") {
-    const holidayOverlap = await prisma.holiday.findFirst({
-      where: {
-        date: { gte: start, lte: end },
-      },
-    });
-    if (holidayOverlap) {
-      return NextResponse.json({
-        error: `Cannot apply for leave on a holiday: ${holidayOverlap.name} (${format(holidayOverlap.date, "dd MMM yyyy")}).`
-      }, { status: 400 });
-    }
-  }
-
-  // 2. Notice Period Check
-  if (leaveType.code !== "WFH" && leaveType.code !== "SICK") {
-    const now = new Date();
-    const diffMs = start.getTime() - now.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-
-    if (days === 1 && diffHours < 24) {
-      return NextResponse.json({ error: "A 1-day leave request must be submitted at least 24 hours in advance." }, { status: 400 });
-    }
-    if (days === 2 && diffHours < 48) {
-      return NextResponse.json({ error: "A 2-day leave request must be submitted at least 48 hours in advance." }, { status: 400 });
-    }
-    if (days >= 3 && diffHours < 168) { // 7 days = 168 hours
-      return NextResponse.json({ error: "Leave requests for 3 or more days must be submitted at least a week (7 days) in advance." }, { status: 400 });
-    }
-  }
-
-  // 3. Optional Holiday limit check (2 days per year)
-  if (leaveType.code === "OPTIONAL_HOLIDAY") {
-    const startOfYear = new Date(start.getFullYear(), 0, 1);
-    const endOfYear = new Date(start.getFullYear(), 11, 31, 23, 59, 59, 999);
-    const existingOptional = await prisma.leaveRequest.findMany({
-      where: {
-        employeeId: employee.id,
-        leaveType: { code: "OPTIONAL_HOLIDAY" },
-        status: { in: ["PENDING", "APPROVED"] },
-        startDate: { gte: startOfYear, lte: endOfYear },
-      },
-    });
-    const totalOptionalUsed = existingOptional.reduce((sum, r) => sum + r.days, 0);
-    if (totalOptionalUsed + days > 2) {
-      return NextResponse.json({
-        error: `Optional Holiday limit exceeded. You can take at most 2 Optional Holidays per year. Already used/pending: ${totalOptionalUsed} day(s).`
-      }, { status: 400 });
-    }
-  }
-
-  // 4. Intern Paid/Quarter Leave quarterly accrual & rollover rules
-  if (leaveType.code === "PAID_QUARTER" && employee.employmentType === "INTERN") {
-    const startQuarter = Math.floor(start.getMonth() / 3);
-    const endQuarter = Math.floor(end.getMonth() / 3);
-    if (startQuarter !== endQuarter || start.getFullYear() !== end.getFullYear()) {
-      return NextResponse.json({
-        error: "Paid/Quarter Leaves cannot span across quarters. Please submit separate requests for each quarter."
-      }, { status: 400 });
-    }
-
-    const qStartMonth = startQuarter * 3;
-    const targetMonthInQuarter = start.getMonth() - qStartMonth + 1; // 1, 2, or 3
-    const accrued = targetMonthInQuarter;
-
-    const qStartDate = new Date(start.getFullYear(), qStartMonth, 1);
-    const qEndDate = new Date(start.getFullYear(), qStartMonth + 3, 0, 23, 59, 59, 999);
-
-    const quarterRequests = await prisma.leaveRequest.findMany({
-      where: {
-        employeeId: employee.id,
-        leaveType: { code: "PAID_QUARTER" },
-        status: { in: ["PENDING", "APPROVED"] },
-        startDate: { gte: qStartDate, lte: qEndDate },
-      },
-    });
-
-    const usedInQuarter = quarterRequests.reduce((sum, r) => sum + r.days, 0);
-    const remaining = accrued - usedInQuarter;
-
-    if (days > remaining) {
-      return NextResponse.json({
-        error: `Insufficient Paid/Quarter Leaves balance. Up to ${format(start, "MMMM")}, you have accrued ${accrued} day(s) this quarter and used/applied for ${usedInQuarter} day(s). Available balance: ${remaining} day(s).`
-      }, { status: 400 });
-    }
-  }
-
-  const existingOverlap = await prisma.leaveRequest.findFirst({
-    where: {
-      employeeId: user.employee.id,
-      status: { in: ["PENDING", "APPROVED"] },
-      AND: [
-        { startDate: { lte: end } },
-        { endDate: { gte: start } },
-      ],
-    },
-  });
-
-  if (existingOverlap) {
-    return NextResponse.json({ error: "You already have a leave request covering this period." }, { status: 400 });
-  }
-
   const year = start.getFullYear();
 
-  let sickPaidDays = 0;
-  let sickLopDays = 0;
-
-  if (leaveType.code === "SICK") {
-    const balances = await getDynamicBalances(employee.id, employee.employmentType, year);
-    const paidTypeCode = employee.employmentType === "INTERN" ? "PAID_QUARTER" : "EARNED";
-    const paidBalance = balances.find((b) => b.leaveType.code === paidTypeCode);
-    const remainingPaid = paidBalance
-      ? Math.max(0, paidBalance.allocated - paidBalance.used - paidBalance.pending)
-      : 0;
-
-    if (remainingPaid >= days) {
-      sickPaidDays = days;
-      sickLopDays = 0;
-    } else {
-      sickPaidDays = remainingPaid;
-      sickLopDays = days - remainingPaid;
-    }
-  }
-
   const result = await prisma.$transaction(async (tx) => {
+    // 1. Acquire an exclusive row-level lock on the Employee table to serialize concurrent leave submissions for this employee
+    await tx.$executeRaw`SELECT * FROM "Employee" WHERE id = ${employee.id} FOR UPDATE`;
+
+    // 2. Holiday Overlap Check
+    if (leaveType.code !== "WFH") {
+      const holidayOverlap = await tx.holiday.findFirst({
+        where: {
+          date: { gte: start, lte: end },
+        },
+      });
+      if (holidayOverlap) {
+        throw new Error(`Cannot apply for leave on a holiday: ${holidayOverlap.name} (${format(holidayOverlap.date, "dd MMM yyyy")}).`);
+      }
+    }
+
+    // 3. Optional Holiday limit check (2 days per year)
+    if (leaveType.code === "OPTIONAL_HOLIDAY") {
+      const startOfYear = new Date(start.getFullYear(), 0, 1);
+      const endOfYear = new Date(start.getFullYear(), 11, 31, 23, 59, 59, 999);
+      const existingOptional = await tx.leaveRequest.findMany({
+        where: {
+          employeeId: employee.id,
+          leaveType: { code: "OPTIONAL_HOLIDAY" },
+          status: { in: ["PENDING", "APPROVED"] },
+          startDate: { gte: startOfYear, lte: endOfYear },
+        },
+      });
+      const totalOptionalUsed = existingOptional.reduce((sum, r) => sum + r.days, 0);
+      if (totalOptionalUsed + days > 2) {
+        throw new Error(`Optional Holiday limit exceeded. You can take at most 2 Optional Holidays per year. Already used/pending: ${totalOptionalUsed} day(s).`);
+      }
+    }
+
+    // 4. Intern Paid/Quarter Leave quarterly accrual & rollover rules
+    if (leaveType.code === "PAID_QUARTER" && employee.employmentType === "INTERN") {
+      const startQuarter = Math.floor(start.getMonth() / 3);
+      const endQuarter = Math.floor(end.getMonth() / 3);
+      if (startQuarter !== endQuarter || start.getFullYear() !== end.getFullYear()) {
+        throw new Error("Paid/Quarter Leaves cannot span across quarters. Please submit separate requests for each quarter.");
+      }
+
+      const qStartMonth = startQuarter * 3;
+      const targetMonthInQuarter = start.getMonth() - qStartMonth + 1; // 1, 2, or 3
+      const accrued = targetMonthInQuarter;
+
+      const qStartDate = new Date(start.getFullYear(), qStartMonth, 1);
+      const qEndDate = new Date(start.getFullYear(), qStartMonth + 3, 0, 23, 59, 59, 999);
+
+      const quarterRequests = await tx.leaveRequest.findMany({
+        where: {
+          employeeId: employee.id,
+          leaveType: { code: "PAID_QUARTER" },
+          status: { in: ["PENDING", "APPROVED"] },
+          startDate: { gte: qStartDate, lte: qEndDate },
+        },
+      });
+
+      const usedInQuarter = quarterRequests.reduce((sum, r) => sum + r.days, 0);
+      const remaining = accrued - usedInQuarter;
+
+      if (days > remaining) {
+        throw new Error(`Insufficient Paid/Quarter Leaves balance. Up to ${format(start, "MMMM")}, you have accrued ${accrued} day(s) this quarter and used/applied for ${usedInQuarter} day(s). Available balance: ${remaining} day(s).`);
+      }
+    }
+
+    // 5. Existing Overlap Check
+    const existingOverlap = await tx.leaveRequest.findFirst({
+      where: {
+        employeeId: user.employee!.id,
+        status: { in: ["PENDING", "APPROVED"] },
+        AND: [
+          { startDate: { lte: end } },
+          { endDate: { gte: start } },
+        ],
+      },
+    });
+
+    if (existingOverlap) {
+      throw new Error("You already have a leave request covering this period.");
+    }
+
+    // 6. Sick Leave Split calculations (calculated under lock using current values)
+    let sickPaidDays = 0;
+    let sickLopDays = 0;
+
+    if (leaveType.code === "SICK") {
+      const [allBalances, allRequests] = await Promise.all([
+        tx.leaveBalance.findMany({
+          where: { employeeId: employee.id, year },
+          include: { leaveType: true },
+        }),
+        tx.leaveRequest.findMany({
+          where: { employeeId: employee.id, status: { in: ["APPROVED", "PENDING"] } },
+          include: { leaveType: true },
+        }),
+      ]);
+
+      const paidTypeCode = employee.employmentType === "INTERN" ? "PAID_QUARTER" : "EARNED";
+      const paidBalanceRecord = allBalances.find((b) => b.leaveType.code === paidTypeCode);
+      const paidReqs = allRequests.filter((r) => r.leaveType.code === paidTypeCode);
+
+      const used = paidReqs.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+      const pending = paidReqs.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+      const allocated = paidBalanceRecord?.allocated ?? (employee.employmentType === "INTERN" ? 12 : 18);
+      const remainingPaid = Math.max(0, allocated - used - pending);
+
+      if (remainingPaid >= days) {
+        sickPaidDays = days;
+        sickLopDays = 0;
+      } else {
+        sickPaidDays = remainingPaid;
+        sickLopDays = days - remainingPaid;
+      }
+    }
+
     // Upsert leave balance table for record-keeping
     await tx.leaveBalance.upsert({
       where: {
@@ -335,8 +327,10 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ request: result }, { status: 201 });
-  } catch (e) {
+  } catch (e: unknown) {
     console.error("[LEAVE POST]", e);
-    return NextResponse.json({ error: "Failed to submit leave request" }, { status: 500 });
+    const errMsg = e instanceof Error ? e.message : "";
+    const isValidationError = errMsg && !errMsg.includes("prisma") && !errMsg.includes("raw");
+    return NextResponse.json({ error: isValidationError ? errMsg : "Failed to submit leave request" }, { status: isValidationError ? 400 : 500 });
   }
 }

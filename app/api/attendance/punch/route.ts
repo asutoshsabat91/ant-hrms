@@ -17,83 +17,108 @@ export async function POST(req: Request) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  let record = await prisma.attendanceRecord.findUnique({
-    where: { employeeId_workDate: { employeeId: employee.id, workDate: today } },
-    include: { punches: { orderBy: { punchedAt: "asc" } } },
-  });
-
-  if (!record) {
-    record = await prisma.attendanceRecord.create({
-      data: {
-        employeeId: employee.id,
-        workDate: today,
-        status: "PRESENT",
-        checkIn: punchType === "IN" ? new Date() : undefined,
-      },
-      include: { punches: { orderBy: { punchedAt: "asc" } } },
-    });
-  } else if (punchType === "IN" && !record.checkIn) {
-    await prisma.attendanceRecord.update({
-      where: { id: record.id },
-      data: { checkIn: new Date() },
-    });
-  } else if (punchType === "OUT") {
-    const checkOut = new Date();
-    const totalHours = record.checkIn
-      ? (checkOut.getTime() - record.checkIn.getTime()) / 3600000
-      : undefined;
-    await prisma.attendanceRecord.update({
-      where: { id: record.id },
-      data: { checkOut, totalHours },
-    });
-  }
-
   const locationStr = latitude && longitude ? `${latitude.toFixed(5)},${longitude.toFixed(5)}` : null;
   const now = new Date();
 
-  // ── Missed punch-in detection ──────────────────────────────────────────────
-  // If punching OUT but no prior IN punch exists today, auto-create an assumed punch-in at 9 AM IST
-  if (punchType === "OUT") {
-    const hasPunchIn = record.punches.some((p) => p.punchType === "IN");
-    if (!hasPunchIn) {
-      // 9:00 AM IST = 03:30 UTC
-      const assumedIn = new Date(today);
-      assumedIn.setUTCHours(3, 30, 0, 0);
-      // Only assume if assumed time is before now
-      if (assumedIn < now) {
-        await prisma.attendancePunch.create({
+  let punch;
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Lock the employee row to serialize punch operations for this employee
+      await tx.$executeRaw`SELECT * FROM "Employee" WHERE id = ${employee.id} FOR UPDATE`;
+
+      // 2. Fetch today's record under lock
+      let record = await tx.attendanceRecord.findUnique({
+        where: { employeeId_workDate: { employeeId: employee.id, workDate: today } },
+        include: { punches: { orderBy: { punchedAt: "asc" } } },
+      });
+
+      // 3. Prevent duplicate consecutive punches (punchType validation)
+      const lastPunch = record?.punches.at(-1);
+      const nextType = lastPunch?.punchType === "IN" ? "OUT" : "IN";
+      if (punchType !== nextType) {
+        throw new Error(`You have already punched ${lastPunch?.punchType || "OUT"}. Please alternate your punches.`);
+      }
+
+      // 4. Create or update record
+      if (!record) {
+        record = await tx.attendanceRecord.create({
           data: {
-            attendanceId: record.id,
             employeeId: employee.id,
-            punchType: "IN",
-            punchedAt: assumedIn,
-            isAssumed: true,
-            assumedReason: "AUTO: No punch-in found. Defaulted to 9:00 AM.",
+            workDate: today,
+            status: "PRESENT",
+            checkIn: punchType === "IN" ? now : undefined,
           },
+          include: { punches: { orderBy: { punchedAt: "asc" } } },
         });
-        // Notify the employee
-        await prisma.notification.create({
-          data: {
-            userId: session.user.id,
-            type: "ATTENDANCE_ALERT",
-            title: "Punch-in assumed",
-            body: "We couldn't find your punch-in today. Your start time has been set to 9:00 AM. Contact HR if incorrect.",
-            link: "/attendance",
-          },
+      } else if (punchType === "IN" && !record.checkIn) {
+        record = await tx.attendanceRecord.update({
+          where: { id: record.id },
+          data: { checkIn: now },
+          include: { punches: { orderBy: { punchedAt: "asc" } } },
+        });
+      } else if (punchType === "OUT") {
+        const totalHours = record.checkIn
+          ? (now.getTime() - record.checkIn.getTime()) / 3600000
+          : undefined;
+        record = await tx.attendanceRecord.update({
+          where: { id: record.id },
+          data: { checkOut: now, totalHours },
+          include: { punches: { orderBy: { punchedAt: "asc" } } },
         });
       }
-    }
-  }
 
-  const punch = await prisma.attendancePunch.create({
-    data: {
-      attendanceId: record.id,
-      employeeId: employee.id,
-      punchType,
-      punchedAt: now,
-      location: locationStr,
-    },
-  });
+      // 5. Missed punch-in auto-creation
+      if (punchType === "OUT") {
+        const hasPunchIn = record.punches.some((p) => p.punchType === "IN");
+        if (!hasPunchIn) {
+          const assumedIn = new Date(today);
+          assumedIn.setUTCHours(3, 30, 0, 0); // 9:00 AM IST
+          if (assumedIn < now) {
+            await tx.attendancePunch.create({
+              data: {
+                attendanceId: record.id,
+                employeeId: employee.id,
+                punchType: "IN",
+                punchedAt: assumedIn,
+                isAssumed: true,
+                assumedReason: "AUTO: No punch-in found. Defaulted to 9:00 AM.",
+              },
+            });
+            await tx.notification.create({
+              data: {
+                userId: session.user.id,
+                type: "ATTENDANCE_ALERT",
+                title: "Punch-in assumed",
+                body: "We couldn't find your punch-in today. Your start time has been set to 9:00 AM. Contact HR if incorrect.",
+                link: "/attendance",
+              },
+            });
+          }
+        }
+      }
+
+      // 6. Create the punch record
+      const newPunch = await tx.attendancePunch.create({
+        data: {
+          attendanceId: record.id,
+          employeeId: employee.id,
+          punchType,
+          punchedAt: now,
+          location: locationStr,
+        },
+      });
+
+      return newPunch;
+    });
+    punch = result;
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : "";
+    if (errMsg.includes("already punched") || errMsg.includes("Please alternate")) {
+      return NextResponse.json({ error: errMsg }, { status: 400 });
+    }
+    console.error("[PUNCH ROUTE ERROR]", err);
+    return NextResponse.json({ error: "Failed to record punch due to server conflict. Please try again." }, { status: 500 });
+  }
 
   return NextResponse.json({ punch });
 }
