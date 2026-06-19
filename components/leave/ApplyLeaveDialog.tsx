@@ -131,6 +131,10 @@ export function ApplyLeaveDialog({
         setFormError("Please fill out all fields.");
         return;
       }
+      if (reason.trim().length < 5) {
+        setFormError("Reason must be at least 5 characters long.");
+        return;
+      }
       setSubmitting(true);
       setFormError(null);
       try {
@@ -146,7 +150,29 @@ export function ApplyLeaveDialog({
         });
         const payload = await res.json();
         if (!res.ok) {
-          setFormError(payload.error || "Unable to submit leave request.");
+          let errorMsg = "Unable to submit leave request.";
+          if (payload.error) {
+            if (typeof payload.error === "string") {
+              errorMsg = payload.error;
+            } else if (typeof payload.error === "object") {
+              if (payload.error.fieldErrors) {
+                const fields = Object.entries(payload.error.fieldErrors)
+                  .map(([field, msgs]) => {
+                    const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+                    return `${fieldName}: ${(msgs as string[]).join(", ")}`;
+                  })
+                  .join("; ");
+                if (fields) errorMsg = fields;
+              } else if (payload.error.formErrors && Array.isArray(payload.error.formErrors) && payload.error.formErrors.length > 0) {
+                errorMsg = payload.error.formErrors.join(", ");
+              } else if (payload.error.message) {
+                errorMsg = payload.error.message;
+              } else {
+                errorMsg = JSON.stringify(payload.error);
+              }
+            }
+          }
+          setFormError(errorMsg);
           return;
         }
         handleClose();
