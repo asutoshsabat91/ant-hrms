@@ -86,7 +86,32 @@ export function ReimbursementPortal({ reimbursements: initialData, isAdmin = fal
         body: JSON.stringify({ title, category, amount: parseFloat(amount), date, description, type: activeTab }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed."); return; }
+      if (!res.ok) {
+        let errorMsg = "Failed to submit request.";
+        if (data.error) {
+          if (typeof data.error === "string") {
+            errorMsg = data.error;
+          } else if (typeof data.error === "object") {
+            if (data.error.fieldErrors) {
+              const fields = Object.entries(data.error.fieldErrors)
+                .map(([field, msgs]) => {
+                  const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+                  return `${fieldName}: ${(msgs as string[]).join(", ")}`;
+                })
+                .join("; ");
+              if (fields) errorMsg = fields;
+            } else if (data.error.formErrors && Array.isArray(data.error.formErrors) && data.error.formErrors.length > 0) {
+              errorMsg = data.error.formErrors.join(", ");
+            } else if (data.error.message) {
+              errorMsg = data.error.message;
+            } else {
+              errorMsg = JSON.stringify(data.error);
+            }
+          }
+        }
+        setError(errorMsg);
+        return;
+      }
       setItems((prev) => [{ ...data.reimbursement, type: activeTab }, ...prev]);
       setTitle(""); setCategory(""); setAmount(""); setDescription("");
       setSuccess(`${activeTab === "PROCUREMENT" ? "Procurement request" : "Reimbursement"} submitted!`);
