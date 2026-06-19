@@ -46,8 +46,8 @@ export function ApplyLeaveDialog({
   const filteredLeaveTypes = useMemo(() => {
     const isIntern = employmentType === "INTERN";
     const allowedCodes = isIntern
-      ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH"]
-      : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH"];
+      ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH", "SICK"]
+      : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH", "SICK"];
     
     return (leaveTypes || []).filter((type) => {
       const code = type.code || "";

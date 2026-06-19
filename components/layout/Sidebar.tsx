@@ -43,7 +43,7 @@ const EMPLOYEE_NAV = [
   { title: "My Dashboard",    href: "/",                        icon: LayoutDashboard },
   { title: "Attendance",      href: "/attendance",              icon: Clock },
   { title: "Leave",           href: "/leave",                   icon: CalendarDays },
-  { title: "My Payslips",     href: "/portal?tab=payslips",     icon: Wallet },
+  { title: "Personal",        href: "/portal",                  icon: FileText },
   { title: "Documents",       href: "/documents",               icon: FileText },
   { title: "Reimbursements",  href: "/portal/reimbursements",   icon: Briefcase },
   { title: "Separation",      href: "/separation",              icon: DoorOpen },

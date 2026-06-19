@@ -18,18 +18,23 @@ type EmployeeWithDept = Employee & { department: Department };
 
 interface PortalClientProps {
   employee: EmployeeWithDept;
+  isAdmin?: boolean;
 }
 
-export function PortalClient({ employee }: PortalClientProps) {
+export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
 
   const [activeTab, setActiveTab] = useState<
     "overview" | "personal" | "tax-declaration" | "hra" | "payslips" | "epf"
-  >("overview");
+  >(isAdmin ? "overview" : "personal");
 
   useEffect(() => {
+    if (!isAdmin) {
+      setActiveTab("personal");
+      return;
+    }
     if (
       tabParam === "payslips" ||
       tabParam === "personal" ||
@@ -40,9 +45,10 @@ export function PortalClient({ employee }: PortalClientProps) {
     ) {
       setActiveTab(tabParam as "overview" | "personal" | "tax-declaration" | "hra" | "payslips" | "epf");
     }
-  }, [tabParam]);
+  }, [tabParam, isAdmin]);
 
   const handleTabChange = (tab: typeof activeTab) => {
+    if (!isAdmin) return;
     setActiveTab(tab);
     router.push(`/portal?tab=${tab}`);
   };
@@ -378,68 +384,70 @@ export function PortalClient({ employee }: PortalClientProps) {
       </div>
 
       {/* Tabs list */}
-      <div className="flex border-b border-zinc-200 gap-6 text-xs font-bold uppercase tracking-wider text-zinc-400">
-        <button
-          onClick={() => handleTabChange("overview")}
-          className={`pb-3 border-b-2 transition-all duration-200 ${
-            activeTab === "overview"
-              ? "border-zinc-900 text-zinc-900"
-              : "border-transparent hover:text-zinc-600"
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => handleTabChange("personal")}
-          className={`pb-3 border-b-2 transition-all duration-200 ${
-            activeTab === "personal"
-              ? "border-zinc-900 text-zinc-900"
-              : "border-transparent hover:text-zinc-600"
-          }`}
-        >
-          Personal
-        </button>
-        <button
-          onClick={() => handleTabChange("tax-declaration")}
-          className={`pb-3 border-b-2 transition-all duration-200 ${
-            activeTab === "tax-declaration"
-              ? "border-zinc-900 text-zinc-900"
-              : "border-transparent hover:text-zinc-600"
-          }`}
-        >
-          IT Declarations
-        </button>
-        <button
-          onClick={() => handleTabChange("hra")}
-          className={`pb-3 border-b-2 transition-all duration-200 ${
-            activeTab === "hra"
-              ? "border-zinc-900 text-zinc-900"
-              : "border-transparent hover:text-zinc-600"
-          }`}
-        >
-          HRA Rent
-        </button>
-        <button
-          onClick={() => handleTabChange("payslips")}
-          className={`pb-3 border-b-2 transition-all duration-200 ${
-            activeTab === "payslips"
-              ? "border-zinc-900 text-zinc-900"
-              : "border-transparent hover:text-zinc-600"
-          }`}
-        >
-          Payslips & Form 16
-        </button>
-        <button
-          onClick={() => handleTabChange("epf")}
-          className={`pb-3 border-b-2 transition-all duration-200 ${
-            activeTab === "epf"
-              ? "border-zinc-900 text-zinc-900"
-              : "border-transparent hover:text-zinc-600"
-          }`}
-        >
-          EPF & Nomination
-        </button>
-      </div>
+      {isAdmin && (
+        <div className="flex border-b border-zinc-200 gap-6 text-xs font-bold uppercase tracking-wider text-zinc-400">
+          <button
+            onClick={() => handleTabChange("overview")}
+            className={`pb-3 border-b-2 transition-all duration-200 ${
+              activeTab === "overview"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent hover:text-zinc-600"
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => handleTabChange("personal")}
+            className={`pb-3 border-b-2 transition-all duration-200 ${
+              activeTab === "personal"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent hover:text-zinc-600"
+            }`}
+          >
+            Personal
+          </button>
+          <button
+            onClick={() => handleTabChange("tax-declaration")}
+            className={`pb-3 border-b-2 transition-all duration-200 ${
+              activeTab === "tax-declaration"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent hover:text-zinc-600"
+            }`}
+          >
+            IT Declarations
+          </button>
+          <button
+            onClick={() => handleTabChange("hra")}
+            className={`pb-3 border-b-2 transition-all duration-200 ${
+              activeTab === "hra"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent hover:text-zinc-600"
+            }`}
+          >
+            HRA Rent
+          </button>
+          <button
+            onClick={() => handleTabChange("payslips")}
+            className={`pb-3 border-b-2 transition-all duration-200 ${
+              activeTab === "payslips"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent hover:text-zinc-600"
+            }`}
+          >
+            Payslips & Form 16
+          </button>
+          <button
+            onClick={() => handleTabChange("epf")}
+            className={`pb-3 border-b-2 transition-all duration-200 ${
+              activeTab === "epf"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent hover:text-zinc-600"
+            }`}
+          >
+            EPF & Nomination
+          </button>
+        </div>
+      )}
 
       {/* Tab Contents */}
       <div className="space-y-6">

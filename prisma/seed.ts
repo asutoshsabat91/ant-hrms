@@ -185,6 +185,8 @@ async function main() {
     { name: "Optional Holiday", code: "OPTIONAL_HOLIDAY", daysPerYear: 2, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN"] },
     // Work From Home (non‑accrual)
     { name: "Work From Home", code: "WFH", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
+    // Sick Leave
+    { name: "Sick Leave", code: "SICK", daysPerYear: 0, carryoverLimit: 0, isPaid: true, applicableTo: ["FULL_TIME", "INTERN", "PART_TIME", "CONTRACT"] },
   ];
 
 

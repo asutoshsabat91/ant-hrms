@@ -30,6 +30,7 @@ export default async function ReimbursementsPage() {
 
       <ReimbursementPortal
         isAdmin={isAdmin}
+        employmentType={user?.employee?.employmentType}
         reimbursements={reimbursements.map((item) => ({
           id: item.id,
           type: (item.type ?? "REIMBURSEMENT") as "REIMBURSEMENT" | "PROCUREMENT",

@@ -29,9 +29,10 @@ interface OfficeConfig {
 
 interface Props {
   initialPunches: Punch[];
+  onPunchSuccess?: () => void;
 }
 
-export function AttendanceCard({ initialPunches }: Props) {
+export function AttendanceCard({ initialPunches, onPunchSuccess }: Props) {
   const [time, setTime] = useState(new Date());
   const [punches, setPunches] = useState<Punch[]>(initialPunches);
   const [loading, setLoading] = useState(false);
@@ -88,6 +89,7 @@ export function AttendanceCard({ initialPunches }: Props) {
       }
       setPunches((p) => [...p, data.punch]);
       setSuccess(`Clocked ${nextType.toLowerCase()} at ${format(new Date(data.punch.punchedAt), "hh:mm a")}`);
+      onPunchSuccess?.();
     } catch (err: unknown) {
       if (err instanceof GeolocationPositionError) {
         if (err.code === GeolocationPositionError.PERMISSION_DENIED) {
@@ -103,7 +105,7 @@ export function AttendanceCard({ initialPunches }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [nextType, officeConfig]);
+  }, [nextType, officeConfig, onPunchSuccess]);
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">

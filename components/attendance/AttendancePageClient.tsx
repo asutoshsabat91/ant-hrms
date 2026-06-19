@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Clock, LogIn, LogOut, Loader2, Calendar, Check, X } from "lucide-react";
+import { Clock, Loader2, Calendar, Check, X } from "lucide-react";
+import { AttendanceCard } from "@/components/dashboard/AttendanceCard";
 
 type PunchType = "IN" | "OUT";
 
@@ -52,7 +53,6 @@ type HistoryRequest = {
 
 export function AttendancePageClient() {
   const [payload, setPayload] = useState<AttendancePayload | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   // Regularization states
   const [isRegularizeOpen, setIsRegularizeOpen] = useState(false);
@@ -95,25 +95,6 @@ export function AttendancePageClient() {
     loadData();
     loadHistory();
   }, []);
-
-  async function handlePunchAction() {
-    setSubmitting(true);
-    try {
-      const response = await fetch("/api/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ device: "Web" }),
-      });
-      const envelope = (await response.json()) as ApiEnvelope;
-      if (response.ok && envelope.success) {
-        setPayload(envelope.data);
-      }
-    } catch {
-      // Ignored
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   const handleRegularizeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,10 +186,6 @@ export function AttendancePageClient() {
     return cyclesList;
   };
 
-  const nextAction = payload?.nextAction ?? "PUNCH_IN";
-  const isPunchOut = nextAction === "PUNCH_OUT";
-  const actionLabel = isPunchOut ? "Punch Out" : "Punch In";
-
   // Formatted date string
   const todayStr = format(new Date(), "dd MMM yyyy").toUpperCase();
 
@@ -218,12 +195,6 @@ export function AttendancePageClient() {
   const punchCycles = punchCyclesList.length;
 
   const hoursTodayFormatted = formatHours(totalHoursToday);
-  const sessionHoursVal = payload?.hoursThisSession || 0;
-  const sessionHoursFormatted = formatHours(sessionHoursVal);
-
-  const lastActivityTime = payload?.punches && payload.punches.length > 0
-    ? format(new Date(payload.punches[payload.punches.length - 1].punchedAt), "hh:mm a")
-    : "No activity yet";
 
   return (
     <div className="space-y-6">
@@ -267,39 +238,12 @@ export function AttendancePageClient() {
 
       {/* Grid Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Today's Session */}
-        <div className="rounded-xl bg-zinc-900 border border-zinc-850 p-6 text-white flex flex-col justify-between h-[210px] shadow-sm">
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
-              TODAY&apos;S SESSION
-            </p>
-            <p className="text-3xl font-bold mt-2 font-mono tracking-tight">
-              {sessionHoursFormatted.h} : {sessionHoursFormatted.m.replace("m", "")} <span className="text-xs font-normal text-zinc-400 font-sans">hrs</span>
-            </p>
-            <p className="text-[10px] text-zinc-400 font-medium mt-1">
-              Across {punchCycles} cycle{punchCycles === 1 ? "" : "s"}
-            </p>
-          </div>
-
-          <div className="space-y-2.5">
-            <button
-              onClick={handlePunchAction}
-              disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-zinc-100 disabled:opacity-50"
-            >
-              {submitting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : isPunchOut ? (
-                <LogOut className="h-3.5 w-3.5" />
-              ) : (
-                <LogIn className="h-3.5 w-3.5" />
-              )}
-              <span>{submitting ? "Recording..." : actionLabel}</span>
-            </button>
-            <p className="text-center text-[9px] text-zinc-400 font-semibold leading-none">
-              Last activity · {lastActivityTime}
-            </p>
-          </div>
+        {/* Card 1: Today's Session (Full GPS validation widget) */}
+        <div className="h-[210px]">
+          <AttendanceCard 
+            initialPunches={payload?.punches || []} 
+            onPunchSuccess={loadData} 
+          />
         </div>
 
         {/* Card 2: Total Hours Today */}

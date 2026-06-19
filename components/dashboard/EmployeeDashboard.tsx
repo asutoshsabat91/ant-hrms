@@ -1,6 +1,6 @@
 "use client";
 
-import { AttendanceCard } from "@/components/dashboard/AttendanceCard";
+import { DashboardAttendanceLogs } from "@/components/dashboard/DashboardAttendanceLogs";
 import { LeaveBalancesCard } from "@/components/dashboard/LeaveBalancesCard";
 import { CompanyCalendarWidget } from "@/components/dashboard/CompanyCalendarWidget";
 import { UpcomingHolidaysWidget } from "@/components/dashboard/UpcomingHolidaysWidget";
@@ -50,7 +50,7 @@ export function EmployeeDashboard({
       {/* Attendance + Leave + Calendar */}
       <div className="grid gap-4 lg:grid-cols-3 items-start">
         <ScrollReveal delayClass="reveal-delay-1">
-          <AttendanceCard initialPunches={todayPunches} />
+          <DashboardAttendanceLogs punches={todayPunches} />
         </ScrollReveal>
         <ScrollReveal delayClass="reveal-delay-2">
           <LeaveBalancesCard balances={leaveBalances} />

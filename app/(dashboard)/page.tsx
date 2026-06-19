@@ -10,7 +10,7 @@ import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { HeadcountTrendChart } from "@/components/dashboard/HeadcountTrendChart";
 import { AttendancePulseChart } from "@/components/dashboard/AttendancePulseChart";
 import { JoiningSoonWidget } from "@/components/dashboard/JoiningSoonWidget";
-import { AttendanceCard } from "@/components/dashboard/AttendanceCard";
+import { DashboardAttendanceLogs } from "@/components/dashboard/DashboardAttendanceLogs";
 import { LeaveBalancesCard } from "@/components/dashboard/LeaveBalancesCard";
 import { CompanyCalendarWidget } from "@/components/dashboard/CompanyCalendarWidget";
 import { UpcomingHolidaysWidget } from "@/components/dashboard/UpcomingHolidaysWidget";
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
       {/* Employee widgets row (admin also sees punch-in) */}
       <div className="grid gap-4 lg:grid-cols-3 items-start">
         <ScrollReveal delayClass="reveal-delay-1">
-          <AttendanceCard initialPunches={todayPunches} />
+          <DashboardAttendanceLogs punches={todayPunches} />
         </ScrollReveal>
         <ScrollReveal delayClass="reveal-delay-2">
           <LeaveBalancesCard balances={leaveBalances} />

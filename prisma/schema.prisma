@@ -392,6 +392,8 @@ model LeaveRequest {
   approverId      String?
   approvedAt      DateTime?
   rejectionReason String?
+  sickPaidDays    Float       @default(0)
+  sickLopDays     Float       @default(0)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }

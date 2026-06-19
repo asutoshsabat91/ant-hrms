@@ -56,10 +56,14 @@ export async function POST(req: Request) {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+    const type = parsed.data.type ?? "REIMBURSEMENT";
+    if (currentUser.employee.employmentType === "INTERN" && type === "REIMBURSEMENT") {
+      return NextResponse.json({ error: "Interns are only allowed to submit procurement requests, not reimbursements." }, { status: 403 });
+    }
+
     const reimbursementDate = new Date(parsed.data.date);
     if (Number.isNaN(reimbursementDate.getTime())) return NextResponse.json({ error: "Invalid date." }, { status: 400 });
 
-    const type = parsed.data.type ?? "REIMBURSEMENT";
     const initialStatus = type === "PROCUREMENT" ? "UNDER_REVIEW" : "DRAFT";
 
     const reimbursement = await prisma.reimbursement.create({

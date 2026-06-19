@@ -138,7 +138,7 @@ export async function POST(req: Request) {
   }
 
   // 2. Notice Period Check
-  if (leaveType.code !== "WFH") {
+  if (leaveType.code !== "WFH" && leaveType.code !== "SICK") {
     const now = new Date();
     const diffMs = start.getTime() - now.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
@@ -227,6 +227,26 @@ export async function POST(req: Request) {
 
   const year = start.getFullYear();
 
+  let sickPaidDays = 0;
+  let sickLopDays = 0;
+
+  if (leaveType.code === "SICK") {
+    const balances = await getDynamicBalances(employee.id, employee.employmentType, year);
+    const paidTypeCode = employee.employmentType === "INTERN" ? "PAID_QUARTER" : "EARNED";
+    const paidBalance = balances.find((b) => b.leaveType.code === paidTypeCode);
+    const remainingPaid = paidBalance
+      ? Math.max(0, paidBalance.allocated - paidBalance.used - paidBalance.pending)
+      : 0;
+
+    if (remainingPaid >= days) {
+      sickPaidDays = days;
+      sickLopDays = 0;
+    } else {
+      sickPaidDays = remainingPaid;
+      sickLopDays = days - remainingPaid;
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     // Upsert leave balance table for record-keeping
     await tx.leaveBalance.upsert({
@@ -260,6 +280,8 @@ export async function POST(req: Request) {
         days,
         reason,
         status: "PENDING",
+        sickPaidDays,
+        sickLopDays,
       },
       include: { leaveType: true },
     });

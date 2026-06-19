@@ -78,6 +78,7 @@ export async function GET(req: Request) {
           startDate: { lte: periodEnd },
           endDate: { gte: periodStart },
         },
+        include: { leaveType: true },
       },
       leaveBalances: {
         where: { year },
@@ -87,7 +88,15 @@ export async function GET(req: Request) {
 
   const payrollLines = employees.map((employee) => {
     const leaveDays = employee.leaveRequests.reduce((total, leave) => {
-      return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
+      if (leave.leaveType.code === "LOP") {
+        return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
+      }
+      if (leave.leaveType.code === "SICK") {
+        const overlap = overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
+        const sickLopRatio = leave.days > 0 ? (leave.sickLopDays / leave.days) : 0;
+        return total + (overlap * sickLopRatio);
+      }
+      return total;
     }, 0);
 
     // Total approved leaves taken in the full year (sum of 'used' across all leave balance records)
@@ -203,6 +212,7 @@ export async function POST(req: Request) {
           startDate: { lte: periodEnd },
           endDate: { gte: periodStart },
         },
+        include: { leaveType: true },
       },
       attendanceRecords: {
         where: {
@@ -224,7 +234,15 @@ export async function POST(req: Request) {
 
     // Fallback to leave-based LOP if no attendance data
     const leaveDays = employee.leaveRequests.reduce((total, leave) => {
-      return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
+      if (leave.leaveType.code === "LOP") {
+        return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
+      }
+      if (leave.leaveType.code === "SICK") {
+        const overlap = overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
+        const sickLopRatio = leave.days > 0 ? (leave.sickLopDays / leave.days) : 0;
+        return total + (overlap * sickLopRatio);
+      }
+      return total;
     }, 0);
     const lopDaysResolved = employee.attendanceRecords.length > 0 ? attendanceLopDays : leaveDays;
 

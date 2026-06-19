@@ -9,6 +9,8 @@ export default async function PortalPage() {
     redirect("/login");
   }
 
+  const isAdmin = session.user.role === "ADMIN";
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
@@ -32,6 +34,6 @@ export default async function PortalPage() {
   }
 
   return (
-    <PortalClient employee={user.employee} />
+    <PortalClient employee={user.employee} isAdmin={isAdmin} />
   );
 }

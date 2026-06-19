@@ -43,11 +43,36 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
         const qRequests = typeRequests.filter((r) => r.startDate >= qStartDate && r.startDate <= qEndDate);
         used = qRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
         pending = qRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+
+        // Add SICK leave paid portion inside current quarter
+        const qSickRequests = requests.filter(
+          (r) => r.leaveType.code === "SICK" && r.startDate >= qStartDate && r.startDate <= qEndDate
+        );
+        const sickPaidApproved = qSickRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
+        const sickPaidPending = qSickRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
+        used += sickPaidApproved;
+        pending += sickPaidPending;
       } else {
         allocated = 0;
         used = 0;
         pending = 0;
       }
+    }
+
+    if (lt.code === "EARNED" && employmentType === "FULL_TIME") {
+      const sickRequests = requests.filter((r) => r.leaveType.code === "SICK");
+      const sickPaidApproved = sickRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
+      const sickPaidPending = sickRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
+      used += sickPaidApproved;
+      pending += sickPaidPending;
+    }
+
+    if (lt.code === "LOP") {
+      const sickRequests = requests.filter((r) => r.leaveType.code === "SICK");
+      const sickLopApproved = sickRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + (r.sickLopDays ?? 0), 0);
+      const sickLopPending = sickRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + (r.sickLopDays ?? 0), 0);
+      used += sickLopApproved;
+      pending += sickLopPending;
     }
 
     return {
