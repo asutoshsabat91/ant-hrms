@@ -239,7 +239,7 @@ export function AttendancePageClient() {
       {/* Grid Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Today's Session (Full GPS validation widget) */}
-        <div className="h-[210px]">
+        <div className="min-h-[210px] flex">
           <AttendanceCard 
             initialPunches={payload?.punches || []} 
             onPunchSuccess={loadData} 
@@ -247,7 +247,7 @@ export function AttendancePageClient() {
         </div>
 
         {/* Card 2: Total Hours Today */}
-        <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between h-[210px]">
+        <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between min-h-[210px]">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
               TOTAL HOURS TODAY
@@ -263,7 +263,7 @@ export function AttendancePageClient() {
         </div>
 
         {/* Card 3: Punch Cycles */}
-        <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between h-[210px]">
+        <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between min-h-[210px]">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
               PUNCH CYCLES
@@ -278,7 +278,7 @@ export function AttendancePageClient() {
         </div>
 
         {/* Card 4: Month Summary */}
-        <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between h-[210px]">
+        <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm flex flex-col justify-between min-h-[210px]">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
               MONTH SUMMARY
