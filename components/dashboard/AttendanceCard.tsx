@@ -41,6 +41,10 @@ export function AttendanceCard({ initialPunches, onPunchSuccess }: Props) {
   const [officeConfig, setOfficeConfig] = useState<OfficeConfig>({ lat: 20.2961, lon: 85.8245, radiusM: 200 });
 
   useEffect(() => {
+    setPunches(initialPunches);
+  }, [initialPunches]);
+
+  useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     fetch("/api/config/office")
       .then((r) => r.json())
