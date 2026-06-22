@@ -43,8 +43,11 @@ export async function POST(req: Request) {
         throw new Error("Missing required fields for one or more employees.");
       }
 
-      currentCount++;
-      const employeeId = `ANT-${String(currentCount).padStart(3, "0")}`;
+      let empIdToUse = data.employeeId;
+      if (!empIdToUse || empIdToUse === "—") {
+        currentCount++;
+        empIdToUse = `ANT-${String(currentCount).padStart(3, "0")}`;
+      }
       const joiningDate = new Date(data.joiningDate);
 
       // Resolve template tasks
@@ -78,16 +81,38 @@ export async function POST(req: Request) {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email.toLowerCase(),
-            employeeId,
+            employeeId: empIdToUse,
             designation: data.designation,
             departmentId: data.departmentId,
             managerId: data.managerId || undefined,
             employmentType: data.employmentType || "FULL_TIME",
-            status: "ONBOARDING",
+            status: data.status || "ONBOARDING",
             joiningDate,
             probationEnds: addDays(joiningDate, 90),
-            personalDetailsFilled: false,
-            onboardingWizardCompleted: false,
+            personalEmail: (data.personalEmail && data.personalEmail !== "—") ? data.personalEmail : null,
+            phone: (data.phone && data.phone !== "—") ? data.phone : null,
+            dateOfBirth: (data.dateOfBirth && data.dateOfBirth !== "—") ? new Date(data.dateOfBirth) : null,
+            gender: (data.gender && data.gender !== "—") ? data.gender : null,
+            bloodGroup: (data.bloodGroup && data.bloodGroup !== "—") ? data.bloodGroup : null,
+            permanentAddress: (data.permanentAddress && data.permanentAddress !== "—") ? data.permanentAddress : null,
+            city: (data.city && data.city !== "—") ? data.city : null,
+            state: (data.state && data.state !== "—") ? data.state : "Odisha",
+            pincode: (data.pincode && data.pincode !== "—") ? data.pincode : null,
+            emergencyContact: (data.emergencyContact && data.emergencyContact !== "—") ? data.emergencyContact : null,
+            emergencyPhone: (data.emergencyPhone && data.emergencyPhone !== "—") ? data.emergencyPhone : null,
+            ctc: data.ctc ? parseFloat(data.ctc) : null,
+            basicSalary: data.basicSalary ? parseFloat(data.basicSalary) : null,
+            hra: data.hra ? parseFloat(data.hra) : null,
+            specialAllowance: data.specialAllowance ? parseFloat(data.specialAllowance) : null,
+            pf: data.pf ? parseFloat(data.pf) : null,
+            professionalTax: data.professionalTax ? parseFloat(data.professionalTax) : 200,
+            bankName: (data.bankName && data.bankName !== "—") ? data.bankName : null,
+            bankAccountNo: (data.bankAccountNo && data.bankAccountNo !== "—") ? data.bankAccountNo : null,
+            ifscCode: (data.ifscCode && data.ifscCode !== "—") ? data.ifscCode : null,
+            pan: (data.pan && data.pan !== "—") ? data.pan : null,
+            uan: (data.uan && data.uan !== "—") ? data.uan : null,
+            personalDetailsFilled: data.personalDetailsFilled === true || data.personalDetailsFilled === "true",
+            onboardingWizardCompleted: data.onboardingWizardCompleted === true || data.onboardingWizardCompleted === "true",
           },
         });
 

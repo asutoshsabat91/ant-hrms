@@ -36,15 +36,33 @@ export async function GET() {
 
     // 2. Section: Headcount & Employees Overview
     csvContent += `SECTION 1: HEADCOUNT OVERVIEW (ACTIVE & ONBOARDING)\n`;
-    csvContent += `Employee ID,First Name,Last Name,Official Email,Personal Email,Phone,Designation,Department,Type,Status,Joining Date,City,State,CTC\n`;
+    csvContent += `Employee ID,First Name,Last Name,Official Email,Personal Email,Phone,Date of Birth,Gender,Blood Group,Permanent Address,City,State,Pincode,Emergency Contact Name,Emergency Contact Phone,Designation,Department,Employment Type,Status,Joining Date,CTC,Basic Salary,HRA,Special Allowance,PF,Professional Tax,Bank Name,Bank Account Number,IFSC Code,PAN,UAN\n`;
     employees.forEach((emp) => {
-      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate).toISOString().slice(0, 10) : "—";
       const personalEmail = emp.personalEmail || "—";
       const phone = emp.phone || "—";
+      const dob = emp.dateOfBirth ? new Date(emp.dateOfBirth).toISOString().slice(0, 10) : "—";
+      const gender = emp.gender || "—";
+      const bloodGroup = emp.bloodGroup || "—";
+      const permAddress = emp.permanentAddress ? emp.permanentAddress.replace(/"/g, '""') : "—";
       const city = emp.city || "—";
       const state = emp.state || "Odisha";
+      const pincode = emp.pincode || "—";
+      const emergencyContact = emp.emergencyContact || "—";
+      const emergencyPhone = emp.emergencyPhone || "—";
+      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate).toISOString().slice(0, 10) : "—";
       const ctc = emp.ctc ?? 0;
-      csvContent += `"${emp.employeeId}","${emp.firstName}","${emp.lastName}","${emp.email}","${personalEmail}","${phone}","${emp.designation}","${emp.department?.name ?? "—"}","${emp.employmentType}","${emp.status}","${joiningDate}","${city}","${state}",${ctc}\n`;
+      const basic = emp.basicSalary ?? 0;
+      const hra = emp.hra ?? 0;
+      const special = emp.specialAllowance ?? 0;
+      const pf = emp.pf ?? 0;
+      const pt = emp.professionalTax ?? 200;
+      const bankName = emp.bankName || "—";
+      const bankAccountNo = emp.bankAccountNo || "—";
+      const ifsc = emp.ifscCode || "—";
+      const pan = emp.pan || "—";
+      const uan = emp.uan || "—";
+
+      csvContent += `"${emp.employeeId}","${emp.firstName}","${emp.lastName}","${emp.email}","${personalEmail}","${phone}","${dob}","${gender}","${bloodGroup}","${permAddress}","${city}","${state}","${pincode}","${emergencyContact}","${emergencyPhone}","${emp.designation}","${emp.department?.name ?? "—"}","${emp.employmentType}","${emp.status}","${joiningDate}",${ctc},${basic},${hra},${special},${pf},${pt},"${bankName}","${bankAccountNo}","${ifsc}","${pan}","${uan}"\n`;
     });
     csvContent += `\n`;
 
