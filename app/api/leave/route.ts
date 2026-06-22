@@ -311,20 +311,45 @@ export async function POST(req: Request) {
       }
     }
 
-    const hrUsers = await tx.user.findMany({
-      where: { role: { in: ["ADMIN"] } },
-    });
+        let companyAdmins: any[] = [];
+    if (employee.deployedCompany) {
+      companyAdmins = await tx.user.findMany({
+        where: {
+          role: "COMPANY_ADMIN",
+          employee: {
+            managedCompany: employee.deployedCompany,
+          },
+        },
+      });
+    }
 
-    hrUsers.forEach((hr) => {
-      if (!recipients.some((recipient) => recipient.userId === hr.id)) {
-        recipients.push({
-          userId: hr.id,
-          title: "Leave request submitted",
-          body: notificationMessage,
-          link: "/leave",
-        });
-      }
-    });
+    if (companyAdmins.length > 0) {
+      companyAdmins.forEach((admin) => {
+        if (!recipients.some((recipient) => recipient.userId === admin.id)) {
+          recipients.push({
+            userId: admin.id,
+            title: "Leave request pending approval",
+            body: notificationMessage,
+            link: "/leave",
+          });
+        }
+      });
+    } else {
+      const hrUsers = await tx.user.findMany({
+        where: { role: { in: ["ADMIN"] } },
+      });
+
+      hrUsers.forEach((hr) => {
+        if (!recipients.some((recipient) => recipient.userId === hr.id)) {
+          recipients.push({
+            userId: hr.id,
+            title: "Leave request submitted",
+            body: notificationMessage,
+            link: "/leave",
+          });
+        }
+      });
+    }
 
     if (recipients.length > 0) {
       await tx.notification.createMany({
@@ -343,14 +368,34 @@ export async function POST(req: Request) {
 
   try {
     const employeeName = `${employee.firstName} ${employee.lastName}`;
-    await sendLeaveRequestEmail(
-      employeeName,
-      leaveType.name,
-      days,
-      format(start, "dd MMM yyyy"),
-      format(end, "dd MMM yyyy"),
-      reason
-    );
+    
+    // Route email to company admins if they exist, otherwise default to admin@theantbox.com
+    let emailRecipients = ["admin@theantbox.com"];
+    if (employee.deployedCompany) {
+      const admins = await prisma.user.findMany({
+        where: {
+          role: "COMPANY_ADMIN",
+          employee: {
+            managedCompany: employee.deployedCompany,
+          },
+        },
+      });
+      if (admins.length > 0) {
+        emailRecipients = admins.map((a) => a.email);
+      }
+    }
+
+    for (const recipientEmail of emailRecipients) {
+      await sendLeaveRequestEmail(
+        recipientEmail,
+        employeeName,
+        leaveType.name,
+        days,
+        format(start, "dd MMM yyyy"),
+        format(end, "dd MMM yyyy"),
+        reason
+      );
+    }
   } catch (mailErr) {
     console.error("Failed to send leave request email", mailErr);
   }

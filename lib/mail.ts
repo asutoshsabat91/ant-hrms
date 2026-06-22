@@ -205,6 +205,7 @@ export async function sendOnboardingEmail(
 
 // 2. Leave Request Submitted Email (Sent to Admin)
 export async function sendLeaveRequestEmail(
+  toEmail: string,
   employeeName: string,
   leaveType: string,
   days: number,
@@ -212,7 +213,6 @@ export async function sendLeaveRequestEmail(
   endDate: string,
   reason: string
 ) {
-  const adminEmail = "admin@theantbox.com";
   const subject = `New Leave Request: ${employeeName}`;
   const bodyHtml = `
     <h2>New Leave Application</h2>
@@ -247,7 +247,7 @@ export async function sendLeaveRequestEmail(
   `;
 
   return sendEmail({
-    to: adminEmail,
+    to: toEmail,
     subject,
     html: generateEmailTemplate(subject, bodyHtml),
   });
