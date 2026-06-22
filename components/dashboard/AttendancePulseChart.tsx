@@ -9,14 +9,15 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export function AttendancePulseChart() {
-  const data = [
+export function AttendancePulseChart({ data }: { data?: { name: string; attendance: number }[] }) {
+  const defaultData = [
     { name: "Mon", attendance: 92.5 },
     { name: "Tue", attendance: 94.6 },
     { name: "Wed", attendance: 96.8 },
     { name: "Thu", attendance: 95.2 },
     { name: "Fri", attendance: 93.4 },
   ];
+  const chartData = data && data.length > 0 ? data : defaultData;
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm transition-all duration-500 ease-[var(--ease-out-expo)] hover:border-zinc-300 hover:shadow-md">
@@ -31,7 +32,7 @@ export function AttendancePulseChart() {
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
+            data={chartData}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
             barSize={16}
           >

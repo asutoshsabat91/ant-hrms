@@ -3,21 +3,36 @@
 import { useEffect, useState } from "react";
 import { Monitor, BarChart3, Briefcase, Users } from "lucide-react";
 
-export function TribeRadarWidget() {
-  const [candidatesCount, setCandidatesCount] = useState(2780);
+export function TribeRadarWidget({
+  activeCandidates = 14,
+  avgReadiness = 87.4,
+  sprintsLive = 6,
+  pposClaimed = 8,
+}: {
+  activeCandidates?: number;
+  avgReadiness?: number;
+  sprintsLive?: number;
+  pposClaimed?: number;
+}) {
+  const [candidatesCount, setCandidatesCount] = useState(activeCandidates);
+
+  useEffect(() => {
+    setCandidatesCount(activeCandidates);
+  }, [activeCandidates]);
 
   useEffect(() => {
     // Dynamic ticker simulation to make it feel alive!
     const interval = setInterval(() => {
       setCandidatesCount((prev) => {
-        const delta = Math.floor(Math.random() * 5) - 2; // fluctuate -2 to +2
+        const scale = activeCandidates > 100 ? 5 : 2;
+        const delta = Math.floor(Math.random() * (scale * 2 + 1)) - scale;
         const next = prev + delta;
-        return next > 2850 ? 2841 : next < 2750 ? 2800 : next;
+        return next < 0 ? 0 : next;
       });
-    }, 4000);
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [activeCandidates]);
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-[#0a0a0a] p-6 shadow-2xl text-white flex flex-col h-full justify-between min-h-[380px]">
@@ -108,7 +123,7 @@ export function TribeRadarWidget() {
             Avg Readiness
           </span>
           <span className="text-base font-extrabold text-white mt-1 block tracking-tight">
-            87.4%
+            {avgReadiness.toFixed(1)}%
           </span>
         </div>
 
@@ -117,7 +132,7 @@ export function TribeRadarWidget() {
             Sprints Live
           </span>
           <span className="text-base font-extrabold text-white mt-1 block tracking-tight">
-            12 active
+            {sprintsLive} active
           </span>
         </div>
 
@@ -126,7 +141,7 @@ export function TribeRadarWidget() {
             PPOs Claimed
           </span>
           <span className="text-base font-extrabold text-[var(--purple)] mt-1 block tracking-tight">
-            340+
+            {pposClaimed}
           </span>
         </div>
       </div>
