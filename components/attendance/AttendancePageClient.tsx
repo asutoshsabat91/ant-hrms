@@ -237,7 +237,7 @@ export function AttendancePageClient() {
       </div>
 
       {/* Grid Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-start">
         {/* Card 1: Today's Session (Full GPS validation widget) */}
         <div className="min-h-[210px] flex">
           <AttendanceCard 
