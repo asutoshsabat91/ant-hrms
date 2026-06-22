@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { differenceInCalendarDays, format } from "date-fns";
 import { getDynamicBalances } from "@/lib/leave";
+import { sendLeaveRequestEmail } from "@/lib/mail";
 
 const requestSchema = z.object({
   leaveTypeId: z.string().min(1),
@@ -48,6 +49,20 @@ export async function GET() {
   if (session.user.role === "ADMIN") {
     approvalRequests = await prisma.leaveRequest.findMany({
       where: { status: "PENDING" },
+      include: {
+        leaveType: true,
+        employee: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 16,
+    });
+  } else if (session.user.role === "COMPANY_ADMIN") {
+    const managedCompany = user.employee.managedCompany;
+    approvalRequests = await prisma.leaveRequest.findMany({
+      where: {
+        status: "PENDING",
+        employee: { deployedCompany: managedCompany || undefined },
+      },
       include: {
         leaveType: true,
         employee: true,
@@ -325,6 +340,20 @@ export async function POST(req: Request) {
 
     return leaveRequest;
   });
+
+  try {
+    const employeeName = `${employee.firstName} ${employee.lastName}`;
+    await sendLeaveRequestEmail(
+      employeeName,
+      leaveType.name,
+      days,
+      format(start, "dd MMM yyyy"),
+      format(end, "dd MMM yyyy"),
+      reason
+    );
+  } catch (mailErr) {
+    console.error("Failed to send leave request email", mailErr);
+  }
 
   return NextResponse.json({ request: result }, { status: 201 });
   } catch (e: unknown) {

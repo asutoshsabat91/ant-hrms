@@ -81,18 +81,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         const dbUser = await prisma.user.findUnique({
           where: { email: (user.email ?? token.email) as string },
+          include: { employee: { select: { managedCompany: true } } },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          token.managedCompany = dbUser.employee?.managedCompany ?? null;
         }
       } else if (token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email as string },
+          include: { employee: { select: { managedCompany: true } } },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          token.managedCompany = dbUser.employee?.managedCompany ?? null;
         }
       }
       return token;
@@ -101,6 +105,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as import("@prisma/client").Role;
+        session.user.managedCompany = token.managedCompany as string | null;
       }
       return session;
     },

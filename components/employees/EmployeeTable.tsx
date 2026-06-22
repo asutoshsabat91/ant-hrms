@@ -59,6 +59,7 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
             <tr>
               <th scope="col" className="px-6 py-4">Employee</th>
               <th scope="col" className="px-6 py-4">Department</th>
+              <th scope="col" className="px-6 py-4">Deployed Company</th>
               <th scope="col" className="px-6 py-4">Location</th>
               <th scope="col" className="px-6 py-4">Joined</th>
               <th scope="col" className="px-6 py-4">Status</th>
@@ -68,7 +69,7 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
           <tbody className="divide-y divide-zinc-100">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-zinc-400">
+                <td colSpan={7} className="px-6 py-10 text-center text-zinc-400">
                   No employees found. Run seed or add your first hire.
                 </td>
               </tr>
@@ -91,8 +92,8 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
                         </Avatar>
                         <div>
                           <Link
-                            href={`/employees/${emp.id}`}
-                            className="font-bold text-zinc-900 hover:underline leading-tight block"
+                             href={`/employees/${emp.id}`}
+                             className="font-bold text-zinc-900 hover:underline leading-tight block"
                           >
                             {name}
                           </Link>
@@ -104,6 +105,15 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
                     </td>
                     <td className="px-6 py-4 text-xs font-semibold text-zinc-900">
                       {emp.department.name}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-zinc-900">
+                      {emp.deployedCompany ? (
+                        <span className="inline-flex items-center rounded-md bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 ring-1 ring-inset ring-violet-700/10">
+                          {emp.deployedCompany}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 italic">Unassigned</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-zinc-900">
                       {locationStr}

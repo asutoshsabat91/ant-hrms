@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { addDays } from "date-fns";
+import { sendSeparationApprovalEmail } from "@/lib/mail";
 
 const OFFBOARDING_TASKS = [
   { title: "Access Card Deletion", category: "IT_SETUP" as const, order: 1 },
@@ -59,6 +60,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         },
       });
 
+      try {
+        const employeeName = `${separation.employee.firstName} ${separation.employee.lastName}`;
+        await sendSeparationApprovalEmail(
+          separation.employee.email,
+          employeeName,
+          "APPROVED",
+          lastWorkingDate,
+          null
+        );
+      } catch (mailErr) {
+        console.error("Failed to send separation approval email", mailErr);
+      }
+
       return NextResponse.json({ separation: updated });
     }
 
@@ -77,6 +91,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           link: "/separation",
         },
       });
+
+      try {
+        const employeeName = `${separation.employee.firstName} ${separation.employee.lastName}`;
+        await sendSeparationApprovalEmail(
+          separation.employee.email,
+          employeeName,
+          "REJECTED",
+          null,
+          rejectionReason ?? "Rejected by admin"
+        );
+      } catch (mailErr) {
+        console.error("Failed to send separation rejection email", mailErr);
+      }
+
       return NextResponse.json({ separation: updated });
     }
 

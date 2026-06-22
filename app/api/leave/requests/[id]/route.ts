@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { sendLeaveApprovalEmail } from "@/lib/mail";
 
 const decisionSchema = z.object({
   action: z.enum(["APPROVE", "REJECT"]),
@@ -50,14 +51,20 @@ export async function PATCH(
   }
 
   const currentEmployee = user.employee;
+  const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
   const isManager = session.user.role === "EMPLOYEE";
   const isHr = ["ADMIN"].includes(session.user.role);
 
-  if (isManager && request.employee.managerId !== currentEmployee.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  let allowed = false;
+  if (isHr) {
+    allowed = true;
+  } else if (isManager && request.employee.managerId === currentEmployee.id) {
+    allowed = true;
+  } else if (isCompanyAdmin && currentEmployee.managedCompany && request.employee.deployedCompany === currentEmployee.managedCompany) {
+    allowed = true;
   }
 
-  if (!isManager && !isHr) {
+  if (!allowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -143,6 +150,20 @@ export async function PATCH(
 
     return updatedRequest;
   });
+
+  try {
+    const employeeName = `${result.employee.firstName} ${result.employee.lastName}`;
+    await sendLeaveApprovalEmail(
+      result.employee.email,
+      employeeName,
+      result.leaveType.name,
+      result.days,
+      result.status as "APPROVED" | "REJECTED",
+      result.rejectionReason
+    );
+  } catch (mailErr) {
+    console.error("Failed to send leave decision email", mailErr);
+  }
 
   return NextResponse.json({ request: result });
 }

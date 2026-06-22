@@ -50,6 +50,14 @@ const EMPLOYEE_NAV = [
   { title: "Calendar",        href: "/calendar",                icon: Calendar },
 ];
 
+const COMPANY_ADMIN_NAV = [
+  { title: "Dashboard",    href: "/",             icon: LayoutDashboard },
+  { title: "Attendance",   href: "/attendance",   icon: Clock },
+  { title: "Leave",        href: "/leave",        icon: CalendarDays },
+  { title: "Personal",     href: "/portal",       icon: FileText },
+  { title: "Calendar",     href: "/calendar",     icon: Calendar },
+];
+
 interface SidebarProps {
   role: Role;
   gender?: string | null;
@@ -58,7 +66,13 @@ interface SidebarProps {
 export function Sidebar({ role, gender }: SidebarProps) {
   const pathname = usePathname();
 
-  const baseNav = role === "ADMIN" ? ADMIN_NAV : EMPLOYEE_NAV;
+  let baseNav = EMPLOYEE_NAV;
+  if (role === "ADMIN") {
+    baseNav = ADMIN_NAV;
+  } else if (role === "COMPANY_ADMIN") {
+    baseNav = COMPANY_ADMIN_NAV;
+  }
+
   const visible = baseNav.filter((item) => {
     if (item.href === "/posh" && gender?.toUpperCase() !== "FEMALE") return false;
     return true;

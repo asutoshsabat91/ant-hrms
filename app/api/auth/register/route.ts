@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { createWorkspaceUser } from "@/lib/googleWorkspace";
+import { sendOnboardingEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   const { firstName, lastName, gender, phone, dateOfBirth, personalEmail } = await req.json();
@@ -56,6 +58,12 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Create the actual user account in Google Workspace Directory
+    await createWorkspaceUser(corpEmail, tempPassword, firstName, lastName);
+
+    // Send the welcome email with credentials to personalEmail
+    await sendOnboardingEmail(personalEmail, corpEmail, tempPassword, firstName);
 
     return NextResponse.json({
       corporateEmail: corpEmail,

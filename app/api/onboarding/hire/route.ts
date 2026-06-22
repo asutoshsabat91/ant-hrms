@@ -5,6 +5,9 @@ import { breakdownFromCTC } from "@/lib/utils/payrollEngine";
 import { addDays, subDays } from "date-fns";
 import { z } from "zod";
 import type { TaskCategory } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { createWorkspaceUser } from "@/lib/googleWorkspace";
+import { sendOnboardingEmail } from "@/lib/mail";
 
 const onboardingSchema = z.object({
   mode: z.enum(["invite", "complete", "direct"]).optional(),
@@ -184,6 +187,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "firstName, lastName and email are required for inviting an employee" }, { status: 400 });
       }
 
+      const tempPassword = "AntBox@2025";
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
+
       const result = await prisma.$transaction(async (tx) => {
         const existingUser = await tx.user.findUnique({ where: { email: data.email!.toLowerCase() } });
         if (existingUser) throw new Error(`User with email ${data.email} already exists.`);
@@ -191,6 +197,7 @@ export async function POST(req: Request) {
         const user = await tx.user.create({
           data: {
             email: data.email!.toLowerCase(),
+            passwordHash,
             role: "EMPLOYEE",
             isActive: true,
           },
@@ -202,6 +209,7 @@ export async function POST(req: Request) {
             firstName: data.firstName!,
             lastName: data.lastName!,
             email: data.email!.toLowerCase(),
+            personalEmail: data.personalEmail || null,
             employeeId,
             designation: data.designation,
             departmentId: data.departmentId,
@@ -257,6 +265,13 @@ export async function POST(req: Request) {
         return employee;
       });
 
+      // Create the actual user account in Google Workspace Directory
+      await createWorkspaceUser(data.email.toLowerCase(), tempPassword, data.firstName, data.lastName);
+
+      // Send the welcome email with credentials to personalEmail (fallback to work email if personal not provided)
+      const targetEmail = data.personalEmail || data.email;
+      await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName);
+
       return NextResponse.json({ employee: result }, { status: 201 });
     }
 
@@ -265,6 +280,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "firstName, lastName and email are required" }, { status: 400 });
     }
 
+    const tempPassword = "AntBox@2025";
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
     const result = await prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({ where: { email: data.email!.toLowerCase() } });
       if (existingUser) throw new Error(`User with email ${data.email} already exists.`);
@@ -272,6 +290,7 @@ export async function POST(req: Request) {
       const user = await tx.user.create({
         data: {
           email: data.email!.toLowerCase(),
+          passwordHash,
           role: "EMPLOYEE",
           isActive: true,
         },
@@ -354,6 +373,13 @@ export async function POST(req: Request) {
 
       return employee;
     });
+
+    // Create the actual user account in Google Workspace Directory
+    await createWorkspaceUser(data.email.toLowerCase(), tempPassword, data.firstName, data.lastName);
+
+    // Send the welcome email with credentials to personalEmail (fallback to work email if personal not provided)
+    const targetEmail = data.personalEmail || data.email;
+    await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName);
 
     const onboardingTasks = await prisma.onboardingTask.findMany({
       where: { employeeId: result.id },

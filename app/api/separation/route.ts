@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { sendSeparationRequestEmail } from "@/lib/mail";
 
 export async function GET() {
   try {
@@ -60,6 +61,18 @@ export async function POST(req: Request) {
         link: "/separation",
       })),
     });
+
+    try {
+      const employeeName = `${employee.firstName} ${employee.lastName}`;
+      await sendSeparationRequestEmail(
+        employeeName,
+        employee.email,
+        reason,
+        noticeDays
+      );
+    } catch (mailErr) {
+      console.error("Failed to send separation request email", mailErr);
+    }
 
     return NextResponse.json({ separation }, { status: 201 });
   } catch (e) {

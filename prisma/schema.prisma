@@ -12,6 +12,7 @@ datasource db {
 enum Role {
   ADMIN
   EMPLOYEE
+  COMPANY_ADMIN
 }
 
 enum EmploymentType {
@@ -244,6 +245,8 @@ model Employee {
   okToRehire       Boolean?
   rehireComment    String?
   regularizationRequests RegularizationRequest[]
+  deployedCompany  String?
+  managedCompany   String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 }

@@ -45,7 +45,10 @@ export async function middleware(req: NextRequest) {
 
   const role = token.role as Role | undefined;
 
-  if (role === "EMPLOYEE" && adminOnlyRoutes.some((r) => pathname.startsWith(r))) {
+  if (
+    (role === "EMPLOYEE" || role === "COMPANY_ADMIN") &&
+    adminOnlyRoutes.some((r) => pathname.startsWith(r))
+  ) {
     if (
       pathname === "/api/onboarding/personal" ||
       pathname === "/api/onboarding/banking" ||

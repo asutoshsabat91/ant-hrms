@@ -5,12 +5,14 @@ function dateOnly(value: Date) {
   return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
 }
 
-export async function getAttendanceOverview() {
+export async function getAttendanceOverview(managedCompany?: string) {
   const today = new Date();
   const dayStart = dateOnly(startOfDay(today));
   const dayEnd = dateOnly(endOfDay(today));
   const weekStart = dateOnly(startOfWeek(today, { weekStartsOn: 1 }));
   const weekEnd = dateOnly(endOfWeek(today, { weekStartsOn: 1 }));
+
+  const companyFilter = managedCompany ? { employee: { deployedCompany: managedCompany } } : {};
 
   const [weeklyRecords, aggregate] = await Promise.all([
     prisma.attendanceRecord.findMany({
@@ -19,6 +21,7 @@ export async function getAttendanceOverview() {
           gte: weekStart,
           lte: weekEnd,
         },
+        ...companyFilter,
       },
       include: {
         employee: true,
@@ -35,6 +38,7 @@ export async function getAttendanceOverview() {
           lte: weekEnd,
         },
         totalHours: { not: null },
+        ...companyFilter,
       },
       _avg: {
         totalHours: true,
@@ -49,6 +53,7 @@ export async function getAttendanceOverview() {
         lte: dayEnd,
       },
       status: "PRESENT",
+      ...companyFilter,
     },
   });
 
@@ -59,6 +64,7 @@ export async function getAttendanceOverview() {
         lte: dayEnd,
       },
       status: "INCOMPLETE",
+      ...companyFilter,
     },
   });
 

@@ -107,7 +107,6 @@ export async function getWeekCelebrations(): Promise<BirthdayEntry[]> {
 }
 
 export async function getAttendancePulse() {
-  const data: { name: string; attendance: number }[] = [];
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const today = new Date();
 

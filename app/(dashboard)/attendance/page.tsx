@@ -32,14 +32,22 @@ function formatHours(value: number | null | undefined) {
 
 export default async function AttendancePage() {
   const session = await auth();
-  const isAdminOrManager = session?.user?.role === "ADMIN";
+  const isSuperAdmin = session?.user?.role === "ADMIN";
+  const isCompanyAdmin = session?.user?.role === "COMPANY_ADMIN";
+  const isAdminOrManager = isSuperAdmin || isCompanyAdmin;
+  const managedCompany = session?.user?.managedCompany || undefined;
 
-  const { weeklyRecords } = await getAttendanceOverview();
+  const { weeklyRecords } = await getAttendanceOverview(managedCompany);
 
   // Load pending regularization requests for Admin
   const pendingRequests = isAdminOrManager
     ? await prisma.regularizationRequest.findMany({
-        where: { status: "PENDING" },
+        where: {
+          status: "PENDING",
+          ...(isCompanyAdmin && managedCompany
+            ? { employee: { deployedCompany: managedCompany } }
+            : {}),
+        },
         include: {
           employee: {
             select: { id: true, firstName: true, lastName: true, employeeId: true },
