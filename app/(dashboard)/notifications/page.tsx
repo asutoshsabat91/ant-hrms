@@ -240,7 +240,6 @@ export default function NotificationsPage() {
                         {notification.link && (
                           <Link
                             href={notification.link}
-                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-zinc-950 hover:underline uppercase tracking-wider"
                           >
                             View details
