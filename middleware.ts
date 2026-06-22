@@ -46,6 +46,16 @@ export async function middleware(req: NextRequest) {
   const role = token.role as Role | undefined;
 
   if (role === "EMPLOYEE" && adminOnlyRoutes.some((r) => pathname.startsWith(r))) {
+    if (
+      pathname === "/api/onboarding/personal" ||
+      pathname === "/api/onboarding/banking" ||
+      pathname === "/api/onboarding/idform" ||
+      /^\/onboarding\/[^\/]+$/.test(pathname)
+    ) {
+      const response = NextResponse.next();
+      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      return response;
+    }
     const redirectRes = NextResponse.redirect(new URL("/", req.url));
     redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     return redirectRes;

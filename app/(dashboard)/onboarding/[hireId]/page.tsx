@@ -26,6 +26,10 @@ export default async function OnboardingDetailPage({
   const isAdmin = session?.user?.role === "ADMIN";
   const isOwnProfile = employee.userId === session?.user?.id;
 
+  if (!isAdmin && !isOwnProfile) {
+    notFound();
+  }
+
   const hasIdProof = employee.documents.some((d) =>
     d.title?.toLowerCase().includes("aadhaar") ||
     d.title?.toLowerCase().includes("pan") ||

@@ -600,7 +600,7 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
               <p className="text-[10px] text-zinc-400 mt-0.5">These must be uploaded to complete your onboarding</p>
             </div>
             <a
-              href="/onboarding"
+              href={currentEmployeeId ? `/onboarding/${currentEmployeeId}` : "/onboarding"}
               className="flex items-center gap-1 text-[10px] font-semibold text-violet-600 hover:underline"
             >
               View Onboarding Tasks <ExternalLink className="h-3 w-3" />
