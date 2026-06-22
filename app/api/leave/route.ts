@@ -311,7 +311,7 @@ export async function POST(req: Request) {
       }
     }
 
-        let companyAdmins: any[] = [];
+        let companyAdmins: { id: string; email: string }[] = [];
     if (employee.deployedCompany) {
       companyAdmins = await tx.user.findMany({
         where: {
@@ -319,6 +319,10 @@ export async function POST(req: Request) {
           employee: {
             managedCompany: employee.deployedCompany,
           },
+        },
+        select: {
+          id: true,
+          email: true,
         },
       });
     }
