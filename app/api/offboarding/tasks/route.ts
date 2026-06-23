@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { TaskStatus } from "@prisma/client";
 import { updateEmployeeInSheet } from "@/lib/googleSheets";
+import { suspendWorkspaceUser } from "@/lib/googleWorkspace";
 
 const patchSchema = z.object({
   id: z.string(),
@@ -81,6 +82,9 @@ export async function PATCH(req: Request) {
 
     // Sync status update directly to Google Sheet
     await updateEmployeeInSheet(updatedEmployee.employeeId, "INACTIVE", "Out of System");
+
+    // Suspend corporate user account in Google Workspace
+    await suspendWorkspaceUser(updatedEmployee.email);
   }
 
   return NextResponse.json(task);

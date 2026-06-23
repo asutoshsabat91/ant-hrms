@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { addDays, subDays } from "date-fns";
 import type { TaskCategory, Employee } from "@prisma/client";
 import { appendEmployeeToSheet, importEmployeesFromGoogleSheets } from "@/lib/googleSheets";
+import { createWorkspaceUser } from "@/lib/googleWorkspace";
 
 const DEFAULT_TASKS: Array<{
   title: string; category: TaskCategory; assignedTo: string;
@@ -160,6 +161,9 @@ export async function POST(req: Request) {
 
       createdEmployees.push(result);
       
+      // Auto-provision Google Workspace account
+      await createWorkspaceUser(result.email.toLowerCase(), "AntBox@2025", result.firstName, result.lastName);
+
       // Sync with Google Sheets
       await appendEmployeeToSheet(result);
     }

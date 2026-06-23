@@ -48,3 +48,41 @@ export async function createWorkspaceUser(
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
+
+export async function suspendWorkspaceUser(email: string) {
+  try {
+    const adminEmail = process.env.GOOGLE_WORKSPACE_ADMIN_EMAIL;
+    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+
+    if (!adminEmail || !clientEmail || !privateKey) {
+      console.warn(
+        `[Google Workspace] Missing configuration. Simulating user suspension for: ${email}`
+      );
+      return { success: true, simulated: true };
+    }
+
+    const auth = new google.auth.JWT({
+      email: clientEmail,
+      key: privateKey.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/admin.directory.user"],
+      subject: adminEmail,
+    });
+
+    const admin = google.admin({ version: "directory_v1", auth });
+
+    const response = await admin.users.update({
+      userKey: email,
+      requestBody: {
+        suspended: true,
+      },
+    });
+
+    console.log(`[Google Workspace] Successfully suspended corporate user: ${email}`);
+    return { success: true, user: response.data };
+  } catch (error) {
+    console.error(`[Google Workspace] Failed to suspend user account: ${email}`, error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
