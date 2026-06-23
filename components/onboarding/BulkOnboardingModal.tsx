@@ -270,6 +270,44 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
     e.target.value = "";
   };
 
+  const handleGoogleSheetsSync = async () => {
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/onboarding/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "google_sheets" }),
+      });
+      const data = await res.json();
+      setMessage({
+        text: res.ok
+          ? `Successfully synced and onboarded ${data.count} employees from Google Sheet!`
+          : data.error || "Failed to sync from Google Sheet.",
+        ok: res.ok,
+      });
+      if (res.ok) {
+        setRows([
+          {
+            firstName: "",
+            lastName: "",
+            email: "",
+            designation: "",
+            departmentId: departments[0]?.id || "",
+            joiningDate: new Date().toISOString().slice(0, 10),
+            employmentType: "FULL_TIME",
+          },
+        ]);
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch {
+      setMessage({ text: "Network error occurred.", ok: false });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleBulkInvite = async () => {
     // Basic validation
     for (const row of rows) {
@@ -561,6 +599,19 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
                         onChange={handleCSVImport}
                       />
                     </label>
+
+                    <button
+                      onClick={handleGoogleSheetsSync}
+                      disabled={loading}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                      )}
+                      Sync from Google Sheet
+                    </button>
                   </div>
                 </div>
               )}

@@ -67,3 +67,54 @@ export async function createGoogleCalendarEvent(eventData: {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
+
+export async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date) {
+  try {
+    const calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
+    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+    const adminEmail = process.env.GOOGLE_WORKSPACE_ADMIN_EMAIL;
+
+    if (!clientEmail || !privateKey) {
+      console.warn("[Google Calendar] Missing service account credentials. Skipping fetch.");
+      return [];
+    }
+
+    const auth = new google.auth.JWT({
+      email: clientEmail,
+      key: privateKey.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
+      subject: adminEmail || undefined,
+    });
+
+    const calendar = google.calendar({ version: "v3", auth });
+
+    const response = await calendar.events.list({
+      calendarId,
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+
+    const googleEvents = (response.data.items || []).map((item) => {
+      const isAllDay = !item.start?.dateTime;
+      const start = isAllDay ? new Date(item.start?.date || "") : new Date(item.start?.dateTime || "");
+      const end = isAllDay ? new Date(item.end?.date || "") : new Date(item.end?.dateTime || "");
+
+      return {
+        id: item.id || `google-${Math.random()}`,
+        title: item.summary || "Untitled Event",
+        start,
+        end,
+        allDay: isAllDay,
+        category: "GOOGLE_EVENT" as const,
+      };
+    });
+
+    return googleEvents;
+  } catch (error) {
+    console.error("[Google Calendar] Failed to fetch events:", error);
+    return [];
+  }
+}

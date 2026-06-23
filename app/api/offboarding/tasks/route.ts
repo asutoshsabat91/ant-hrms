@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { TaskStatus } from "@prisma/client";
+import { updateEmployeeInSheet } from "@/lib/googleSheets";
 
 const patchSchema = z.object({
   id: z.string(),
@@ -60,6 +61,27 @@ export async function PATCH(req: Request) {
     where: { id: parsed.data.id },
     data: updateData,
   });
+
+  // Check if all offboarding tasks for this employee are now completed/skipped
+  const remainingPending = await prisma.offboardingTask.count({
+    where: {
+      employeeId: task.employeeId,
+      status: { notIn: ["COMPLETED", "SKIPPED"] },
+    },
+  });
+
+  if (remainingPending === 0) {
+    const updatedEmployee = await prisma.employee.update({
+      where: { id: task.employeeId },
+      data: {
+        status: "INACTIVE",
+        deployedCompany: "Out of System",
+      },
+    });
+
+    // Sync status update directly to Google Sheet
+    await updateEmployeeInSheet(updatedEmployee.employeeId, "INACTIVE", "Out of System");
+  }
 
   return NextResponse.json(task);
 }

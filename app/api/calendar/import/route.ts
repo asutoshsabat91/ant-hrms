@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -83,6 +84,21 @@ export async function POST(req: Request) {
         data: parsedHolidays,
       });
     });
+
+    // Sync each holiday to Google Calendar
+    try {
+      for (const holiday of parsedHolidays) {
+        await createGoogleCalendarEvent({
+          title: `Holiday: ${holiday.name}`,
+          description: holiday.description,
+          startDate: holiday.date,
+          endDate: holiday.date,
+          allDay: true,
+        });
+      }
+    } catch (calErr) {
+      console.error("[Google Calendar] Failed to sync imported holidays:", calErr);
+    }
 
     return NextResponse.json({
       message: `Successfully imported ${parsedHolidays.length} holidays for year(s): ${Array.from(targetYears).join(", ")}.`,

@@ -39,6 +39,7 @@ const categoryStyles: Record<string, { background: string; border: string }> = {
   TRAINING: { background: "#D1FAE5", border: "#22C55E" },
   LEAVE: { background: "#FBCFE8", border: "#EC4899" },
   BIRTHDAY: { background: "#E0E7FF", border: "#6366F1" },
+  GOOGLE_EVENT: { background: "#DDD6FE", border: "#8B5CF6" },
 };
 
 export function CompanyCalendar({ canManage, isSuperAdmin }: { canManage?: boolean; isSuperAdmin?: boolean }) {
@@ -285,6 +286,7 @@ export function CompanyCalendar({ canManage, isSuperAdmin }: { canManage?: boole
       { label: "Training", category: "TRAINING" },
       { label: "Leave", category: "LEAVE" },
       { label: "Birthday", category: "BIRTHDAY" },
+      { label: "Google Calendar", category: "GOOGLE_EVENT" },
     ],
     []
   );

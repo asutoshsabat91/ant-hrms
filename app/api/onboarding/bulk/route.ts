@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { addDays, subDays } from "date-fns";
 import type { TaskCategory, Employee } from "@prisma/client";
-import { appendEmployeeToSheet } from "@/lib/googleSheets";
+import { appendEmployeeToSheet, importEmployeesFromGoogleSheets } from "@/lib/googleSheets";
 
 const DEFAULT_TASKS: Array<{
   title: string; category: TaskCategory; assignedTo: string;
@@ -29,8 +29,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { employees } = await req.json();
-  if (!Array.isArray(employees) || !employees.length) {
+  const body = await req.json();
+  let employeesToProcess = [];
+
+  if (body.source === "google_sheets") {
+    const departments = await prisma.department.findMany();
+    employeesToProcess = await importEmployeesFromGoogleSheets(departments);
+    if (!employeesToProcess.length) {
+      return NextResponse.json({ error: "No employee data found in Google Sheets" }, { status: 400 });
+    }
+  } else {
+    employeesToProcess = body.employees;
+  }
+
+  if (!Array.isArray(employeesToProcess) || !employeesToProcess.length) {
     return NextResponse.json({ error: "No employees provided" }, { status: 400 });
   }
 
@@ -39,7 +51,7 @@ export async function POST(req: Request) {
     const count = await prisma.employee.count();
     let currentCount = count;
 
-    for (const data of employees) {
+    for (const data of employeesToProcess) {
       if (!data.firstName || !data.lastName || !data.email || !data.designation || !data.departmentId || !data.joiningDate) {
         throw new Error("Missing required fields for one or more employees.");
       }

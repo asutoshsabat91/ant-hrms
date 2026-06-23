@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { exportDataToGoogleSheets } from "@/lib/googleSheets";
 
 export async function GET() {
   const session = await auth();
@@ -8,7 +9,7 @@ export async function GET() {
   }
 
   try {
-    const [employees, leaveRequests, reimbursements, separations] = await Promise.all([
+    const [employees, leaveRequests, reimbursements, separations, companyEvents] = await Promise.all([
       prisma.employee.findMany({
         include: { department: true },
         orderBy: { employeeId: "asc" },
@@ -25,7 +26,21 @@ export async function GET() {
         include: { employee: true },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.companyEvent.findMany({
+        orderBy: { startDate: "asc" },
+      }),
     ]);
+
+    // Live export sync directly to Google Sheets worksheets
+    try {
+      await exportDataToGoogleSheets({
+        employees,
+        leaveRequests,
+        companyEvents,
+      });
+    } catch (sheetErr) {
+      console.error("[Google Sheets] Live export sync failed:", sheetErr);
+    }
 
     let csvContent = "";
 

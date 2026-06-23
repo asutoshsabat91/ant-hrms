@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { addDays, endOfDay, startOfDay } from "date-fns";
-import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
+import { createGoogleCalendarEvent, fetchGoogleCalendarEvents } from "@/lib/googleCalendar";
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Invalid date range." }, { status: 400 });
     }
 
-    const [holidays, companyEvents, approvedLeaves, employees] = await Promise.all([
+    const [holidays, companyEvents, approvedLeaves, employees, googleCalendarEvents] = await Promise.all([
       prisma.holiday.findMany({ where: { date: { gte: start, lte: end } } }),
       prisma.companyEvent.findMany({ where: { startDate: { lte: end }, endDate: { gte: start } } }),
       prisma.leaveRequest.findMany({
@@ -42,6 +42,7 @@ export async function GET(req: Request) {
         where: { status: { in: ["ACTIVE", "ONBOARDING"] }, dateOfBirth: { not: null } },
         select: { id: true, firstName: true, lastName: true, dateOfBirth: true },
       }),
+      fetchGoogleCalendarEvents(start, end),
     ]);
 
     const birthdayEvents = employees.flatMap((employee) => {
@@ -74,6 +75,7 @@ export async function GET(req: Request) {
         category: "LEAVE",
       })),
       ...birthdayEvents,
+      ...googleCalendarEvents,
     ];
 
     return NextResponse.json({ events });
