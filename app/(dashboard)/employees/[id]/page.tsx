@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/dateHelpers";
@@ -13,6 +14,12 @@ export default async function EmployeeProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  if (session.user.role === "COMPANY_ADMIN") {
+    redirect("/employees");
+  }
+
   const { id } = await params;
 
   let employee;

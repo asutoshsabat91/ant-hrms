@@ -15,7 +15,13 @@ import {
 
 type EmployeeRow = Employee & { department: Department };
 
-export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
+export function EmployeeTable({
+  employees,
+  userRole,
+}: {
+  employees: EmployeeRow[];
+  userRole?: string;
+}) {
   const router = useRouter();
   const getStatusBadge = (status: EmployeeStatus) => {
     switch (status) {
@@ -91,12 +97,18 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <Link
-                             href={`/employees/${emp.id}`}
-                             className="font-bold text-zinc-900 hover:underline leading-tight block"
-                          >
-                            {name}
-                          </Link>
+                          {userRole === "COMPANY_ADMIN" ? (
+                            <span className="font-bold text-zinc-900 leading-tight block">
+                              {name}
+                            </span>
+                          ) : (
+                            <Link
+                               href={`/employees/${emp.id}`}
+                               className="font-bold text-zinc-900 hover:underline leading-tight block"
+                            >
+                              {name}
+                            </Link>
+                          )}
                           <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
                             {emp.designation} · {emp.employeeId}
                           </p>
@@ -130,18 +142,22 @@ export function EmployeeTable({ employees }: { employees: EmployeeRow[] }) {
                           <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44 bg-white border border-zinc-100 rounded-xl shadow-lg p-1">
-                          <DropdownMenuItem
-                            onClick={() => router.push(`/employees/${emp.id}`)}
-                            className="flex items-center px-3 py-2 text-xs text-zinc-700 hover:bg-zinc-50 rounded-lg cursor-pointer font-medium"
-                          >
-                            View profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => router.push(`/offboarding?employeeId=${emp.id}`)}
-                            className="flex items-center px-3 py-2 text-xs text-zinc-700 hover:bg-zinc-50 rounded-lg cursor-pointer font-medium"
-                          >
-                            Initiate offboarding
-                          </DropdownMenuItem>
+                          {userRole !== "COMPANY_ADMIN" && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/employees/${emp.id}`)}
+                                className="flex items-center px-3 py-2 text-xs text-zinc-700 hover:bg-zinc-50 rounded-lg cursor-pointer font-medium"
+                              >
+                                View profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/offboarding?employeeId=${emp.id}`)}
+                                className="flex items-center px-3 py-2 text-xs text-zinc-700 hover:bg-zinc-50 rounded-lg cursor-pointer font-medium"
+                              >
+                                Initiate offboarding
+                              </DropdownMenuItem>
+                            </>
+                          )}
                           <DropdownMenuItem
                             onClick={() => router.push(`/leave?employeeId=${emp.id}`)}
                             className="flex items-center px-3 py-2 text-xs text-zinc-700 hover:bg-zinc-50 rounded-lg cursor-pointer font-medium"

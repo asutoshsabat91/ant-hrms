@@ -52,10 +52,14 @@ const EMPLOYEE_NAV = [
 
 const COMPANY_ADMIN_NAV = [
   { title: "Dashboard",    href: "/",             icon: LayoutDashboard },
+  { title: "Employees",    href: "/employees",    icon: Users },
   { title: "Attendance",   href: "/attendance",   icon: Clock },
   { title: "Leave",        href: "/leave",        icon: CalendarDays },
   { title: "Personal",     href: "/portal",       icon: FileText },
+  { title: "Documents",    href: "/documents",    icon: FileText },
+  { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "Calendar",     href: "/calendar",     icon: Calendar },
+  { title: "Settings",     href: "/settings",     icon: Settings },
 ];
 
 interface SidebarProps {

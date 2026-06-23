@@ -4,10 +4,12 @@ import { DocumentsHub } from "@/components/documents/DocumentsHub";
 
 export default async function DocumentsPage() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isSuperAdmin = session?.user?.role === "ADMIN";
+  const isCompanyAdmin = session?.user?.role === "COMPANY_ADMIN";
+  const managedCompany = session?.user?.managedCompany;
 
   let currentEmployeeId: string | null = null;
-  if (!isAdmin && session?.user?.id) {
+  if (!isSuperAdmin && !isCompanyAdmin && session?.user?.id) {
     const emp = await prisma.employee.findFirst({
       where: { userId: session.user.id },
       select: { id: true },
@@ -15,26 +17,48 @@ export default async function DocumentsPage() {
     currentEmployeeId = emp?.id ?? null;
   }
 
+  let docWhere = {};
+  if (isSuperAdmin) {
+    docWhere = {};
+  } else if (isCompanyAdmin && managedCompany) {
+    docWhere = { employee: { deployedCompany: managedCompany } };
+  } else if (currentEmployeeId) {
+    docWhere = { employeeId: currentEmployeeId };
+  } else {
+    docWhere = { id: "none" };
+  }
+
+  let employeeQuery;
+  if (isSuperAdmin) {
+    employeeQuery = prisma.employee.findMany({
+      orderBy: { firstName: "asc" },
+      select: { id: true, firstName: true, lastName: true, employeeId: true },
+    });
+  } else if (isCompanyAdmin && managedCompany) {
+    employeeQuery = prisma.employee.findMany({
+      where: { deployedCompany: managedCompany },
+      orderBy: { firstName: "asc" },
+      select: { id: true, firstName: true, lastName: true, employeeId: true },
+    });
+  } else {
+    employeeQuery = Promise.resolve([]);
+  }
+
   const [documents, employees] = await Promise.all([
     prisma.hRDocument.findMany({
-      where: isAdmin ? {} : currentEmployeeId ? { employeeId: currentEmployeeId } : { id: "none" },
+      where: docWhere,
       include: {
         employee: { select: { id: true, firstName: true, lastName: true, employeeId: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
-    isAdmin
-      ? prisma.employee.findMany({
-          orderBy: { firstName: "asc" },
-          select: { id: true, firstName: true, lastName: true, employeeId: true },
-        })
-      : Promise.resolve([]),
+    employeeQuery,
   ]);
 
   return (
     <DocumentsHub
-      isAdmin={isAdmin}
+      isAdmin={isSuperAdmin || isCompanyAdmin}
       currentEmployeeId={currentEmployeeId}
       documents={documents.map((d) => ({
         id: d.id,

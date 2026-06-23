@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 const ALL_TYPES = [
   "OFFER_LETTER", "INTERNSHIP_AGREEMENT", "RELIEVING_LETTER",
@@ -26,15 +27,29 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const employeeId = searchParams.get("employeeId");
-    const isAdmin = session.user.role === "ADMIN";
+    const isSuperAdmin = session.user.role === "ADMIN";
+    const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+    const managedCompany = session.user.managedCompany;
 
-    let whereClause: Record<string, unknown> = {};
-    if (!isAdmin) {
+    let whereClause: Prisma.HRDocumentWhereInput = {};
+    if (isSuperAdmin) {
+      if (employeeId) {
+        whereClause = { employeeId };
+      }
+    } else if (isCompanyAdmin && managedCompany) {
+      if (employeeId) {
+        const emp = await prisma.employee.findFirst({
+          where: { id: employeeId, deployedCompany: managedCompany },
+        });
+        if (!emp) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        whereClause = { employeeId };
+      } else {
+        whereClause = { employee: { deployedCompany: managedCompany } };
+      }
+    } else {
       const emp = await prisma.employee.findFirst({ where: { userId: session.user.id } });
       if (!emp) return NextResponse.json({ documents: [] });
       whereClause = { employeeId: emp.id };
-    } else if (employeeId) {
-      whereClause = { employeeId };
     }
 
     const docs = await prisma.hRDocument.findMany({
@@ -62,10 +77,20 @@ export async function POST(req: Request) {
 
     const { employeeId, type, title, issuedDate, description, fileUrl, fileData } = parsed.data;
 
-    const isAdmin = session.user.role === "ADMIN";
-    if (!isAdmin) {
-      const emp = await prisma.employee.findFirst({ where: { userId: session.user.id } });
-      if (!emp || emp.id !== employeeId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const isSuperAdmin = session.user.role === "ADMIN";
+    const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+    const managedCompany = session.user.managedCompany;
+
+    if (!isSuperAdmin) {
+      if (isCompanyAdmin && managedCompany) {
+        const emp = await prisma.employee.findFirst({
+          where: { id: employeeId, deployedCompany: managedCompany },
+        });
+        if (!emp) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      } else {
+        const emp = await prisma.employee.findFirst({ where: { userId: session.user.id } });
+        if (!emp || emp.id !== employeeId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const issued = new Date(issuedDate);

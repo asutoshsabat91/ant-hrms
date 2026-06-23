@@ -5,10 +5,13 @@ import type { Role } from "@prisma/client";
 
 const publicPaths = ["/login", "/register", "/api/auth"];
 
-const adminOnlyRoutes = [
-  "/employees", "/onboarding", "/offboarding", "/payroll",
-  "/settings",
-  "/api/employees", "/api/payroll", "/api/onboarding", "/api/offboarding",
+const superAdminOnlyRoutes = [
+  "/onboarding", "/offboarding", "/payroll",
+  "/api/payroll", "/api/onboarding", "/api/offboarding",
+];
+
+const adminOrCompanyAdminRoutes = [
+  "/employees", "/settings", "/api/employees"
 ];
 
 export async function middleware(req: NextRequest) {
@@ -45,10 +48,26 @@ export async function middleware(req: NextRequest) {
 
   const role = token.role as Role | undefined;
 
-  if (
-    (role === "EMPLOYEE" || role === "COMPANY_ADMIN") &&
-    adminOnlyRoutes.some((r) => pathname.startsWith(r))
-  ) {
+  const isSuperAdminOnly = superAdminOnlyRoutes.some((r) => pathname.startsWith(r));
+  const isAdminOrCompanyAdmin = adminOrCompanyAdminRoutes.some((r) => pathname.startsWith(r));
+
+  if (role === "EMPLOYEE" && (isSuperAdminOnly || isAdminOrCompanyAdmin)) {
+    if (
+      pathname === "/api/onboarding/personal" ||
+      pathname === "/api/onboarding/banking" ||
+      pathname === "/api/onboarding/idform" ||
+      /^\/onboarding\/[^\/]+$/.test(pathname)
+    ) {
+      const response = NextResponse.next();
+      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      return response;
+    }
+    const redirectRes = NextResponse.redirect(new URL("/", req.url));
+    redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    return redirectRes;
+  }
+
+  if (role === "COMPANY_ADMIN" && isSuperAdminOnly) {
     if (
       pathname === "/api/onboarding/personal" ||
       pathname === "/api/onboarding/banking" ||

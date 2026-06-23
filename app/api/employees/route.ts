@@ -25,7 +25,16 @@ export async function GET() {
     const session = await auth();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+    const managedCompany = session.user.managedCompany;
+
+    let whereClause = {};
+    if (isCompanyAdmin && managedCompany) {
+      whereClause = { deployedCompany: managedCompany };
+    }
+
     const employees = await prisma.employee.findMany({
+      where: whereClause,
       include: { department: true },
       orderBy: { createdAt: "desc" },
     });

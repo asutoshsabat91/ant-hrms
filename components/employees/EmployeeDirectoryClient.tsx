@@ -9,9 +9,10 @@ type EmployeeRow = Employee & { department: Department };
 
 interface Props {
   employees: EmployeeRow[];
+  userRole?: string;
 }
 
-export function EmployeeDirectoryClient({ employees }: Props) {
+export function EmployeeDirectoryClient({ employees, userRole }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<EmployeeStatus | "ALL">("ALL");
   const [typeFilter, setTypeFilter] = useState<EmploymentType | "ALL">("ALL");
@@ -217,7 +218,7 @@ export function EmployeeDirectoryClient({ employees }: Props) {
       )}
 
       {/* Table */}
-      <EmployeeTable employees={filteredEmployees} />
+      <EmployeeTable employees={filteredEmployees} userRole={userRole} />
     </div>
   );
 }

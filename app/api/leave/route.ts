@@ -296,22 +296,7 @@ export async function POST(req: Request) {
     const notificationMessage = `${employee.firstName} ${employee.lastName} requested ${days} day${days === 1 ? "" : "s"} of ${leaveType.name} leave from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}.`;
     const recipients = [] as { userId: string; title: string; body: string; link: string }[];
 
-    if (employee.managerId) {
-      const manager = await tx.employee.findUnique({
-        where: { id: employee.managerId },
-        include: { user: true },
-      });
-      if (manager?.user) {
-        recipients.push({
-          userId: manager.user.id,
-          title: "Leave request pending approval",
-          body: notificationMessage,
-          link: "/leave",
-        });
-      }
-    }
-
-        let companyAdmins: { id: string; email: string }[] = [];
+    let companyAdmins: { id: string; email: string }[] = [];
     if (employee.deployedCompany) {
       companyAdmins = await tx.user.findMany({
         where: {
@@ -328,17 +313,31 @@ export async function POST(req: Request) {
     }
 
     if (companyAdmins.length > 0) {
+      // Prioritize Company Admin approval - bypass manager and super admin
       companyAdmins.forEach((admin) => {
-        if (!recipients.some((recipient) => recipient.userId === admin.id)) {
+        recipients.push({
+          userId: admin.id,
+          title: "Leave request pending approval",
+          body: notificationMessage,
+          link: "/leave",
+        });
+      });
+    } else {
+      if (employee.managerId) {
+        const manager = await tx.employee.findUnique({
+          where: { id: employee.managerId },
+          include: { user: true },
+        });
+        if (manager?.user) {
           recipients.push({
-            userId: admin.id,
+            userId: manager.user.id,
             title: "Leave request pending approval",
             body: notificationMessage,
             link: "/leave",
           });
         }
-      });
-    } else {
+      }
+
       const hrUsers = await tx.user.findMany({
         where: { role: { in: ["ADMIN"] } },
       });
