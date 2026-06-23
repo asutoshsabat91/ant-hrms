@@ -1,5 +1,8 @@
 import { google, sheets_v4 } from "googleapis";
-import type { Employee, LeaveRequest, CompanyEvent, Department, LeaveType } from "@prisma/client";
+import type { Employee, LeaveRequest, CompanyEvent, Department, LeaveType, EmployeeStatus, EmploymentType } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 function getSheetsClient() {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
@@ -305,3 +308,298 @@ export async function importEmployeesFromGoogleSheets(departments: Array<{ id: s
     return [];
   }
 }
+
+export async function syncGoogleSheetsWithDb() {
+  const client = getSheetsClient();
+  if (!client) {
+    console.warn("[Google Sheets] Simulation mode active. Credentials not found.");
+    return {
+      success: true,
+      simulated: true,
+      updatedCount: 2,
+      createdCount: 1,
+      message: "Simulation mode: Sync completed with simulated results."
+    };
+  }
+
+  const { sheets, spreadsheetId } = client;
+  const sheetName = "Employees";
+
+  try {
+    await ensureWorksheetExists(sheets, spreadsheetId, sheetName);
+
+    // 1. Pull data from Google Sheet
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:Z`,
+    });
+
+    const rows = response.data.values || [];
+    let updatedCount = 0;
+    let createdCount = 0;
+
+    if (rows.length > 1) {
+      const headers = rows[0].map((h: string) => h.trim().toLowerCase());
+      const dataRows = rows.slice(1);
+
+      const getColVal = (row: string[], possibleHeaders: string[]) => {
+        for (const ph of possibleHeaders) {
+          const idx = headers.indexOf(ph.toLowerCase());
+          if (idx !== -1 && row[idx] !== undefined) return row[idx].trim();
+        }
+        return "";
+      };
+
+      let defaultDept = await prisma.department.findFirst();
+      if (!defaultDept) {
+        defaultDept = await prisma.department.create({
+          data: { name: "General", code: "GEN" }
+        });
+      }
+
+      for (const row of dataRows) {
+        const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
+        const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
+
+        if (!email && !empId) continue;
+
+        const orConditions: Prisma.EmployeeWhereInput[] = [];
+        if (email) orConditions.push({ email: email.toLowerCase() });
+        if (empId) orConditions.push({ employeeId: empId });
+
+        const existingEmp = orConditions.length > 0 ? await prisma.employee.findFirst({
+          where: { OR: orConditions },
+          include: { user: true }
+        }) : null;
+
+        const firstName = getColVal(row, ["First Name", "firstname", "name"]) || "New";
+        const lastName = getColVal(row, ["Last Name", "lastname"]) || "Employee";
+        const designation = getColVal(row, ["Designation"]) || "Associate";
+        const deployedCompany = getColVal(row, ["Deployed Company", "deployedcompany", "company"]);
+        const personalEmail = getColVal(row, ["Personal Email", "personalemail"]);
+        const phone = getColVal(row, ["Phone", "phone number", "mobile"]);
+        const gender = getColVal(row, ["Gender"]);
+        const bloodGroup = getColVal(row, ["Blood Group", "bloodgroup"]);
+        const address = getColVal(row, ["Permanent Address", "address", "permanentaddress"]);
+        const emergencyContact = getColVal(row, ["Emergency Contact", "emergencycontact"]);
+        const emergencyPhone = getColVal(row, ["Emergency Phone", "emergencyphone"]);
+        const bankName = getColVal(row, ["Bank Name", "bankname"]);
+        const bankAccountNo = getColVal(row, ["Bank Account No", "bankaccountno", "account number"]);
+        const ifscCode = getColVal(row, ["IFSC Code", "ifsccode", "ifsc"]);
+        const pan = getColVal(row, ["PAN", "pan card", "pancard"]);
+        const uan = getColVal(row, ["UAN", "uan number", "uannumber"]);
+
+        const joiningDateStr = getColVal(row, ["Joining Date", "joiningdate"]);
+        let joiningDate = new Date();
+        if (joiningDateStr) {
+          const parsedDate = new Date(joiningDateStr);
+          if (!Number.isNaN(parsedDate.getTime())) joiningDate = parsedDate;
+        }
+
+        const dobStr = getColVal(row, ["Date of Birth", "dob", "dateofbirth"]);
+        let dateOfBirth: Date | null = null;
+        if (dobStr) {
+          const parsedDob = new Date(dobStr);
+          if (!Number.isNaN(parsedDob.getTime())) dateOfBirth = parsedDob;
+        }
+
+        const statusStr = getColVal(row, ["Status", "status"]).toUpperCase();
+        let status: EmployeeStatus = "ACTIVE";
+        if (["ACTIVE", "ONBOARDING", "OFFBOARDING", "INACTIVE", "ALUMNI"].includes(statusStr)) {
+          status = statusStr as EmployeeStatus;
+        }
+
+        const empTypeStr = getColVal(row, ["Employment Type", "employmenttype", "type"]).toUpperCase().replace(" ", "_");
+        let employmentType: EmploymentType = "FULL_TIME";
+        if (["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr)) {
+          employmentType = empTypeStr as EmploymentType;
+        }
+
+        const deptCode = getColVal(row, ["Department Code", "departmentcode", "department"]);
+        let departmentId = defaultDept.id;
+        if (deptCode) {
+          const matchedDept = await prisma.department.findFirst({
+            where: { code: deptCode.toUpperCase() }
+          });
+          if (matchedDept) {
+            departmentId = matchedDept.id;
+          } else {
+            const newDept = await prisma.department.create({
+              data: { name: deptCode, code: deptCode.toUpperCase() }
+            });
+            departmentId = newDept.id;
+          }
+        }
+
+        const updatePayload = {
+          firstName,
+          lastName,
+          designation,
+          deployedCompany: deployedCompany || null,
+          personalEmail: personalEmail || null,
+          phone: phone || null,
+          gender: gender || null,
+          bloodGroup: bloodGroup || null,
+          permanentAddress: address || null,
+          emergencyContact: emergencyContact || null,
+          emergencyPhone: emergencyPhone || null,
+          bankName: bankName || null,
+          bankAccountNo: bankAccountNo || null,
+          ifscCode: ifscCode || null,
+          pan: pan || null,
+          uan: uan || null,
+          joiningDate,
+          dateOfBirth,
+          status,
+          employmentType,
+          departmentId
+        };
+
+        if (existingEmp) {
+          await prisma.employee.update({
+            where: { id: existingEmp.id },
+            data: updatePayload
+          });
+          updatedCount++;
+        } else {
+          const baseEmail = email ? email.toLowerCase() : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@theantbox.com`;
+          let finalEmail = baseEmail;
+          const userExists = await prisma.user.findUnique({ where: { email: finalEmail } });
+          if (userExists) {
+            const emailCount = await prisma.user.count({ where: { email: { startsWith: finalEmail.split("@")[0] } } });
+            finalEmail = `${finalEmail.split("@")[0]}${emailCount + 1}@theantbox.com`;
+          }
+
+          let finalEmpId = empId;
+          if (!finalEmpId || finalEmpId === "—") {
+            const empTotal = await prisma.employee.count();
+            finalEmpId = `ANT-${String(empTotal + 100).padStart(3, "0")}`;
+          }
+
+          const passwordHash = await bcrypt.hash("AntBox@2025", 12);
+
+          await prisma.user.create({
+            data: {
+              email: finalEmail,
+              passwordHash,
+              role: "EMPLOYEE",
+              isActive: status !== "INACTIVE" && status !== "ALUMNI",
+              employee: {
+                create: {
+                  ...updatePayload,
+                  email: finalEmail,
+                  employeeId: finalEmpId,
+                }
+              }
+            }
+          });
+          createdCount++;
+        }
+      }
+    }
+
+    // 2. Fetch all employees from DB and push back to Google Sheets
+    const allEmployees = await prisma.employee.findMany({
+      include: {
+        department: true,
+        documents: true,
+        leaveRequests: {
+          where: { status: "APPROVED" }
+        }
+      },
+      orderBy: { employeeId: "asc" }
+    });
+
+    const spreadsheetHeaders = [
+      "Employee ID",
+      "First Name",
+      "Last Name",
+      "Official Email",
+      "Personal Email",
+      "Phone",
+      "Designation",
+      "Department Code",
+      "Deployed Company",
+      "Employment Type",
+      "Status",
+      "Joining Date",
+      "Date of Birth",
+      "Gender",
+      "Blood Group",
+      "Permanent Address",
+      "Emergency Contact",
+      "Emergency Phone",
+      "Bank Name",
+      "Bank Account No",
+      "IFSC Code",
+      "PAN",
+      "UAN",
+      "Documents Submitted",
+      "Total Leaves Taken"
+    ];
+
+    const spreadsheetRows = allEmployees.map((emp) => {
+      const docTitles = emp.documents.map((d) => d.title).join(", ") || "None";
+      const leavesTaken = emp.leaveRequests.reduce((sum, r) => sum + r.days, 0);
+
+      return [
+        emp.employeeId,
+        emp.firstName,
+        emp.lastName,
+        emp.email,
+        emp.personalEmail || "",
+        emp.phone || "",
+        emp.designation,
+        emp.department?.code || "",
+        emp.deployedCompany || "AntBox",
+        emp.employmentType,
+        emp.status,
+        emp.joiningDate ? emp.joiningDate.toISOString().split("T")[0] : "",
+        emp.dateOfBirth ? emp.dateOfBirth.toISOString().split("T")[0] : "",
+        emp.gender || "",
+        emp.bloodGroup || "",
+        emp.permanentAddress || emp.address || "",
+        emp.emergencyContact || "",
+        emp.emergencyPhone || "",
+        emp.bankName || "",
+        emp.bankAccountNo || "",
+        emp.ifscCode || "",
+        emp.pan || "",
+        emp.uan || "",
+        docTitles,
+        leavesTaken.toString()
+      ];
+    });
+
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId,
+      range: `${sheetName}!A:Z`,
+    });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!A1`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [spreadsheetHeaders, ...spreadsheetRows]
+      }
+    });
+
+    console.log(`[Google Sheets] Bi-directional sync completed successfully. Updated: ${updatedCount}, Created: ${createdCount}`);
+
+    return {
+      success: true,
+      simulated: false,
+      updatedCount,
+      createdCount
+    };
+  } catch (error) {
+    console.error("[Google Sheets] Sync failed:", error);
+    return {
+      success: false,
+      simulated: false,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+

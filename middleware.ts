@@ -8,6 +8,7 @@ const publicPaths = ["/login", "/register", "/api/auth"];
 const superAdminOnlyRoutes = [
   "/onboarding", "/offboarding", "/payroll",
   "/api/payroll", "/api/onboarding", "/api/offboarding",
+  "/api/google",
 ];
 
 const adminOrCompanyAdminRoutes = [

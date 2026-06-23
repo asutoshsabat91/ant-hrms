@@ -23,6 +23,7 @@ import { PayrollSummaryCard } from "@/components/dashboard/PayrollSummaryCard";
 import { UpcomingOffboardingWidget } from "@/components/dashboard/UpcomingOffboardingWidget";
 import { PendingLeavesWidget } from "@/components/dashboard/PendingLeavesWidget";
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard";
+import { MasterSheetsSyncWidget } from "@/components/dashboard/MasterSheetsSyncWidget";
 import { getDashboardStats, getRecentActivity, getAttendancePulse } from "@/lib/dashboard";
 import { getDynamicBalances } from "@/lib/leave";
 import type { Employee } from "@prisma/client";
@@ -304,6 +305,11 @@ export default async function DashboardPage() {
           />
         </ScrollReveal>
       </div>
+
+      {/* Master Employee Database (Google Sheets) */}
+      <ScrollReveal delayClass="reveal-delay-3">
+        <MasterSheetsSyncWidget spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} />
+      </ScrollReveal>
 
       {/* Onboarding + Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
