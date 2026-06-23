@@ -8,6 +8,7 @@ import type { TaskCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import { sendOnboardingEmail } from "@/lib/mail";
+import { appendEmployeeToSheet } from "@/lib/googleSheets";
 
 const onboardingSchema = z.object({
   mode: z.enum(["invite", "complete", "direct"]).optional(),
@@ -272,6 +273,9 @@ export async function POST(req: Request) {
       const targetEmail = data.personalEmail || data.email;
       await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName);
 
+      // Sync with Google Sheets
+      await appendEmployeeToSheet(result);
+
       return NextResponse.json({ employee: result }, { status: 201 });
     }
 
@@ -380,6 +384,9 @@ export async function POST(req: Request) {
     // Send the welcome email with credentials to personalEmail (fallback to work email if personal not provided)
     const targetEmail = data.personalEmail || data.email;
     await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName);
+
+    // Sync with Google Sheets
+    await appendEmployeeToSheet(result);
 
     const onboardingTasks = await prisma.onboardingTask.findMany({
       where: { employeeId: result.id },

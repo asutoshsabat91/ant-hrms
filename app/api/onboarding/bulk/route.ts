@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { addDays, subDays } from "date-fns";
 import type { TaskCategory, Employee } from "@prisma/client";
+import { appendEmployeeToSheet } from "@/lib/googleSheets";
 
 const DEFAULT_TASKS: Array<{
   title: string; category: TaskCategory; assignedTo: string;
@@ -146,6 +147,9 @@ export async function POST(req: Request) {
       });
 
       createdEmployees.push(result);
+      
+      // Sync with Google Sheets
+      await appendEmployeeToSheet(result);
     }
 
     // Notify admins in bulk

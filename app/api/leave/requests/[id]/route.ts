@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendLeaveApprovalEmail } from "@/lib/mail";
+import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
 
 const decisionSchema = z.object({
   action: z.enum(["APPROVE", "REJECT"]),
@@ -153,6 +154,8 @@ export async function PATCH(
 
   try {
     const employeeName = `${result.employee.firstName} ${result.employee.lastName}`;
+    
+    // Send email notification
     await sendLeaveApprovalEmail(
       result.employee.email,
       employeeName,
@@ -161,8 +164,19 @@ export async function PATCH(
       result.status as "APPROVED" | "REJECTED",
       result.rejectionReason
     );
-  } catch (mailErr) {
-    console.error("Failed to send leave decision email", mailErr);
+
+    // Sync to Google Calendar if approved
+    if (result.status === "APPROVED") {
+      await createGoogleCalendarEvent({
+        title: `${employeeName} — Out of Office (${result.leaveType.name})`,
+        description: `Leave Request Approved.\nReason: ${result.reason || ""}`,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        allDay: true,
+      });
+    }
+  } catch (err) {
+    console.error("Failed post-leave decision integrations (email/calendar)", err);
   }
 
   return NextResponse.json({ request: result });

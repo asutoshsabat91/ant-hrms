@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { addDays, endOfDay, startOfDay } from "date-fns";
+import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -103,6 +104,15 @@ export async function POST(req: Request) {
 
     const event = await prisma.companyEvent.create({
       data: { title, description, category, startDate: start, endDate: end, allDay, createdBy: session.user.id },
+    });
+
+    // Sync to Google Calendar
+    await createGoogleCalendarEvent({
+      title,
+      description,
+      startDate: start,
+      endDate: end,
+      allDay,
     });
 
     return NextResponse.json({ event }, { status: 201 });
