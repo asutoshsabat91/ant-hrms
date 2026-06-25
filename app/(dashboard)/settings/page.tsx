@@ -1,8 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { OfficeLocationCard } from "@/components/settings/OfficeLocationCard";
+import { SettingsPageClient } from "@/components/settings/SettingsPageClient";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -38,6 +37,23 @@ export default async function SettingsPage() {
     // DB not ready or connection failed fallback
   }
 
+  // Fetch all leave types ordered by name
+  const leaveTypes = await prisma.leaveType.findMany({
+    orderBy: { name: "asc" },
+  });
+
+  // Map to safe client types
+  const safeLeaveTypes = leaveTypes.map((lt) => ({
+    id: lt.id,
+    name: lt.name,
+    code: lt.code,
+    daysPerYear: lt.daysPerYear,
+    accrual: lt.accrual,
+    priorNoticeHours: lt.priorNoticeHours,
+    applicableTo: lt.applicableTo,
+    isPaid: lt.isPaid,
+  }));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -45,88 +61,14 @@ export default async function SettingsPage() {
         description="Company profile, office location, departments, policies, and audit log"
       />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Profile card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>Logged-in account details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email</p>
-              <p className="text-sm font-medium text-zinc-900 mt-0.5">{user?.email}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Role</p>
-              <p className="text-sm font-medium text-zinc-900 mt-0.5">{user?.role?.replace("_", " ")}</p>
-            </div>
-            {user?.employee && (
-              <>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Employee</p>
-                  <p className="text-sm font-medium text-zinc-900 mt-0.5">
-                    {user.employee.firstName} {user.employee.lastName}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Employee ID</p>
-                  <p className="text-sm font-mono font-semibold text-[var(--purple)] mt-0.5">{user.employee.employeeId}</p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* App status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>App Status</CardTitle>
-            <CardDescription>Environment and runtime info</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Environment</p>
-              <p className="text-sm font-medium text-zinc-900 mt-0.5">{process.env.NODE_ENV ?? "development"}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Next.js</p>
-              <p className="text-sm font-medium text-zinc-900 mt-0.5">14.2.35</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Database</p>
-              <p className="text-sm font-medium text-zinc-900 mt-0.5">PostgreSQL via Prisma</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Office Location</p>
-              <p className="text-sm font-mono text-zinc-600 mt-0.5">{officeLat}, {officeLon}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Office Location (super admin only) */}
-        {isSuperAdmin && (
-          <OfficeLocationCard
-            initialLat={officeLat}
-            initialLon={officeLon}
-            initialRadius={officeRadius}
-          />
-        )}
-
-        {!isSuperAdmin && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Workspace</CardTitle>
-              <CardDescription>AntBox HRMS configuration</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-zinc-500">
-                Settings are managed by your Super Admin. Contact HR for changes to office policies or account configuration.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      <SettingsPageClient
+        user={user}
+        isSuperAdmin={isSuperAdmin}
+        officeLat={officeLat}
+        officeLon={officeLon}
+        officeRadius={officeRadius}
+        initialLeaveTypes={safeLeaveTypes}
+      />
     </div>
   );
 }

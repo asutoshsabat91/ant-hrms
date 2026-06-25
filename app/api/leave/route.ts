@@ -143,6 +143,8 @@ export async function POST(req: Request) {
     // 1. Acquire an exclusive row-level lock on the Employee table to serialize concurrent leave submissions for this employee
     await tx.$executeRaw`SELECT * FROM "Employee" WHERE id = ${employee.id} FOR UPDATE`;
 
+    const isUnpaidIntern = employee.employmentType === "INTERN" && (!employee.ctc || employee.ctc === 0);
+
     // 2. Holiday Overlap Check
     if (leaveType.code !== "WFH") {
       const holidayOverlap = await tx.holiday.findFirst({
@@ -155,8 +157,21 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Optional Holiday limit check (2 days per year)
-    if (leaveType.code === "OPTIONAL_HOLIDAY") {
+    // 3. Notice Period check
+    if (!isUnpaidIntern && leaveType.priorNoticeHours > 0) {
+      // Assume the workday starts at 9:00 AM of the start date in the local timezone
+      const startWorkday = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 9, 0, 0);
+      const now = new Date();
+      const diffHours = (startWorkday.getTime() - now.getTime()) / (1000 * 60 * 60);
+      if (diffHours < leaveType.priorNoticeHours) {
+        throw new Error(
+          `This leave type requires at least ${leaveType.priorNoticeHours} hours of prior notice. Since your leave starts on ${format(start, "dd MMM yyyy")}, you must apply earlier.`
+        );
+      }
+    }
+
+    // 4. Optional Holiday limit check (2 days per year)
+    if (!isUnpaidIntern && leaveType.code === "OPTIONAL_HOLIDAY") {
       const startOfYear = new Date(start.getFullYear(), 0, 1);
       const endOfYear = new Date(start.getFullYear(), 11, 31, 23, 59, 59, 999);
       const existingOptional = await tx.leaveRequest.findMany({
@@ -173,8 +188,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Intern Paid/Quarter Leave quarterly accrual & rollover rules
-    if (leaveType.code === "PAID_QUARTER" && employee.employmentType === "INTERN") {
+    // 5. Intern Paid/Quarter Leave quarterly accrual & rollover rules
+    if (!isUnpaidIntern && leaveType.code === "PAID_QUARTER" && employee.employmentType === "INTERN") {
       const startQuarter = Math.floor(start.getMonth() / 3);
       const endQuarter = Math.floor(end.getMonth() / 3);
       if (startQuarter !== endQuarter || start.getFullYear() !== end.getFullYear()) {
@@ -205,7 +220,21 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Existing Overlap Check
+    // 5.1 General Leave Balance Check (Exempt for LOP, WFH, SICK and Unpaid Interns)
+    if (!isUnpaidIntern && leaveType.code !== "LOP" && leaveType.code !== "WFH" && leaveType.code !== "SICK") {
+      const balances = await getDynamicBalances(employee.id, employee.employmentType, year);
+      const balance = balances.find((b) => b.leaveType.id === leaveTypeId);
+      if (balance) {
+        const remaining = balance.allocated - balance.used - balance.pending;
+        if (days > remaining) {
+          throw new Error(`Insufficient leave balance. You are requesting ${days} day(s), but only have ${remaining} day(s) remaining for ${leaveType.name}.`);
+        }
+      } else {
+        throw new Error(`This leave type (${leaveType.name}) is not applicable to your employment type.`);
+      }
+    }
+
+    // 6. Existing Overlap Check
     const existingOverlap = await tx.leaveRequest.findFirst({
       where: {
         employeeId: user.employee!.id,
@@ -221,37 +250,42 @@ export async function POST(req: Request) {
       throw new Error("You already have a leave request covering this period.");
     }
 
-    // 6. Sick Leave Split calculations (calculated under lock using current values)
+    // 7. Sick Leave Split calculations (calculated under lock using current values)
     let sickPaidDays = 0;
     let sickLopDays = 0;
 
     if (leaveType.code === "SICK") {
-      const [allBalances, allRequests] = await Promise.all([
-        tx.leaveBalance.findMany({
-          where: { employeeId: employee.id, year },
-          include: { leaveType: true },
-        }),
-        tx.leaveRequest.findMany({
-          where: { employeeId: employee.id, status: { in: ["APPROVED", "PENDING"] } },
-          include: { leaveType: true },
-        }),
-      ]);
-
-      const paidTypeCode = employee.employmentType === "INTERN" ? "PAID_QUARTER" : "EARNED";
-      const paidBalanceRecord = allBalances.find((b) => b.leaveType.code === paidTypeCode);
-      const paidReqs = allRequests.filter((r) => r.leaveType.code === paidTypeCode);
-
-      const used = paidReqs.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
-      const pending = paidReqs.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
-      const allocated = paidBalanceRecord?.allocated ?? (employee.employmentType === "INTERN" ? 12 : 18);
-      const remainingPaid = Math.max(0, allocated - used - pending);
-
-      if (remainingPaid >= days) {
+      if (isUnpaidIntern) {
         sickPaidDays = days;
         sickLopDays = 0;
       } else {
-        sickPaidDays = remainingPaid;
-        sickLopDays = days - remainingPaid;
+        const [allBalances, allRequests] = await Promise.all([
+          tx.leaveBalance.findMany({
+            where: { employeeId: employee.id, year },
+            include: { leaveType: true },
+          }),
+          tx.leaveRequest.findMany({
+            where: { employeeId: employee.id, status: { in: ["APPROVED", "PENDING"] } },
+            include: { leaveType: true },
+          }),
+        ]);
+
+        const paidTypeCode = employee.employmentType === "INTERN" ? "PAID_QUARTER" : "EARNED";
+        const paidBalanceRecord = allBalances.find((b) => b.leaveType.code === paidTypeCode);
+        const paidReqs = allRequests.filter((r) => r.leaveType.code === paidTypeCode);
+
+        const used = paidReqs.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+        const pending = paidReqs.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+        const allocated = paidBalanceRecord?.allocated ?? (employee.employmentType === "INTERN" ? 12 : 18);
+        const remainingPaid = Math.max(0, allocated - used - pending);
+
+        if (remainingPaid >= days) {
+          sickPaidDays = days;
+          sickLopDays = 0;
+        } else {
+          sickPaidDays = remainingPaid;
+          sickLopDays = days - remainingPaid;
+        }
       }
     }
 

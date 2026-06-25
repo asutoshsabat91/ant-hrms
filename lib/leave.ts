@@ -18,6 +18,13 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
     include: { leaveType: true },
   });
 
+  // Fetch employee to check if they are an unpaid intern
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { ctc: true },
+  });
+  const isUnpaidIntern = employmentType === "INTERN" && (!employee?.ctc || employee.ctc === 0);
+
   const balances = allLeaveTypes.map((lt) => {
     const isApplicable = lt.applicableTo.includes(employmentType as EmploymentType);
     if (!isApplicable) {
@@ -30,32 +37,54 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
 
     let allocated = lt.daysPerYear;
 
-    if (lt.code === "PAID_QUARTER" && employmentType === "INTERN") {
+    if (isUnpaidIntern) {
+      allocated = 999; // Unlimited
+    } else {
+      const accrualMode = lt.accrual || "ANNUAL";
       const now = new Date();
       if (now.getFullYear() === year) {
-        const startQuarter = Math.floor(now.getMonth() / 3) * 3;
-        allocated = now.getMonth() - startQuarter + 1; // Accrued up to current month in current quarter
-        
-        // Accumulate used/pending only inside the current quarter
-        const qStartDate = new Date(year, startQuarter, 1);
-        const qEndDate = new Date(year, startQuarter + 3, 0, 23, 59, 59, 999);
-        
-        const qRequests = typeRequests.filter((r) => r.startDate >= qStartDate && r.startDate <= qEndDate);
-        used = qRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
-        pending = qRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+        if (accrualMode === "QUARTERLY") {
+          const startQuarter = Math.floor(now.getMonth() / 3) * 3;
+          const quarterBase = lt.daysPerYear / 4;
+          const monthInQuarter = now.getMonth() - startQuarter + 1; // 1, 2, or 3
+          allocated = Math.round((quarterBase / 3) * monthInQuarter * 10) / 10;
+          
+          // Accumulate used/pending only inside the current quarter
+          const qStartDate = new Date(year, startQuarter, 1);
+          const qEndDate = new Date(year, startQuarter + 3, 0, 23, 59, 59, 999);
+          
+          const qRequests = typeRequests.filter((r) => r.startDate >= qStartDate && r.startDate <= qEndDate);
+          used = qRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+          pending = qRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
 
-        // Add SICK leave paid portion inside current quarter
-        const qSickRequests = requests.filter(
-          (r) => r.leaveType.code === "SICK" && r.startDate >= qStartDate && r.startDate <= qEndDate
-        );
-        const sickPaidApproved = qSickRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
-        const sickPaidPending = qSickRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
-        used += sickPaidApproved;
-        pending += sickPaidPending;
+          // Add SICK leave paid portion inside current quarter
+          const qSickRequests = requests.filter(
+            (r) => r.leaveType.code === "SICK" && r.startDate >= qStartDate && r.startDate <= qEndDate
+          );
+          const sickPaidApproved = qSickRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
+          const sickPaidPending = qSickRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + (r.sickPaidDays ?? 0), 0);
+          used += sickPaidApproved;
+          pending += sickPaidPending;
+        } else if (accrualMode === "MONTHLY") {
+          const currentMonthIndex = now.getMonth();
+          const monthlyAccrued = (lt.daysPerYear / 12) * (currentMonthIndex + 1);
+          allocated = Math.round(monthlyAccrued * 10) / 10;
+
+          // Accumulate used/pending only inside the current month
+          const mStartDate = new Date(year, currentMonthIndex, 1);
+          const mEndDate = new Date(year, currentMonthIndex + 1, 0, 23, 59, 59, 999);
+
+          const mRequests = typeRequests.filter((r) => r.startDate >= mStartDate && r.startDate <= mEndDate);
+          used = mRequests.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+          pending = mRequests.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+        }
       } else {
-        allocated = 0;
-        used = 0;
-        pending = 0;
+        // Different year logic
+        if (accrualMode === "QUARTERLY" || accrualMode === "MONTHLY") {
+          allocated = 0;
+          used = 0;
+          pending = 0;
+        }
       }
     }
 

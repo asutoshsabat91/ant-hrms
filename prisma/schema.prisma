@@ -362,6 +362,8 @@ model LeaveType {
   carryoverLimit Int              @default(0)
   isPaid         Boolean          @default(true)
   applicableTo   EmploymentType[]
+  accrual        String           @default("ANNUAL")
+  priorNoticeHours Int            @default(0)
   requests       LeaveRequest[]
   balances       LeaveBalance[]
 }

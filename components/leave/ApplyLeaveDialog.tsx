@@ -9,6 +9,7 @@ interface LeaveTypeItem {
   id: string;
   name: string;
   code?: string;
+  applicableTo?: string[];
 }
 
 interface LeaveBalanceItem {
@@ -44,12 +45,14 @@ export function ApplyLeaveDialog({
   employmentType = "FULL_TIME",
 }: ApplyLeaveDialogProps) {
   const filteredLeaveTypes = useMemo(() => {
-    const isIntern = employmentType === "INTERN";
-    const allowedCodes = isIntern
-      ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH", "SICK"]
-      : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH", "SICK"];
-    
     return (leaveTypes || []).filter((type) => {
+      if (type.applicableTo && Array.isArray(type.applicableTo)) {
+        return type.applicableTo.includes(employmentType);
+      }
+      const isIntern = employmentType === "INTERN";
+      const allowedCodes = isIntern
+        ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH", "SICK"]
+        : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH", "SICK"];
       const code = type.code || "";
       return allowedCodes.includes(code);
     });

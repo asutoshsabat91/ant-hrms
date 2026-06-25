@@ -65,6 +65,7 @@ export default async function LeavePage() {
     id: lt.id,
     name: lt.name,
     code: lt.code,
+    applicableTo: lt.applicableTo,
   }));
 
   return (
