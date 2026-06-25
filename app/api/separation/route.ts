@@ -9,9 +9,22 @@ export async function GET() {
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const isAdmin = session.user.role === "ADMIN";
+    const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+    const managedCompany = session.user.managedCompany;
 
     if (isAdmin) {
       const separations = await prisma.separation.findMany({
+        orderBy: { initiatedAt: "desc" },
+        include: { employee: { select: { firstName: true, lastName: true, employeeId: true, designation: true, department: { select: { name: true } } } } },
+      });
+      return NextResponse.json({ separations });
+    }
+
+    if (isCompanyAdmin && managedCompany) {
+      const separations = await prisma.separation.findMany({
+        where: {
+          employee: { deployedCompany: managedCompany },
+        },
         orderBy: { initiatedAt: "desc" },
         include: { employee: { select: { firstName: true, lastName: true, employeeId: true, designation: true, department: { select: { name: true } } } } },
       });
@@ -34,21 +47,38 @@ export async function POST(req: Request) {
     const session = await auth();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const employee = await prisma.employee.findFirst({ where: { userId: session.user.id } });
-    if (!employee) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+    const { reason, employeeId } = await req.json();
 
-    const existing = await prisma.separation.findUnique({ where: { employeeId: employee.id } });
+    const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+    const managedCompany = session.user.managedCompany;
+
+    let targetEmployee;
+    if (isCompanyAdmin && managedCompany) {
+      if (!employeeId) {
+        return NextResponse.json({ error: "employeeId is required" }, { status: 400 });
+      }
+      targetEmployee = await prisma.employee.findFirst({
+        where: { id: employeeId, deployedCompany: managedCompany }
+      });
+      if (!targetEmployee) {
+        return NextResponse.json({ error: "Employee not found in your company" }, { status: 404 });
+      }
+    } else {
+      targetEmployee = await prisma.employee.findFirst({ where: { userId: session.user.id } });
+      if (!targetEmployee) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+    }
+
+    const existing = await prisma.separation.findUnique({ where: { employeeId: targetEmployee.id } });
     if (existing && ["PENDING", "APPROVED"].includes(existing.status)) {
       return NextResponse.json({ error: "A separation request is already active." }, { status: 400 });
     }
 
-    const { reason } = await req.json();
     if (!reason?.trim()) return NextResponse.json({ error: "Reason is required" }, { status: 400 });
 
-    const noticeDays = employee.employmentType === "INTERN" ? 10 : 60;
+    const noticeDays = targetEmployee.employmentType === "INTERN" ? 10 : 60;
 
     const separation = await prisma.separation.create({
-      data: { employeeId: employee.id, reason, status: "PENDING", noticeDays },
+      data: { employeeId: targetEmployee.id, reason, status: "PENDING", noticeDays },
     });
 
     const admins = await prisma.user.findMany({ where: { role: { in: ["ADMIN"] } } });
@@ -57,16 +87,16 @@ export async function POST(req: Request) {
         userId: a.id,
         type: "SEPARATION_REQUEST" as const,
         title: "Resignation Submitted",
-        body: `${employee.firstName} ${employee.lastName} has initiated a resignation. Please review.`,
+        body: `${targetEmployee.firstName} ${targetEmployee.lastName} has initiated a resignation. Please review.`,
         link: "/separation",
       })),
     });
 
     try {
-      const employeeName = `${employee.firstName} ${employee.lastName}`;
+      const employeeName = `${targetEmployee.firstName} ${targetEmployee.lastName}`;
       await sendSeparationRequestEmail(
         employeeName,
-        employee.email,
+        targetEmployee.email,
         reason,
         noticeDays
       );

@@ -9,9 +9,12 @@ export default async function SeparationPage() {
   if (!session?.user) redirect("/login");
 
   const isAdmin = session.user.role === "ADMIN";
+  const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+  const managedCompany = session.user.managedCompany;
 
   let mySeparation = null;
   let allSeparations: unknown[] = [];
+  let companyEmployees: { id: string; firstName: string; lastName: string; employeeId: string }[] = [];
 
   try {
     if (isAdmin) {
@@ -29,6 +32,34 @@ export default async function SeparationPage() {
           },
         },
       });
+    } else if (isCompanyAdmin && managedCompany) {
+      allSeparations = await prisma.separation.findMany({
+        where: {
+          employee: { deployedCompany: managedCompany },
+        },
+        orderBy: { initiatedAt: "desc" },
+        include: {
+          employee: {
+            select: {
+              firstName: true,
+              lastName: true,
+              employeeId: true,
+              designation: true,
+              department: { select: { name: true } },
+            },
+          },
+        },
+      });
+      companyEmployees = await prisma.employee.findMany({
+        where: { deployedCompany: managedCompany },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          employeeId: true,
+        },
+        orderBy: { firstName: "asc" },
+      });
     } else {
       const emp = await prisma.employee.findFirst({ where: { userId: session.user.id } });
       if (emp) {
@@ -43,10 +74,12 @@ export default async function SeparationPage() {
     <div className="space-y-6">
       <PageHeader
         title="Separation"
-        description={isAdmin ? "Review and manage employee resignation requests" : "Initiate and track your resignation"}
+        description={isAdmin ? "Review and manage employee resignation requests" : isCompanyAdmin ? "View company separations and apply on behalf of employees" : "Initiate and track your resignation"}
       />
       <SeparationPortal
         isAdmin={isAdmin}
+        isCompanyAdmin={isCompanyAdmin}
+        companyEmployees={companyEmployees}
         mySeparation={mySeparation ? {
           id: mySeparation.id,
           status: mySeparation.status as "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED",

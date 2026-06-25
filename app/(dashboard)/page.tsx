@@ -24,6 +24,7 @@ import { UpcomingOffboardingWidget } from "@/components/dashboard/UpcomingOffboa
 import { PendingLeavesWidget } from "@/components/dashboard/PendingLeavesWidget";
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard";
 import { MasterSheetsSyncWidget } from "@/components/dashboard/MasterSheetsSyncWidget";
+import { LiveWorkspacePulse } from "@/components/dashboard/LiveWorkspacePulse";
 import { getDashboardStats, getRecentActivity, getAttendancePulse } from "@/lib/dashboard";
 import { getDynamicBalances } from "@/lib/leave";
 import type { Employee } from "@prisma/client";
@@ -237,12 +238,25 @@ export default async function DashboardPage() {
 
       {/* Employee widgets row (admin also sees punch-in) */}
       <div className="grid gap-4 lg:grid-cols-3 items-start">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <DashboardAttendanceLogs punches={todayPunches} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
-          <LeaveBalancesCard balances={leaveBalances} />
-        </ScrollReveal>
+        {isAdmin ? (
+          <ScrollReveal delayClass="reveal-delay-1" className="lg:col-span-2">
+            <LiveWorkspacePulse
+              activeCount={displayActiveCount}
+              presentPct={displayPresentPct}
+              onLeaveCount={stats.onLeaveToday}
+              pendingApprovals={pendingLeaveCount}
+            />
+          </ScrollReveal>
+        ) : (
+          <>
+            <ScrollReveal delayClass="reveal-delay-1">
+              <DashboardAttendanceLogs punches={todayPunches} />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-2">
+              <LeaveBalancesCard balances={leaveBalances} />
+            </ScrollReveal>
+          </>
+        )}
         <ScrollReveal delayClass="reveal-delay-3" className="space-y-4">
           <CompanyCalendarWidget holidays={holidays} leaves={calendarLeaves} leaveTypes={leaveTypes} />
           <UpcomingHolidaysWidget holidays={holidays} />
