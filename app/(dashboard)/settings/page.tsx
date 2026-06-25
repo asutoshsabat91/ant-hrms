@@ -37,28 +37,11 @@ export default async function SettingsPage() {
     // DB not ready or connection failed fallback
   }
 
-  // Fetch all leave types ordered by name
-  const leaveTypes = await prisma.leaveType.findMany({
-    orderBy: { name: "asc" },
-  });
-
-  // Map to safe client types
-  const safeLeaveTypes = leaveTypes.map((lt) => ({
-    id: lt.id,
-    name: lt.name,
-    code: lt.code,
-    daysPerYear: lt.daysPerYear,
-    accrual: lt.accrual,
-    priorNoticeHours: lt.priorNoticeHours,
-    applicableTo: lt.applicableTo,
-    isPaid: lt.isPaid,
-  }));
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Company profile, office location, departments, policies, and audit log"
+        description="Company profile, office location, departments, and audit log"
       />
 
       <SettingsPageClient
@@ -67,7 +50,6 @@ export default async function SettingsPage() {
         officeLat={officeLat}
         officeLon={officeLon}
         officeRadius={officeRadius}
-        initialLeaveTypes={safeLeaveTypes}
       />
     </div>
   );

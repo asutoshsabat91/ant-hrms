@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Layers,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -39,6 +40,7 @@ const ADMIN_NAV = [
   { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "POSH",         href: "/posh",         icon: ShieldCheck },
   { title: "Calendar",     href: "/calendar",     icon: Calendar },
+  { title: "Policy",       href: "/policy",       icon: BookOpen },
   { title: "Settings",     href: "/settings",     icon: Settings },
 ];
 
@@ -51,6 +53,7 @@ const EMPLOYEE_NAV = [
   { title: "Reimbursements",  href: "/portal/reimbursements",   icon: Briefcase },
   { title: "Separation",      href: "/separation",              icon: DoorOpen },
   { title: "Calendar",        href: "/calendar",                icon: Calendar },
+  { title: "Policy",          href: "/policy",                  icon: BookOpen },
 ];
 
 const COMPANY_ADMIN_NAV = [
@@ -62,6 +65,7 @@ const COMPANY_ADMIN_NAV = [
   { title: "Documents",    href: "/documents",    icon: FileText },
   { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "Calendar",     href: "/calendar",     icon: Calendar },
+  { title: "Policy",       href: "/policy",       icon: BookOpen },
   { title: "Settings",     href: "/settings",     icon: Settings },
 ];
 

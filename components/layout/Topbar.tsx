@@ -106,6 +106,7 @@ export function Topbar({ user, employee }: TopbarProps) {
       { name: "POSH 🛡️", href: "/posh" },
       { name: "Calendar 📅", href: "/calendar" },
       { name: "Reports 📈", href: "/reports" },
+      { name: "Policy 📖", href: "/policy" },
       { name: "Settings ⚙️", href: "/settings" },
     ];
 
@@ -153,6 +154,7 @@ export function Topbar({ user, employee }: TopbarProps) {
     if (path.startsWith("/calendar")) return { title: "Calendar", description: "Events, holidays, and schedules" };
     if (path.startsWith("/reports")) return { title: "Reports", description: "Reports and analysis" };
     if (path.startsWith("/settings")) return { title: "Settings", description: "Manage your account and workspace" };
+    if (path.startsWith("/policy")) return { title: "Policy", description: "Company leave policies and workplace rules" };
     if (path.startsWith("/notifications")) return { title: "Notifications", description: "System alerts and notifications" };
     return { title: "AntBox HRMS", description: "Talent-Tech People Platform" };
   };
