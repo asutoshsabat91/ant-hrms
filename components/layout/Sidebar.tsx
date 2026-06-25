@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -19,6 +20,8 @@ import {
   LogOut,
   DoorOpen,
   ShieldCheck,
+  ChevronDown,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -67,6 +70,8 @@ interface SidebarProps {
   gender?: string | null;
 }
 
+const OTHERS_TITLES = ["Personal", "Documents", "Reimbursements", "Separation"];
+
 export function Sidebar({ role, gender }: SidebarProps) {
   const pathname = usePathname();
 
@@ -82,6 +87,49 @@ export function Sidebar({ role, gender }: SidebarProps) {
     return true;
   });
 
+  const checkActive = (href: string) => {
+    const [itemPath, itemQuery] = href.split("?");
+    if (href === "/") {
+      return pathname === "/";
+    }
+    if (itemQuery) {
+      if (typeof window !== "undefined") {
+        const searchParams = new URLSearchParams(window.location.search);
+        const itemParams = new URLSearchParams(itemQuery);
+        let allMatch = pathname === itemPath;
+        itemParams.forEach((val, key) => {
+          if (searchParams.get(key) !== val) allMatch = false;
+        });
+        return allMatch;
+      }
+      return pathname === itemPath;
+    }
+    const isPrefixed = pathname.startsWith(href);
+    if (isPrefixed) {
+      const hasLongerMatch = visible.some(
+        (other) =>
+          other.href !== href &&
+          pathname.startsWith(other.href) &&
+          other.href.length > href.length
+      );
+      return !hasLongerMatch;
+    }
+    return false;
+  };
+
+  const hasOthers = role !== "ADMIN";
+  const othersItems = hasOthers ? visible.filter((item) => OTHERS_TITLES.includes(item.title)) : [];
+  const firstOthersIndex = hasOthers ? visible.findIndex((item) => OTHERS_TITLES.includes(item.title)) : -1;
+
+  const isAnyOthersActive = othersItems.some((item) => checkActive(item.href));
+  const [othersOpen, setOthersOpen] = useState(false);
+
+  useEffect(() => {
+    if (isAnyOthersActive) {
+      setOthersOpen(true);
+    }
+  }, [pathname, isAnyOthersActive]);
+
   return (
     <aside className="flex h-full w-full flex-col bg-[var(--sidebar-bg)]">
       <div className="flex h-16 items-center border-b border-[var(--border)] px-6 bg-transparent justify-start">
@@ -93,37 +141,67 @@ export function Sidebar({ role, gender }: SidebarProps) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {visible.map((item) => {
-          const [itemPath, itemQuery] = item.href.split("?");
-          let active = false;
-          if (item.href === "/") {
-            active = pathname === "/";
-          } else if (itemQuery) {
-            if (typeof window !== "undefined") {
-              const searchParams = new URLSearchParams(window.location.search);
-              const itemParams = new URLSearchParams(itemQuery);
-              let allMatch = pathname === itemPath;
-              itemParams.forEach((val, key) => {
-                if (searchParams.get(key) !== val) allMatch = false;
-              });
-              active = allMatch;
-            } else {
-              active = pathname === itemPath;
+        {visible.map((item, index) => {
+          if (hasOthers && OTHERS_TITLES.includes(item.title)) {
+            if (index !== firstOthersIndex) {
+              return null;
             }
-          } else {
-            const isPrefixed = pathname.startsWith(item.href);
-            if (isPrefixed) {
-              const hasLongerMatch = visible.some(
-                (other) =>
-                  other.href !== item.href &&
-                  pathname.startsWith(other.href) &&
-                  other.href.length > item.href.length
-              );
-              active = !hasLongerMatch;
-            } else {
-              active = false;
-            }
+
+            return (
+              <div key="others-dropdown" className="space-y-1">
+                <button
+                  onClick={() => setOthersOpen(!othersOpen)}
+                  className={cn(
+                    "group flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 ease-[var(--ease-out-expo)] border border-transparent text-[var(--sidebar-text)] hover:bg-zinc-800/50 hover:text-zinc-100 cursor-pointer outline-none",
+                    isAnyOthersActive && !othersOpen ? "text-zinc-100 bg-zinc-800/20" : ""
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Layers className={cn(
+                      "h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110",
+                      isAnyOthersActive ? "text-[var(--purple)]" : "group-hover:text-[var(--purple)] text-[var(--sidebar-text)]"
+                    )} />
+                    <span className="transition-colors duration-300">Others</span>
+                  </div>
+                  <ChevronDown className={cn(
+                    "h-3.5 w-3.5 shrink-0 transition-transform duration-300 text-[var(--sidebar-text)]",
+                    othersOpen ? "transform rotate-180 text-zinc-300" : ""
+                  )} />
+                </button>
+
+                {othersOpen && (
+                  <div className="pl-4 mt-1 space-y-1 border-l border-zinc-800 ml-5">
+                    {othersItems.map((subItem) => {
+                      const active = checkActive(subItem.href);
+                      const SubIcon = subItem.icon;
+                      return (
+                        <Link
+                          key={subItem.href}
+                          href={subItem.href}
+                          className={cn(
+                            "group flex items-center justify-between gap-3 rounded-lg pl-3 pr-2 py-1.5 text-xs font-semibold transition-all duration-200 border border-transparent",
+                            active
+                              ? "bg-[var(--sidebar-active)] text-[var(--sidebar-active-text)] border-[var(--border)] border-l-2 border-l-[var(--purple)]"
+                              : "text-[var(--sidebar-text)] hover:bg-zinc-800/30 hover:text-zinc-100"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <SubIcon className={cn(
+                              "h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover:scale-110",
+                              active ? "text-[var(--purple)]" : "group-hover:text-[var(--purple)] text-[var(--sidebar-text)]"
+                            )} />
+                            <span>{subItem.title}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
           }
+
+          const active = checkActive(item.href);
           const Icon = item.icon;
           return (
             <Link
