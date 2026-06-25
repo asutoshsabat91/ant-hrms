@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   format,
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameDay,
   isSameMonth,
   addMonths,
   subMonths,
@@ -48,14 +47,57 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
   const [success, setSuccess] = useState<string | null>(null);
   const [localLeaves, setLocalLeaves] = useState<CalendarLeave[]>(leaves);
 
-  const monthStart = startOfMonth(current);
-  const monthEnd = endOfMonth(current);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const monthStart = useMemo(() => startOfMonth(current), [current]);
+  const monthEnd = useMemo(() => endOfMonth(current), [current]);
+  const days = useMemo(() => eachDayOfInterval({ start: monthStart, end: monthEnd }), [monthStart, monthEnd]);
+  const paddingDays = useMemo(() => monthStart.getDay(), [monthStart]);
 
-  const paddingDays = monthStart.getDay();
+  // Pre-compile holidays lookup map by yyyy-MM-dd key to avoid O(N) array scans and new Date() instantiation in render loop.
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach((h) => {
+      try {
+        const d = new Date(h.date);
+        if (!isNaN(d.getTime())) {
+          const key = format(d, "yyyy-MM-dd");
+          map.set(key, h);
+        }
+      } catch (e) {
+        console.error("Invalid holiday date:", h.date, e);
+      }
+    });
+    return map;
+  }, [holidays]);
 
-  const getHoliday = (d: Date) => holidays.find((h) => isSameDay(new Date(h.date), d));
-  const getDayLeaves = (d: Date) => localLeaves.filter((l) => isSameDay(new Date(l.date), d));
+  // Pre-compile leaves lookup map by yyyy-MM-dd key to avoid O(N) array scans and new Date() instantiation in render loop.
+  const leavesMap = useMemo(() => {
+    const map = new Map<string, CalendarLeave[]>();
+    localLeaves.forEach((l) => {
+      try {
+        const d = new Date(l.date);
+        if (!isNaN(d.getTime())) {
+          const key = format(d, "yyyy-MM-dd");
+          if (!map.has(key)) {
+            map.set(key, []);
+          }
+          map.get(key)!.push(l);
+        }
+      } catch (e) {
+        console.error("Invalid leave date:", l.date, e);
+      }
+    });
+    return map;
+  }, [localLeaves]);
+
+  const getHoliday = (d: Date) => {
+    const key = format(d, "yyyy-MM-dd");
+    return holidayMap.get(key);
+  };
+
+  const getDayLeaves = (d: Date) => {
+    const key = format(d, "yyyy-MM-dd");
+    return leavesMap.get(key) || [];
+  };
 
   const openDialog = (d: Date) => {
     const past = d < new Date(new Date().setHours(0, 0, 0, 0));
