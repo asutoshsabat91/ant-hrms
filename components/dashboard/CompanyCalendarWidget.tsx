@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   format,
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameMonth,
   addMonths,
   subMonths,
-  isToday,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, CalendarDays, X, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -46,11 +45,20 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [localLeaves, setLocalLeaves] = useState<CalendarLeave[]>(leaves);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const monthStart = useMemo(() => startOfMonth(current), [current]);
   const monthEnd = useMemo(() => endOfMonth(current), [current]);
   const days = useMemo(() => eachDayOfInterval({ start: monthStart, end: monthEnd }), [monthStart, monthEnd]);
   const paddingDays = useMemo(() => monthStart.getDay(), [monthStart]);
+
+  const todayKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+  const currentMonth = useMemo(() => current.getMonth(), [current]);
+  const currentYear = useMemo(() => current.getFullYear(), [current]);
 
   // Pre-compile holidays lookup map by yyyy-MM-dd key to avoid O(N) array scans and new Date() instantiation in render loop.
   const holidayMap = useMemo(() => {
@@ -89,15 +97,6 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
     return map;
   }, [localLeaves]);
 
-  const getHoliday = (d: Date) => {
-    const key = format(d, "yyyy-MM-dd");
-    return holidayMap.get(key);
-  };
-
-  const getDayLeaves = (d: Date) => {
-    const key = format(d, "yyyy-MM-dd");
-    return leavesMap.get(key) || [];
-  };
 
   const openDialog = (d: Date) => {
     const past = d < new Date(new Date().setHours(0, 0, 0, 0));
@@ -216,16 +215,17 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
           <div key={`pad-${i}`} />
         ))}
         {days.map((day) => {
-          const holiday = getHoliday(day);
-          const dayLeaves = getDayLeaves(day);
-          const today = isToday(day);
-          const inMonth = isSameMonth(day, current);
+          const dateKey = format(day, "yyyy-MM-dd");
+          const holiday = holidayMap.get(dateKey);
+          const dayLeaves = leavesMap.get(dateKey) || [];
+          const today = dateKey === todayKey;
+          const inMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
           const wfh = dayLeaves.some((l) => l.type === "WFH");
           const onLeave = dayLeaves.some((l) => l.type !== "WFH");
 
           return (
             <button
-              key={day.toISOString()}
+              key={dateKey}
               onClick={() => openDialog(day)}
               className={`relative flex flex-col items-center justify-center rounded-lg py-1.5 text-xs font-medium transition-all hover:bg-zinc-50 ${
                 today
@@ -257,9 +257,9 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" />WFH</span>
       </div>
 
-      {/* Slot Dialog */}
-      {dialogOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      {/* Slot Dialog Portal */}
+      {dialogOpen && selected && mounted && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-96 rounded-2xl bg-white p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <p className="font-bold text-zinc-900 text-sm">
@@ -327,7 +327,8 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
