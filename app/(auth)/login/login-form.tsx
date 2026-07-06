@@ -620,17 +620,26 @@ export function LoginForm() {
       </div>
 
       {/* New Joinee CTA */}
-      <button
-        type="button"
-        onClick={() => {
-          setMode("register");
-          setError(null);
-          setSuccessMsg(null);
-        }}
-        className="w-full rounded-xl border border-dashed border-[#8e43ac]/40 bg-[#8e43ac]/5 py-3 text-xs font-bold text-[#8e43ac] hover:border-[#8e43ac] hover:bg-[#8e43ac]/10 transition-all uppercase tracking-wider"
-      >
-        New Joinee? Create Account →
-      </button>
+      <div className="relative pt-4">
+        {/* Sketched curly arrow pointing down to the CTA */}
+        <div className="absolute -top-6 right-8 text-[#8e43ac] opacity-40 pointer-events-none select-none hidden sm:block">
+          <svg viewBox="0 0 100 60" className="w-12 h-10 transform -rotate-12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M70 10 Q 50 5 35 25 T 30 50" />
+            <path d="M20 40 L30 50 L40 45" />
+          </svg>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setMode("register");
+            setError(null);
+            setSuccessMsg(null);
+          }}
+          className="w-full rounded-xl border border-dashed border-[#8e43ac]/40 bg-[#8e43ac]/5 py-3 text-xs font-bold text-[#8e43ac] hover:border-[#8e43ac] hover:bg-[#8e43ac]/10 transition-all uppercase tracking-wider relative z-10"
+        >
+          New Joinee? Create Account →
+        </button>
+      </div>
     </div>
   );
 }
