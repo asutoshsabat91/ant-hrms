@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
@@ -84,21 +85,40 @@ export async function POST(req: Request) {
       finalDeptId = dept.id;
     }
 
-    // Generate corporate email
+    // Generate corporate email safely with incrementing suffix until unique
     const base = `${request.firstName.toLowerCase().replace(/\s+/g, "")}.${request.lastName.toLowerCase().replace(/\s+/g, "")}`;
     let corpEmail = `${base}@theantbox.com`;
-    const existing = await prisma.user.findUnique({ where: { email: corpEmail } });
-    if (existing) {
-      const count = await prisma.user.count({ where: { email: { startsWith: base } } });
-      corpEmail = `${base}${count + 1}@theantbox.com`;
+    let isEmailUnique = false;
+    let suffix = 1;
+    while (!isEmailUnique) {
+      const existing = await prisma.user.findUnique({ where: { email: corpEmail } });
+      if (!existing) {
+        isEmailUnique = true;
+      } else {
+        corpEmail = `${base}${suffix}@theantbox.com`;
+        suffix++;
+      }
     }
 
-    const tempPassword = "AntBox@2025";
+    const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
     const passwordHash = await bcrypt.hash(tempPassword, 12);
 
-    // Generate employee ID
-    const empCount = await prisma.employee.count();
-    const employeeId = `ANT-${String(empCount + 100).padStart(3, "0")}`;
+    // Generate unique employee ID safely in case of concurrent approvals
+    let employeeId = "";
+    let attempts = 0;
+    while (attempts < 5) {
+      const empCount = await prisma.employee.count();
+      const candidateId = `ANT-${String(empCount + 100 + attempts).padStart(3, "0")}`;
+      const exists = await prisma.employee.findUnique({ where: { employeeId: candidateId } });
+      if (!exists) {
+        employeeId = candidateId;
+        break;
+      }
+      attempts++;
+    }
+    if (!employeeId) {
+      employeeId = `ANT-${Date.now().toString().slice(-6)}`;
+    }
 
     const compensation = ctc ? breakdownFromCTC(ctc, employmentType) : null;
     const parsedJoiningDate = new Date(joiningDate);
@@ -182,8 +202,11 @@ export async function POST(req: Request) {
       data: { status: "APPROVED" }
     });
 
-    // Create the actual user account in Google Workspace Directory
-    await createWorkspaceUser(corpEmail, tempPassword, request.firstName, request.lastName);
+    // Create the actual user account in Google Workspace Directory and check for errors
+    const workspaceRes = await createWorkspaceUser(corpEmail, tempPassword, request.firstName, request.lastName);
+    if (!workspaceRes.success && !workspaceRes.simulated) {
+      throw new Error(`Google Workspace account creation failed: ${workspaceRes.error || "Unknown error"}`);
+    }
 
     // Send welcome email with credentials to personalEmail
     await sendOnboardingEmail(request.personalEmail, corpEmail, tempPassword, request.firstName);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { z } from "zod";
 import { breakdownFromCTC } from "@/lib/utils/payrollEngine";
 import { addMonths } from "date-fns";
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
     const joiningDate = new Date(data.joiningDate);
     const compensation = data.ctc ? breakdownFromCTC(data.ctc) : null;
-    const tempPassword = data.password ?? "AntBox@2025";
+    const tempPassword = data.password ?? (crypto.randomBytes(6).toString("hex") + "!");
     const passwordHash = await bcrypt.hash(tempPassword, 12);
 
     const result = await prisma.$transaction(async (tx) => {

@@ -37,9 +37,12 @@ function overlapDays(start: Date, end: Date, periodStart: Date, periodEnd: Date)
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user || !["ADMIN", "COMPANY_ADMIN"].includes(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
+  const managedCompany = session.user.managedCompany;
 
   const url = new URL(req.url);
   const parsed = monthYearSchema.safeParse({
@@ -65,11 +68,11 @@ export async function GET(req: Request) {
     },
   });
 
-
   const employees = await prisma.employee.findMany({
     where: {
       status: { in: ["ACTIVE", "ONBOARDING"] },
       basicSalary: { not: null },
+      deployedCompany: isCompanyAdmin && managedCompany ? managedCompany : undefined,
     },
     include: {
       leaveRequests: {
@@ -136,20 +139,10 @@ export async function GET(req: Request) {
     };
   });
 
-  const totalGross = payrollLines.reduce((sum, line) => sum + line.grossEarnings, 0);
-  const totalNet = payrollLines.reduce((sum, line) => sum + line.netPay, 0);
-
-  return NextResponse.json({
-    month,
-    year,
-    status: existingRun?.status ?? "DRAFT",
-    hasRun: Boolean(existingRun),
-    workingDays,
-    totalEmployees: payrollLines.length,
-    totalGross,
-    totalNet,
-    lines: existingRun
-      ? existingRun.lines.map((line) => {
+  const displayLines = existingRun
+    ? existingRun.lines
+        .filter((line) => !isCompanyAdmin || line.employee.deployedCompany === managedCompany)
+        .map((line) => {
           const preview = payrollLines.find((pl) => pl.employeeId === line.employeeId);
           return {
             employeeId: line.employeeId,
@@ -171,7 +164,21 @@ export async function GET(req: Request) {
             totalLeavesTaken: preview?.totalLeavesTaken ?? 0,
           };
         })
-      : payrollLines,
+    : payrollLines;
+
+  const totalGross = displayLines.reduce((sum, line) => sum + line.grossEarnings, 0);
+  const totalNet = displayLines.reduce((sum, line) => sum + line.netPay, 0);
+
+  return NextResponse.json({
+    month,
+    year,
+    status: existingRun?.status ?? "DRAFT",
+    hasRun: Boolean(existingRun),
+    workingDays,
+    totalEmployees: displayLines.length,
+    totalGross,
+    totalNet,
+    lines: displayLines,
   });
 }
 

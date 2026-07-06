@@ -17,7 +17,17 @@ function getTransporter() {
   });
 }
 
-const BRAND_COLOR = "#7c3aed";
+const BRAND_COLOR = "#8e43ac";
+
+export function escapeHtml(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function generateEmailTemplate(title: string, bodyHtml: string) {
   return `
@@ -172,20 +182,24 @@ export async function sendOnboardingEmail(
   tempPassword: string,
   firstName: string
 ) {
+  const escFirstName = escapeHtml(firstName);
+  const escCorpEmail = escapeHtml(corpEmail);
+  const escTempPassword = escapeHtml(tempPassword);
+
   const subject = "Welcome to AntBox! Your Corporate Account is Ready";
   const bodyHtml = `
-    <h2>Welcome to the colony, ${firstName}!</h2>
+    <h2>Welcome to the colony, ${escFirstName}!</h2>
     <p>We are absolutely thrilled to welcome you to the AntBox team. Your corporate workspace account has been successfully configured.</p>
     <p>Please use the following credentials to sign in to the AntBox HR Portal:</p>
     
     <div class="card">
       <div class="card-row">
         <span class="card-label">Corporate Email</span>
-        <span class="card-value">${corpEmail}</span>
+        <span class="card-value">${escCorpEmail}</span>
       </div>
       <div class="card-row">
         <span class="card-label">Temporary Password</span>
-        <span class="card-value" style="font-family: monospace;">${tempPassword}</span>
+        <span class="card-value" style="font-family: monospace;">${escTempPassword}</span>
       </div>
     </div>
 
@@ -213,7 +227,11 @@ export async function sendLeaveRequestEmail(
   endDate: string,
   reason: string
 ) {
-  const subject = `New Leave Request: ${employeeName}`;
+  const escEmployeeName = escapeHtml(employeeName);
+  const escLeaveType = escapeHtml(leaveType);
+  const escReason = escapeHtml(reason);
+
+  const subject = `New Leave Request: ${escEmployeeName}`;
   const bodyHtml = `
     <h2>New Leave Application</h2>
     <p>An employee has submitted a leave request that requires your monitoring or approval.</p>
@@ -221,11 +239,11 @@ export async function sendLeaveRequestEmail(
     <div class="card">
       <div class="card-row">
         <span class="card-label">Employee</span>
-        <span class="card-value">${employeeName}</span>
+        <span class="card-value">${escEmployeeName}</span>
       </div>
       <div class="card-row">
         <span class="card-label">Leave Type</span>
-        <span class="card-value">${leaveType}</span>
+        <span class="card-value">${escLeaveType}</span>
       </div>
       <div class="card-row">
         <span class="card-label">Duration</span>
@@ -237,7 +255,7 @@ export async function sendLeaveRequestEmail(
       </div>
       <div class="card-row">
         <span class="card-label">Reason</span>
-        <span class="card-value">${reason}</span>
+        <span class="card-value">${escReason}</span>
       </div>
     </div>
 
@@ -262,14 +280,18 @@ export async function sendLeaveApprovalEmail(
   status: "APPROVED" | "REJECTED",
   rejectionReason?: string | null
 ) {
-  const subject = `Leave Request ${status === "APPROVED" ? "Approved" : "Rejected"}: ${leaveType}`;
+  const escEmployeeName = escapeHtml(employeeName);
+  const escLeaveType = escapeHtml(leaveType);
+  const escRejectionReason = rejectionReason ? escapeHtml(rejectionReason) : "";
+
+  const subject = `Leave Request ${status === "APPROVED" ? "Approved" : "Rejected"}: ${escLeaveType}`;
   const statusLabel = status === "APPROVED" ? "Approved" : "Rejected";
   const statusColor = status === "APPROVED" ? "#10b981" : "#ef4444";
 
   const bodyHtml = `
     <h2>Leave Application Update</h2>
-    <p>Hello ${employeeName},</p>
-    <p>Your request for ${leaveType} leave has been reviewed.</p>
+    <p>Hello ${escEmployeeName},</p>
+    <p>Your request for ${escLeaveType} leave has been reviewed.</p>
     
     <div class="card">
       <div class="card-row">
@@ -280,10 +302,10 @@ export async function sendLeaveApprovalEmail(
         <span class="card-label">Duration</span>
         <span class="card-value">${days} Day(s)</span>
       </div>
-      ${rejectionReason ? `
+      ${escRejectionReason ? `
       <div class="card-row">
         <span class="card-label">Reason for Rejection</span>
-        <span class="card-value">${rejectionReason}</span>
+        <span class="card-value">${escRejectionReason}</span>
       </div>` : ""}
     </div>
 
@@ -307,19 +329,23 @@ export async function sendSeparationRequestEmail(
   noticeDays: number
 ) {
   const adminEmail = "admin@theantbox.com";
-  const subject = `Resignation Submitted: ${employeeName}`;
+  const escEmployeeName = escapeHtml(employeeName);
+  const escEmployeeEmail = escapeHtml(employeeEmail);
+  const escReason = escapeHtml(reason);
+
+  const subject = `Resignation Submitted: ${escEmployeeName}`;
   const bodyHtml = `
     <h2>Resignation Request Received</h2>
-    <p>${employeeName} has initiated a formal separation request in the portal.</p>
+    <p>${escEmployeeName} has initiated a formal separation request in the portal.</p>
     
     <div class="card">
       <div class="card-row">
         <span class="card-label">Employee</span>
-        <span class="card-value">${employeeName}</span>
+        <span class="card-value">${escEmployeeName}</span>
       </div>
       <div class="card-row">
         <span class="card-label">Email</span>
-        <span class="card-value">${employeeEmail}</span>
+        <span class="card-value">${escEmployeeEmail}</span>
       </div>
       <div class="card-row">
         <span class="card-label">Notice Period</span>
@@ -327,7 +353,7 @@ export async function sendSeparationRequestEmail(
       </div>
       <div class="card-row">
         <span class="card-label">Reason</span>
-        <span class="card-value">${reason}</span>
+        <span class="card-value">${escReason}</span>
       </div>
     </div>
 
@@ -347,7 +373,7 @@ export async function sendSeparationRequestEmail(
   const employeeSubject = "Resignation Receipt Acknowledgment";
   const empHtml = `
     <h2>Resignation Received</h2>
-    <p>Dear ${employeeName},</p>
+    <p>Dear ${escEmployeeName},</p>
     <p>This email acknowledges that we have received your formal resignation request. The Human Resources team has been notified and will review the case.</p>
     <div class="card">
       <div class="card-row">
@@ -376,13 +402,16 @@ export async function sendSeparationApprovalEmail(
   lastWorkingDate?: Date | null,
   rejectionReason?: string | null
 ) {
+  const escEmployeeName = escapeHtml(employeeName);
+  const escRejectionReason = rejectionReason ? escapeHtml(rejectionReason) : "";
+
   const subject = `Resignation Request ${status === "APPROVED" ? "Approved" : "Reviewed"}`;
   const statusLabel = status === "APPROVED" ? "Approved" : "Not Approved";
   const statusColor = status === "APPROVED" ? "#10b981" : "#ef4444";
 
   const bodyHtml = `
     <h2>Resignation Decision Update</h2>
-    <p>Dear ${employeeName},</p>
+    <p>Dear ${escEmployeeName},</p>
     <p>Your resignation request has been processed.</p>
     
     <div class="card">
@@ -395,10 +424,10 @@ export async function sendSeparationApprovalEmail(
         <span class="card-label">Last Working Day</span>
         <span class="card-value">${new Date(lastWorkingDate).toDateString()}</span>
       </div>` : ""}
-      ${rejectionReason ? `
+      ${escRejectionReason ? `
       <div class="card-row">
         <span class="card-label">Remarks</span>
-        <span class="card-value">${rejectionReason}</span>
+        <span class="card-value">${escRejectionReason}</span>
       </div>` : ""}
     </div>
 

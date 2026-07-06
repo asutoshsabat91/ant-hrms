@@ -27,6 +27,7 @@ export function POSHPortal({ reports: initialReports, isAdmin }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [revealedIds, setRevealedIds] = useState<Record<string, boolean>>({});
 
   async function submit() {
     if (!subject.trim() || !description.trim()) {
@@ -123,8 +124,20 @@ export function POSHPortal({ reports: initialReports, isAdmin }: Props) {
               </div>
               <p className="text-xs text-zinc-600 whitespace-pre-wrap">{r.description}</p>
               {isAdmin && r.employee && (
-                <p className="text-[10px] text-zinc-400">
-                  Submitted by: {r.employee.firstName} {r.employee.lastName} ({r.employee.employeeId})
+                <p className="text-[10px] text-zinc-400 flex items-center gap-1.5 mt-1 select-none">
+                  <span>Submitted by:</span>
+                  {revealedIds[r.id] ? (
+                    <span className="font-bold text-zinc-700">
+                      {r.employee.firstName} {r.employee.lastName} ({r.employee.employeeId})
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setRevealedIds((prev) => ({ ...prev, [r.id]: true }))}
+                      className="text-[#8e43ac] hover:text-[#703387] hover:underline font-bold"
+                    >
+                      [Click to Reveal Identity]
+                    </button>
+                  )}
                 </p>
               )}
             </div>

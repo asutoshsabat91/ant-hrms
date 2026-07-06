@@ -69,24 +69,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
   pages: { signIn: "/login", error: "/login" },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google" && user.email) {
         const email = user.email.toLowerCase();
         if (!email.endsWith("@theantbox.com")) {
           return false; // Strictly restrict to AntBox corporate email IDs
         }
+        
+        // Ensure the Google account email is verified
+        if (profile && "email_verified" in profile && (profile as any).email_verified === false) {
+          return false;
+        }
+
         const existing = await prisma.user.findUnique({
           where: { email },
         });
-        if (existing && !existing.isActive) return false;
-        if (!existing) {
-          await prisma.user.create({
-            data: {
-              email,
-              role: "EMPLOYEE",
-              isActive: true,
-            },
-          });
+        
+        // Block logins for non-existent or inactive user records
+        if (!existing || !existing.isActive) {
+          return false;
         }
       }
       return true;

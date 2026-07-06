@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { createWorkspaceUser } from "@/lib/googleWorkspace";
+import crypto from "crypto";
 
 function getSheetsClient() {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
@@ -477,7 +478,8 @@ export async function syncGoogleSheetsWithDb() {
             finalEmpId = `ANT-${String(empTotal + 100).padStart(3, "0")}`;
           }
 
-          const passwordHash = await bcrypt.hash("AntBox@2025", 12);
+          const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
+          const passwordHash = await bcrypt.hash(tempPassword, 12);
 
           await prisma.user.create({
             data: {
