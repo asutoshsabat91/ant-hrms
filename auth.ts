@@ -43,15 +43,25 @@ const providers: any[] = [
   }),
 ];
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  providers.push(
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    })
-  );
-}
+const googleClientId =
+  process.env.GOOGLE_CLIENT_ID ||
+  process.env.AUTH_GOOGLE_ID ||
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  "";
+
+const googleClientSecret =
+  process.env.GOOGLE_CLIENT_SECRET ||
+  process.env.AUTH_GOOGLE_SECRET ||
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET ||
+  "";
+
+providers.push(
+  Google({
+    clientId: googleClientId || "placeholder-google-client-id",
+    clientSecret: googleClientSecret || "placeholder-google-client-secret",
+    allowDangerousEmailAccountLinking: true,
+  })
+);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
