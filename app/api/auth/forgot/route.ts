@@ -56,11 +56,24 @@ export async function POST(req: Request) {
       <p>This code is valid for 15 minutes. If you did not request this, you can safely ignore this email.</p>
     `;
 
-    await sendEmail({
+    const result = await sendEmail({
       to: emailTrimmed,
       subject,
       html: bodyHtml,
     });
+
+    if (!result.success) {
+      if (result.simulated) {
+        return NextResponse.json({
+          message: "Verification code generated in simulation mode.",
+          otp: otp
+        }, { status: 200 });
+      }
+      const errorMsg = result.error instanceof Error ? result.error.message : String(result.error);
+      return NextResponse.json({
+        error: `SMTP mail delivery failed: ${errorMsg}`
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ message: "Verification code sent successfully" }, { status: 200 });
   } catch (err: unknown) {

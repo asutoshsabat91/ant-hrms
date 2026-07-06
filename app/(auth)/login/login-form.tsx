@@ -7,7 +7,6 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, ArrowLeft, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
 
@@ -112,6 +111,7 @@ export function LoginForm() {
     }
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       const res = await fetch("/api/auth/forgot", {
@@ -125,7 +125,11 @@ export function LoginForm() {
         setError(payload.error || "Failed to generate recovery code.");
         return;
       }
-      setSuccessMsg("Verification code sent to your email. Check inbox/spam.");
+      if (payload.otp) {
+        setSuccessMsg(`[Simulation Mode] OTP code generated: ${payload.otp}`);
+      } else {
+        setSuccessMsg("Verification code sent to your email. Check inbox/spam.");
+      }
       setMode("reset");
     } catch {
       setLoading(false);
@@ -245,8 +249,8 @@ export function LoginForm() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">First Name</Label>
-              <Input
-                className="mt-1 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+              <input
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Riya"
                 {...registerForm.register("firstName")}
               />
@@ -256,8 +260,8 @@ export function LoginForm() {
             </div>
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Last Name</Label>
-              <Input
-                className="mt-1 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+              <input
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Sharma"
                 {...registerForm.register("lastName")}
               />
@@ -270,7 +274,7 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Gender</Label>
             <select
-              className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20"
+              className="mt-1 w-full h-11 px-3.5 rounded-xl border border-zinc-200 bg-white text-sm text-zinc-900 outline-none focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20"
               {...registerForm.register("gender")}
             >
               <option value="" className="text-zinc-400">Select gender…</option>
@@ -285,9 +289,9 @@ export function LoginForm() {
 
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Email</Label>
-            <Input
+            <input
               type="email"
-              className="mt-1 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+              className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
               placeholder="you@gmail.com"
               {...registerForm.register("personalEmail")}
             />
@@ -299,17 +303,17 @@ export function LoginForm() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Phone (optional)</Label>
-              <Input
-                className="mt-1 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+              <input
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 placeholder="+91 98765..."
                 {...registerForm.register("phone")}
               />
             </div>
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Date of Birth (optional)</Label>
-              <Input
+              <input
                 type="date"
-                className="mt-1 bg-white border-zinc-200 text-zinc-900 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 {...registerForm.register("dateOfBirth")}
               />
             </div>
@@ -360,10 +364,10 @@ export function LoginForm() {
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Corporate Email</Label>
             <div className="relative mt-1">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-              <Input
+              <input
                 type="email"
                 required
-                className="pl-10 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 placeholder="you@theantbox.com"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
@@ -420,11 +424,11 @@ export function LoginForm() {
         <form onSubmit={handleReset} className="space-y-4">
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Verification Code (OTP)</Label>
-            <Input
+            <input
               type="text"
               required
               maxLength={6}
-              className="mt-1 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20 font-mono tracking-widest text-center"
+              className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all"
               placeholder="123456"
               value={resetOtp}
               onChange={(e) => setResetOtp(e.target.value)}
@@ -435,10 +439,10 @@ export function LoginForm() {
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">New Password</Label>
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-              <Input
+              <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="pl-10 pr-10 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 placeholder="At least 6 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -446,7 +450,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#8e43ac] transition-colors"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -457,10 +461,10 @@ export function LoginForm() {
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Confirm New Password</Label>
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-              <Input
+              <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="pl-10 pr-10 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -506,10 +510,10 @@ export function LoginForm() {
           <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Address</Label>
           <div className="relative mt-1">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
+            <input
               id="email"
               type="email"
-              className="pl-10 bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
               placeholder="you@theantbox.com"
               {...loginForm.register("email")}
             />
@@ -536,10 +540,10 @@ export function LoginForm() {
           </div>
           <div className="relative mt-1">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
+            <input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="pl-10 pr-10 bg-white border-zinc-200 text-zinc-900 focus:border-[#8e43ac] focus:ring-[#8e43ac]/20"
+              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
               {...loginForm.register("password")}
             />
             <button
