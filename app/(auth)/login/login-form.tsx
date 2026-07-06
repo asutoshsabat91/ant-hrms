@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
@@ -43,6 +43,21 @@ export function LoginForm() {
 
   // States for Forgot / Reset Flow
   const [forgotEmail, setForgotEmail] = useState("");
+
+  useEffect(() => {
+    const authError = searchParams.get("error");
+    if (authError) {
+      if (authError === "AccessDenied") {
+        setError("Access Denied: Only corporate email accounts ending with @theantbox.com are allowed to sign in.");
+      } else {
+        setError(`Authentication failed: ${authError}`);
+      }
+      // Clean up the URL parameter cleanly without reloading the page
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }
+  }, [searchParams]);
   const [resetOtp, setResetOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

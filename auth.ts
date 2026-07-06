@@ -67,7 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   trustHost: true,
   session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
-  pages: { signIn: "/login" },
+  pages: { signIn: "/login", error: "/login" },
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
