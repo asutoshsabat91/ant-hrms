@@ -106,7 +106,7 @@ export function LoginForm() {
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
     if (!forgotEmail.trim()) {
-      setError("Please enter your email");
+      setError("Please enter your email or name");
       return;
     }
     setLoading(true);
@@ -126,9 +126,12 @@ export function LoginForm() {
         return;
       }
       if (payload.otp) {
-        setSuccessMsg(`[Simulation Mode] OTP code generated: ${payload.otp}`);
+        setSuccessMsg(`[Simulation Mode] OTP code generated: ${payload.otp} for ${payload.email || forgotEmail}`);
       } else {
-        setSuccessMsg("Verification code sent to your email. Check inbox/spam.");
+        setSuccessMsg(`Verification code sent to ${payload.email || forgotEmail} successfully. Check inbox/spam.`);
+      }
+      if (payload.email) {
+        setForgotEmail(payload.email);
       }
       setMode("reset");
     } catch {
@@ -355,23 +358,23 @@ export function LoginForm() {
         <div>
           <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Forgot Password</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
-            Enter your corporate email address. We will verify and help you change your password.
+            Enter your corporate email address or name. We will verify and help you change your password.
           </p>
         </div>
 
         <form onSubmit={handleForgot} className="space-y-4">
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Corporate Email</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Corporate Email or Name</Label>
             <div className="relative mt-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <input
-                type="email"
+                type="text"
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
-                placeholder="you@theantbox.com"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                placeholder="you@theantbox.com or name"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
               />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             </div>
           </div>
 
@@ -416,7 +419,7 @@ export function LoginForm() {
         </div>
 
         {successMsg && (
-          <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac]">
+          <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac] leading-relaxed">
             {successMsg}
           </div>
         )}
@@ -438,19 +441,19 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">New Password</Label>
             <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="At least 6 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#8e43ac] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#8e43ac] transition-colors z-20"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -460,15 +463,15 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Confirm New Password</Label>
             <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             </div>
           </div>
 
@@ -509,14 +512,14 @@ export function LoginForm() {
         <div>
           <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Address</Label>
           <div className="relative mt-1">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <input
               id="email"
               type="email"
-              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
               placeholder="you@theantbox.com"
               {...loginForm.register("email")}
             />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
           </div>
           {loginForm.formState.errors.email && (
             <p className="mt-1 text-[10px] font-bold text-red-600">{loginForm.formState.errors.email.message}</p>
@@ -539,17 +542,17 @@ export function LoginForm() {
             </button>
           </div>
           <div className="relative mt-1">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
               {...loginForm.register("password")}
             />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-950 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-950 transition-colors z-20"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>

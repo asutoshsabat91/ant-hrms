@@ -7,17 +7,49 @@ export async function POST(req: Request) {
     const { email } = await req.json();
 
     if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      return NextResponse.json({ error: "Email or Name is required" }, { status: 400 });
     }
 
-    const emailTrimmed = email.trim().toLowerCase();
+    let emailTrimmed = email.trim().toLowerCase();
+
+    // Support name resolution if they enter a name instead of an email address
+    if (!emailTrimmed.includes("@")) {
+      const nameParts = emailTrimmed.split(/\s+/);
+      let employee = null;
+
+      if (nameParts.length >= 2) {
+        employee = await prisma.employee.findFirst({
+          where: {
+            firstName: { equals: nameParts[0], mode: "insensitive" },
+            lastName: { equals: nameParts[nameParts.length - 1], mode: "insensitive" },
+          },
+        });
+      }
+
+      if (!employee) {
+        employee = await prisma.employee.findFirst({
+          where: {
+            OR: [
+              { firstName: { equals: emailTrimmed, mode: "insensitive" } },
+              { lastName: { equals: emailTrimmed, mode: "insensitive" } },
+            ],
+          },
+        });
+      }
+
+      if (employee && employee.email) {
+        emailTrimmed = employee.email.toLowerCase();
+      } else {
+        return NextResponse.json({ error: "Could not find a corporate account matching this name" }, { status: 404 });
+      }
+    }
 
     const user = await prisma.user.findUnique({
       where: { email: emailTrimmed },
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Account with this email does not exist" }, { status: 404 });
+      return NextResponse.json({ error: `Account with email ${emailTrimmed} does not exist` }, { status: 404 });
     }
 
     // Generate random 6-digit OTP
@@ -66,16 +98,17 @@ export async function POST(req: Request) {
       if (result.simulated) {
         return NextResponse.json({
           message: "Verification code generated in simulation mode.",
-          otp: otp
+          otp: otp,
+          email: emailTrimmed
         }, { status: 200 });
       }
       const errorMsg = result.error instanceof Error ? result.error.message : String(result.error);
       return NextResponse.json({
-        error: `SMTP mail delivery failed: ${errorMsg}`
+        error: `SMTP mail delivery failed to ${emailTrimmed}: ${errorMsg}`
       }, { status: 500 });
     }
 
-    return NextResponse.json({ message: "Verification code sent successfully" }, { status: 200 });
+    return NextResponse.json({ message: `Verification code sent to ${emailTrimmed} successfully` }, { status: 200 });
   } catch (err: unknown) {
     console.error("[FORGOT POST]", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
