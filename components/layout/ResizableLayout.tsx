@@ -13,6 +13,7 @@ export function ResizableLayout({
 }) {
   const [width, setWidth] = useState(256);
   const isDragging = useRef(false);
+  const [isFunky, setIsFunky] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-width");
@@ -22,7 +23,26 @@ export function ResizableLayout({
         setWidth(parsed);
       }
     }
+
+    const funkySaved = localStorage.getItem("funky-theme") === "true";
+    setIsFunky(funkySaved);
+    if (funkySaved) {
+      document.documentElement.classList.add("funky-theme");
+    } else {
+      document.documentElement.classList.remove("funky-theme");
+    }
   }, []);
+
+  const toggleFunky = () => {
+    const next = !isFunky;
+    setIsFunky(next);
+    localStorage.setItem("funky-theme", String(next));
+    if (next) {
+      document.documentElement.classList.add("funky-theme");
+    } else {
+      document.documentElement.classList.remove("funky-theme");
+    }
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -96,6 +116,18 @@ export function ResizableLayout({
         </div>
         <main className="mt-16 min-h-[calc(100vh-4rem)] p-8 relative z-10">{children}</main>
       </div>
+
+      {/* Floating Action Button for Gen Z Mode Toggle */}
+      <button
+        onClick={toggleFunky}
+        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold transition-all duration-500 shadow-lg border backdrop-blur-md active:scale-95 cursor-pointer ${
+          isFunky
+            ? "bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 text-white border-white/20 animate-pulse shadow-pink-500/20"
+            : "bg-zinc-950/80 border-zinc-800 text-zinc-300 hover:text-white"
+        }`}
+      >
+        <span>{isFunky ? "⚡ GEN Z: ON" : "💫 GO FUNKY"}</span>
+      </button>
     </div>
   );
 }

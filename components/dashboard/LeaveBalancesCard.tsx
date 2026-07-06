@@ -46,12 +46,15 @@ export function LeaveBalancesCard({ balances }: Props) {
             const usedPct = b.allocated > 0 ? Math.min(100, ((b.used + b.pending) / b.allocated) * 100) : 0;
             const color = COLORS[b.leaveType.code] || "bg-zinc-400";
 
+            const ratio = b.allocated > 0 ? (remaining / b.allocated) : 1;
+            const urgencyClass = ratio === 0 ? "urgency-empty" : ratio < 0.3 ? "urgency-high" : "urgency-normal";
+
             return (
               <div key={b.leaveType.code} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-zinc-700">{b.leaveType.name}</span>
                   {b.allocated > 0 ? (
-                    <span className="text-[10px] font-semibold text-zinc-400">
+                    <span className={`text-[10px] font-semibold text-zinc-400 leave-remaining-text ${urgencyClass}`}>
                       {remaining} / {b.allocated} left
                     </span>
                   ) : (
