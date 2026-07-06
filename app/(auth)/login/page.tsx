@@ -58,10 +58,23 @@ export default function LoginPage() {
       {/* Right Side: Clean infographic / layout with Canva Brand Mascot assets */}
       <div className="hidden lg:flex lg:w-1/2 bg-zinc-50/50 border-l border-zinc-100 flex-col justify-center items-center p-16 relative overflow-hidden select-none">
         
-        {/* Hand drawn quote marks in background */}
-        <div className="absolute top-24 left-24 opacity-10 pointer-events-none select-none">
-          <svg viewBox="0 0 100 80" className="w-32 h-24 text-[#8e43ac]" fill="currentColor">
-            <path d="M15 15 C 20 5, 40 10, 35 35 C 30 55, 10 60, 10 35 Z M60 15 C 65 5, 85 10, 80 35 C 75 55, 55 60, 55 35 Z" />
+        {/* Sketched delicate stars and dots in the background */}
+        <div className="absolute top-20 left-20 opacity-25 pointer-events-none select-none">
+          <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M50 15 C50 35, 35 50, 15 50 C35 50, 50 65, 50 85 C50 65, 65 50, 85 50 C65 50, 50 35, 50 15 Z" />
+          </svg>
+        </div>
+        <div className="absolute bottom-24 right-24 opacity-25 pointer-events-none select-none">
+          <svg viewBox="0 0 100 100" className="w-6 h-6 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M50 20 C50 35, 35 50, 20 50 C35 50, 50 65, 50 80 C50 65, 65 50, 80 50 C65 50, 50 35, 50 20 Z" />
+          </svg>
+        </div>
+        <div className="absolute top-1/3 right-12 opacity-20 pointer-events-none select-none">
+          <svg viewBox="0 0 80 80" className="w-12 h-12 text-[#8e43ac]" fill="currentColor">
+            <circle cx="20" cy="20" r="1.5" />
+            <circle cx="45" cy="15" r="1" />
+            <circle cx="30" cy="45" r="2" />
+            <circle cx="55" cy="35" r="1.5" />
           </svg>
         </div>
 
