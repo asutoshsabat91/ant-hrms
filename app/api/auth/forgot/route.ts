@@ -94,14 +94,15 @@ export async function POST(req: Request) {
       html: bodyHtml,
     });
 
+    if (result.simulated) {
+      return NextResponse.json({
+        message: "Verification code generated in simulation mode.",
+        otp: otp,
+        email: emailTrimmed
+      }, { status: 200 });
+    }
+
     if (!result.success) {
-      if (result.simulated) {
-        return NextResponse.json({
-          message: "Verification code generated in simulation mode.",
-          otp: otp,
-          email: emailTrimmed
-        }, { status: 200 });
-      }
       const errorMsg = result.error instanceof Error ? result.error.message : String(result.error);
       return NextResponse.json({
         error: `SMTP mail delivery failed to ${emailTrimmed}: ${errorMsg}`
