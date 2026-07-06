@@ -357,6 +357,37 @@ export default function LoginPage() {
             <p className="mt-8 max-w-md text-xl md:text-2xl font-extrabold leading-relaxed text-black/90">
               A GenZ-first workspace bridging academia to SaaS careers. Manage onboarding, attendance, leaves, and payroll in an ultra-modern environment.
             </p>
+
+            {/* Premium Canva Brand Illustrations */}
+            <div className="mt-12 flex items-end gap-10 relative">
+              {/* Pit Stop Team (Collaboration & Alignment) */}
+              <div className="relative w-full max-w-[260px] group">
+                <Image
+                  src="/pitstop-ants.png"
+                  alt="AntBox Teamwork Pitstop"
+                  width={260}
+                  height={152}
+                  className="object-contain filter drop-shadow-[0_8px_20px_rgba(0,0,0,0.1)] select-none group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute -bottom-4 -left-2 bg-purple-600 px-2.5 py-1 rounded-xl text-[9px] font-black text-white shadow-lg border border-white/10 -rotate-3 uppercase tracking-wider">
+                  Pitstop Teamwork 🏎️
+                </div>
+              </div>
+
+              {/* Basketball Ant (Aiming High / Success) */}
+              <div className="relative w-full max-w-[150px] group">
+                <Image
+                  src="/basketball-ant.png"
+                  alt="AntBox Basketball Ant"
+                  width={150}
+                  height={173}
+                  className="object-contain filter drop-shadow-[0_8px_20px_rgba(0,0,0,0.1)] select-none group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute -bottom-4 -right-2 bg-yellow-400 px-2.5 py-1 rounded-xl text-[9px] font-black text-black shadow-lg border border-black/5 rotate-6 uppercase tracking-wider">
+                  Aim High 🏀
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-black/60">
             <span>Bhubaneswar HQ</span>
