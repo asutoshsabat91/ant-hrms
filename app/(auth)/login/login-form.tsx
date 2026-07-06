@@ -359,7 +359,7 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Corporate Email</Label>
             <div className="relative mt-1">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <Input
                 type="email"
                 required
@@ -434,7 +434,7 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">New Password</Label>
             <div className="relative mt-1">
-              <Lock className="absolute left-3 top-3.5 h-4 w-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <Input
                 type={showNewPassword ? "text" : "password"}
                 required
@@ -446,7 +446,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-3.5 text-zinc-400 hover:text-zinc-900 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 transition-colors"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -456,7 +456,7 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Confirm New Password</Label>
             <div className="relative mt-1">
-              <Lock className="absolute left-3 top-3.5 h-4 w-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <Input
                 type={showNewPassword ? "text" : "password"}
                 required
@@ -489,12 +489,6 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
-      {/* Google Login Status Indicator */}
-      <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-        <span>Use Corporate Credentials</span>
-      </div>
-
       <div>
         <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Sign in</h2>
         <p className="mt-1.5 text-xs text-zinc-500 font-medium">Welcome back to AntBox People Platform</p>
@@ -511,7 +505,7 @@ export function LoginForm() {
         <div>
           <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Address</Label>
           <div className="relative mt-1">
-            <Mail className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input
               id="email"
               type="email"
@@ -541,7 +535,7 @@ export function LoginForm() {
             </button>
           </div>
           <div className="relative mt-1">
-            <Lock className="absolute left-3 top-3.5 h-4 w-4 text-zinc-400" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -551,7 +545,7 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3.5 text-zinc-400 hover:text-zinc-950 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-950 transition-colors"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -633,10 +627,6 @@ export function LoginForm() {
       >
         New Joinee? Create Account →
       </button>
-
-      <p className="mt-4 text-center text-[10px] font-semibold text-zinc-400">
-        Demo Account: admin@theantbox.com
-      </p>
     </div>
   );
 }
