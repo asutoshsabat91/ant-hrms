@@ -39,7 +39,7 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [registered, setRegistered] = useState<{ email: string; password: string } | null>(null);
+  const [registered, setRegistered] = useState<{ pending: boolean; personalEmail: string } | null>(null);
 
   // States for Forgot / Reset Flow
   const [forgotEmail, setForgotEmail] = useState("");
@@ -81,7 +81,7 @@ export function LoginForm() {
         setError(payload.error || "Registration failed.");
         return;
       }
-      setRegistered({ email: payload.corporateEmail, password: payload.temporaryPassword });
+      setRegistered({ pending: true, personalEmail: data.personalEmail });
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -155,28 +155,30 @@ export function LoginForm() {
     }
   }
 
-  if (registered) {
+  if (registered && registered.pending) {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl border border-[#10b981]/20 bg-[#10b981]/5 p-6 space-y-4 shadow-[0_4px_30px_rgba(16,185,129,0.1)] backdrop-blur-md">
+        <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-6 space-y-4 shadow-[0_4px_30px_rgba(168,85,247,0.1)] backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-6 w-6 text-[#10b981] shrink-0" />
-            <p className="font-extrabold text-white text-lg">Account Created!</p>
+            <CheckCircle2 className="h-6 w-6 text-purple-400 shrink-0" />
+            <p className="font-extrabold text-white text-lg">Registration Submitted!</p>
           </div>
           <p className="text-sm text-zinc-300 leading-relaxed">
-            Your AntBox corporate email has been generated. Use these credentials to log in.
+            Your details have been submitted to the Superadmin for approval.
           </p>
           <div className="rounded-xl bg-[#09090b]/80 border border-white/10 p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Corporate Email</p>
-              <p className="text-sm font-semibold text-purple-400 mt-0.5 select-all">{registered.email}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Personal Email</p>
+              <p className="text-sm font-semibold text-purple-400 mt-0.5 select-all">{registered.personalEmail}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Temporary Password</p>
-              <p className="text-sm font-semibold text-orange-400 mt-0.5 font-mono select-all">{registered.password}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Status</p>
+              <p className="text-sm font-semibold text-orange-400 mt-0.5 uppercase tracking-wide">Pending Approval</p>
             </div>
           </div>
-          <p className="text-xs text-zinc-400">Please change your password after your first login.</p>
+          <p className="text-xs text-zinc-400">
+            Once approved by the admin, your official corporate email account will be generated and a welcome message containing your login credentials will be sent to your personal email address.
+          </p>
         </div>
         <Button
           className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold h-11 rounded-xl transition-all shadow-[0_4px_20px_rgba(168,85,247,0.4)]"
@@ -185,7 +187,7 @@ export function LoginForm() {
             setRegistered(null);
           }}
         >
-          Proceed to Login
+          Back to Login
         </Button>
       </div>
     );

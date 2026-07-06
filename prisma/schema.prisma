@@ -603,3 +603,16 @@ model RegularizationRequest {
 
   @@unique([employeeId, date])
 }
+
+model OnboardingRequest {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String
+  gender        String
+  phone         String?
+  dateOfBirth   DateTime?
+  personalEmail String   @unique
+  status        String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

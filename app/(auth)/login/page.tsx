@@ -357,25 +357,6 @@ export default function LoginPage() {
             <p className="mt-8 max-w-md text-xl md:text-2xl font-extrabold leading-relaxed text-black/90">
               A GenZ-first workspace bridging academia to SaaS careers. Manage onboarding, attendance, leaves, and payroll in an ultra-modern environment.
             </p>
-
-            {/* Permanent Large Mascot Cartoons */}
-            <div className="mt-12 flex items-end gap-10 relative">
-              {/* Mascot 1: Cool Boba Ant */}
-              <div className="w-[170px] h-auto relative animate-bounce" style={{ animationDuration: "3.5s" }}>
-                <AntSvg type="boba" />
-                <div className="absolute -top-6 -right-4 bg-white px-3 py-1 rounded-xl text-[10px] font-black shadow-lg border border-black/5 rotate-12 uppercase tracking-wide">
-                  BOBA VIBES! 🧋
-                </div>
-              </div>
-
-              {/* Mascot 2: Fire Laptop Ant */}
-              <div className="w-[160px] h-auto relative animate-bounce" style={{ animationDuration: "4.5s", animationDelay: "0.4s" }}>
-                <AntSvg type="laptop" />
-                <div className="absolute -top-6 -left-4 bg-yellow-300 px-3 py-1 rounded-xl text-[10px] font-black text-black shadow-lg border border-black/5 -rotate-12 uppercase tracking-wide">
-                  CODE IS LIT 🔥
-                </div>
-              </div>
-            </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-black/60">
             <span>Bhubaneswar HQ</span>

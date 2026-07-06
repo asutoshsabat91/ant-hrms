@@ -3,9 +3,10 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { OnboardingHub } from "@/components/onboarding/OnboardingHub";
 import { NewHireWizard } from "@/components/onboarding/NewHireWizard";
 import { BulkOnboardingModal } from "@/components/onboarding/BulkOnboardingModal";
+import { PendingOnboardings } from "@/components/onboarding/PendingOnboardings";
 
 export default async function OnboardingPage() {
-  const [employees, departments, managers, templates] = await Promise.all([
+  const [employees, departments, managers, templates, pendingRequests] = await Promise.all([
     prisma.employee.findMany({
       where: { status: { in: ["ONBOARDING", "ACTIVE"] } },
       include: {
@@ -24,6 +25,10 @@ export default async function OnboardingPage() {
     prisma.onboardingTemplate.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, description: true },
+    }),
+    prisma.onboardingRequest.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -52,6 +57,22 @@ export default async function OnboardingPage() {
             }))}
           />
         }
+      />
+
+      <PendingOnboardings
+        requests={pendingRequests.map((r) => ({
+          id: r.id,
+          firstName: r.firstName,
+          lastName: r.lastName,
+          personalEmail: r.personalEmail,
+          gender: r.gender,
+          phone: r.phone,
+          dateOfBirth: r.dateOfBirth ? r.dateOfBirth.toISOString() : null,
+          createdAt: r.createdAt.toISOString(),
+        }))}
+        departments={departments}
+        managers={managers}
+        templates={templates}
       />
 
       <OnboardingHub

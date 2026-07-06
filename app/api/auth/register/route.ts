@@ -1,75 +1,81 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import { createWorkspaceUser } from "@/lib/googleWorkspace";
-import { sendOnboardingEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
-  const { firstName, lastName, gender, phone, dateOfBirth, personalEmail } = await req.json();
-
-  if (!firstName || !lastName || !gender || !personalEmail) {
-    return NextResponse.json({ error: "firstName, lastName, gender and personalEmail are required" }, { status: 400 });
-  }
-
-  // Generate corporate email: first.last@theantbox.com, de-duplicate with suffix
-  const base = `${firstName.toLowerCase().replace(/\s+/g, "")}.${lastName.toLowerCase().replace(/\s+/g, "")}`;
-  let corpEmail = `${base}@theantbox.com`;
-  const existing = await prisma.user.findUnique({ where: { email: corpEmail } });
-  if (existing) {
-    const count = await prisma.user.count({ where: { email: { startsWith: base } } });
-    corpEmail = `${base}${count + 1}@theantbox.com`;
-  }
-
-  // Find or create a default department for new joiners
-  let dept = await prisma.department.findFirst();
-  if (!dept) {
-    dept = await prisma.department.create({ data: { name: "General", code: "GEN" } });
-  }
-
-  const tempPassword = "AntBox@2025";
-  const passwordHash = await bcrypt.hash(tempPassword, 12);
-
-  // Generate employee ID
-  const empCount = await prisma.employee.count();
-  const employeeId = `ANT-${String(empCount + 100).padStart(3, "0")}`;
-
   try {
-    const user = await prisma.user.create({
-      data: {
-        email: corpEmail,
-        passwordHash,
-        role: "EMPLOYEE",
-        employee: {
-          create: {
-            firstName,
-            lastName,
-            email: corpEmail,
-            personalEmail,
-            phone: phone ?? null,
-            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-            gender,
-            employeeId,
-            designation: "New Joinee",
-            departmentId: dept.id,
-            employmentType: "INTERN",
-            status: "ONBOARDING",
-            joiningDate: new Date(),
-          },
-        },
+    const { firstName, lastName, gender, phone, dateOfBirth, personalEmail } = await req.json();
+
+    if (!firstName || !lastName || !gender || !personalEmail) {
+      return NextResponse.json({ error: "firstName, lastName, gender and personalEmail are required" }, { status: 400 });
+    }
+
+    const emailLower = personalEmail.toLowerCase().trim();
+
+    // Check if there is already an active user or employee with this personal email
+    const existingEmployee = await prisma.employee.findFirst({
+      where: { personalEmail: emailLower }
+    });
+    if (existingEmployee) {
+      return NextResponse.json({ error: "An employee with this personal email already exists." }, { status: 400 });
+    }
+
+    // Check if there is already an onboarding request
+    const existingRequest = await prisma.onboardingRequest.findUnique({
+      where: { personalEmail: emailLower }
+    });
+    if (existingRequest) {
+      if (existingRequest.status === "PENDING") {
+        return NextResponse.json({ error: "Your registration is already submitted and pending administrator approval." }, { status: 400 });
+      }
+      if (existingRequest.status === "APPROVED") {
+        return NextResponse.json({ error: "This registration has already been approved." }, { status: 400 });
+      }
+    }
+
+    // Create the onboarding request
+    await prisma.onboardingRequest.upsert({
+      where: { personalEmail: emailLower },
+      update: {
+        firstName,
+        lastName,
+        gender,
+        phone: phone ?? null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        status: "PENDING"
       },
+      create: {
+        firstName,
+        lastName,
+        gender,
+        phone: phone ?? null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        personalEmail: emailLower,
+        status: "PENDING"
+      }
     });
 
-    // Create the actual user account in Google Workspace Directory
-    await createWorkspaceUser(corpEmail, tempPassword, firstName, lastName);
+    // Notify Superadmins
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN" }
+    });
 
-    // Send the welcome email with credentials to personalEmail
-    await sendOnboardingEmail(personalEmail, corpEmail, tempPassword, firstName);
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          type: "SYSTEM",
+          title: "New Onboarding Request Pending",
+          body: `New joinee ${firstName} ${lastName} has submitted registration details and is waiting for approval.`,
+          link: "/onboarding",
+        }
+      });
+    }
 
     return NextResponse.json({
-      corporateEmail: corpEmail,
-      temporaryPassword: tempPassword,
-      userId: user.id,
+      success: true,
+      message: "Registration submitted successfully. Pending administrator approval."
     }, { status: 201 });
+
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });
