@@ -1,25 +1,26 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import { LoginForm } from "./login-form";
+import { WavyGrid } from "./wavy-grid";
 
 const ANTS_CONFIG = [
   { id: 1, type: "leaf", top: "5%", duration: "22s", delay: "-4s", anim: "march-horizontal", direction: "ltr" },
   { id: 2, type: "coin", top: "12%", duration: "26s", delay: "-12s", anim: "march-horizontal-rev", direction: "rtl" },
-  { id: 3, type: "coffee", top: "20%", duration: "24s", delay: "-8s", anim: "march-diagonal-down", direction: "ltr" },
-  { id: 4, type: "leaf", top: "28%", duration: "29s", delay: "-17s", anim: "march-diagonal-down-rev", direction: "rtl" },
-  { id: 5, type: "coin", top: "36%", duration: "25s", delay: "-5s", anim: "march-diagonal-up", direction: "ltr" },
+  { id: 3, type: "boba", top: "20%", duration: "24s", delay: "-8s", anim: "march-diagonal-down", direction: "ltr" },
+  { id: 4, type: "laptop", top: "28%", duration: "29s", delay: "-17s", anim: "march-diagonal-down-rev", direction: "rtl" },
+  { id: 5, type: "fire", top: "36%", duration: "25s", delay: "-5s", anim: "march-diagonal-up", direction: "ltr" },
   { id: 6, type: "coffee", top: "44%", duration: "32s", delay: "-22s", anim: "march-diagonal-up-rev", direction: "rtl" },
   { id: 7, type: "leaf", top: "52%", duration: "28s", delay: "-10s", anim: "march-horizontal", direction: "ltr" },
   { id: 8, type: "coin", top: "60%", duration: "23s", delay: "-19s", anim: "march-horizontal-rev", direction: "rtl" },
-  { id: 9, type: "coffee", top: "68%", duration: "31s", delay: "-3s", anim: "march-diagonal-down", direction: "ltr" },
-  { id: 10, type: "leaf", top: "76%", duration: "27s", delay: "-15s", anim: "march-diagonal-down-rev", direction: "rtl" },
-  { id: 11, type: "coin", top: "84%", duration: "22s", delay: "-6s", anim: "march-diagonal-up", direction: "ltr" },
+  { id: 9, type: "boba", top: "68%", duration: "31s", delay: "-3s", anim: "march-diagonal-down", direction: "ltr" },
+  { id: 10, type: "laptop", top: "76%", duration: "27s", delay: "-15s", anim: "march-diagonal-down-rev", direction: "rtl" },
+  { id: 11, type: "fire", top: "84%", duration: "22s", delay: "-6s", anim: "march-diagonal-up", direction: "ltr" },
   { id: 12, type: "coffee", top: "92%", duration: "33s", delay: "-25s", anim: "march-diagonal-up-rev", direction: "rtl" },
   { id: 13, type: "leaf", top: "16%", duration: "20s", delay: "-14s", anim: "march-horizontal", direction: "ltr" },
   { id: 14, type: "coin", top: "32%", duration: "27s", delay: "-7s", anim: "march-horizontal-rev", direction: "rtl" },
-  { id: 15, type: "coffee", top: "48%", duration: "23s", delay: "-18s", anim: "march-diagonal-down", direction: "ltr" },
-  { id: 16, type: "leaf", top: "64%", duration: "30s", delay: "-9s", anim: "march-diagonal-down-rev", direction: "rtl" },
-  { id: 17, type: "coin", top: "80%", duration: "25s", delay: "-21s", anim: "march-diagonal-up", direction: "ltr" },
+  { id: 15, type: "boba", top: "48%", duration: "23s", delay: "-18s", anim: "march-diagonal-down", direction: "ltr" },
+  { id: 16, type: "laptop", top: "64%", duration: "30s", delay: "-9s", anim: "march-diagonal-down-rev", direction: "rtl" },
+  { id: 17, type: "fire", top: "80%", duration: "25s", delay: "-21s", anim: "march-diagonal-up", direction: "ltr" },
   { id: 18, type: "coffee", top: "88%", duration: "31s", delay: "-11s", anim: "march-diagonal-up-rev", direction: "rtl" },
 ];
 
@@ -51,6 +52,9 @@ function AntSvg({ type }: { type: string }) {
       <svg viewBox="0 0 100 60" className="w-full h-auto overflow-visible">
         {/* Carrying Item: Green Leaf */}
         <path d="M 45,5 C 55,-5 70,5 65,15 C 60,20 40,15 45,5 Z" fill="#10b981" className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(16,185,129,0.4))" />
+        {/* Cute red cap */}
+        <path d="M 57,17 C 59,12 64,12 66,17 Z" fill="#ef4444" />
+        <circle cx="61.5" cy="13" r="1.5" fill="#ffffff" />
         {/* Legs - White */}
         <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
         <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
@@ -71,6 +75,75 @@ function AntSvg({ type }: { type: string }) {
         {/* Carrying Item: Gold Coin */}
         <circle cx="50" cy="8" r="7" fill="#f97316" className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(249,115,22,0.5))" />
         <text x="50" y="11" fill="#fff" fontSize="9" fontWeight="bold" textAnchor="middle" className="ant-carrying">$</text>
+        {/* Cool green sunglasses */}
+        <path d="M 59,19 L 68,19" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Legs - White */}
+        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
+        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
+        {/* Head & Antennae - White */}
+        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#ffffff" />
+        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        {/* Eyes */}
+        <circle cx="64" cy="21" r="1.5" fill="#000" />
+        {/* Body Segments - White */}
+        <circle cx="50" cy="25" r="7" fill="#ffffff" />
+        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#f4f4f5" />
+      </svg>
+    );
+  }
+  if (type === "boba") {
+    return (
+      <svg viewBox="0 0 100 60" className="w-full h-auto overflow-visible">
+        {/* Carrying Item: Boba Tea */}
+        <g className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(236,72,153,0.5))">
+          <path d="M 44,4 L 56,4 L 54,15 L 46,15 Z" fill="rgba(255,255,255,0.7)" stroke="#ec4899" strokeWidth="1" />
+          <circle cx="48" cy="13" r="1.2" fill="#000" />
+          <circle cx="52" cy="13" r="1.2" fill="#000" />
+          <circle cx="50" cy="11" r="1.2" fill="#000" />
+          <line x1="50" y1="1" x2="48" y2="12" stroke="#ef4444" strokeWidth="1.5" />
+        </g>
+        {/* Legs - White */}
+        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
+        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
+        {/* Head & Antennae - White */}
+        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#ffffff" />
+        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        {/* Eyes */}
+        <circle cx="64" cy="21" r="1.5" fill="#000" />
+        {/* Body Segments - White */}
+        <circle cx="50" cy="25" r="7" fill="#ffffff" />
+        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#f4f4f5" />
+      </svg>
+    );
+  }
+  if (type === "fire") {
+    return (
+      <svg viewBox="0 0 100 60" className="w-full h-auto overflow-visible">
+        {/* Carrying Item: Fire Flame */}
+        <path d="M 45,15 C 42,10 45,5 50,2 C 55,5 58,10 55,15 C 52,17 48,17 45,15 Z" fill="#f97316" className="ant-carrying" filter="drop-shadow(0 2px 6px rgba(249,115,22,0.6))" />
+        <path d="M 47,15 C 45,12 47,8 50,6 C 53,8 55,12 53,15 Z" fill="#ef4444" className="ant-carrying" />
+        {/* Legs - White */}
+        <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
+        <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
+        {/* Head & Antennae - White */}
+        <path d="M 68,23 C 65,18 60,18 58,23 C 58,25 68,25 68,23 Z" fill="#ffffff" />
+        <path d="M 64,20 Q 68,10 74,8 M 62,20 Q 64,8 68,6" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        {/* Eyes */}
+        <circle cx="64" cy="21" r="1.5" fill="#000" />
+        {/* Body Segments - White */}
+        <circle cx="50" cy="25" r="7" fill="#ffffff" />
+        <ellipse cx="32" cy="27" rx="10" ry="7" fill="#f4f4f5" />
+      </svg>
+    );
+  }
+  if (type === "laptop") {
+    return (
+      <svg viewBox="0 0 100 60" className="w-full h-auto overflow-visible">
+        {/* Carrying Item: Laptop */}
+        <g className="ant-carrying" filter="drop-shadow(0 2px 4px rgba(255,255,255,0.4))">
+          <rect x="42" y="2" width="16" height="10" rx="1" fill="#cbd5e1" stroke="#475569" strokeWidth="1" />
+          <polygon points="40,12 60,12 62,15 38,15" fill="#94a3b8" />
+        </g>
         {/* Legs - White */}
         <path d="M 35,25 Q 25,40 20,42 M 45,25 Q 35,42 33,43 M 55,25 Q 45,43 42,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-l" />
         <path d="M 35,25 Q 45,40 50,42 M 45,25 Q 55,42 57,43 M 55,25 Q 65,43 68,43" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" className="ant-leg-r" />
@@ -114,8 +187,8 @@ export default function LoginPage() {
         <div className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[80%] rounded-full bg-radial-gradient from-[rgba(255,255,255,0.1)] to-transparent blur-[120px] animate-pulse" style={{ animationDuration: "12s" }} />
       </div>
 
-      {/* Cyber Grid Lines */}
-      <div className="absolute inset-0 z-0 opacity-[0.06] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
+      {/* Dynamic Interactive Wavy Grid Background */}
+      <WavyGrid />
 
       {/* Embedded CSS Animations */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -296,7 +369,7 @@ export default function LoginPage() {
         <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-[55%] lg:px-16 xl:px-24">
           <div className="mx-auto w-full max-w-[480px]">
             {/* Floating Glassmorphic Login Box */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/45 p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:p-10">
+            <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_30px_100px_rgba(0,0,0,0.5)] backdrop-blur-3xl sm:p-10">
               {/* Outer Decorative Neon Ring */}
               <div className="absolute -top-12 -left-12 h-24 w-24 rounded-full bg-white/5 blur-xl" />
               <div className="absolute -bottom-12 -right-12 h-24 w-24 rounded-full bg-white/5 blur-xl" />
