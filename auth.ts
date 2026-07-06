@@ -71,14 +71,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
+        const email = user.email.toLowerCase();
+        if (!email.endsWith("@theantbox.com")) {
+          return false; // Strictly restrict to AntBox corporate email IDs
+        }
         const existing = await prisma.user.findUnique({
-          where: { email: user.email.toLowerCase() },
+          where: { email },
         });
         if (existing && !existing.isActive) return false;
         if (!existing) {
           await prisma.user.create({
             data: {
-              email: user.email.toLowerCase(),
+              email,
               role: "EMPLOYEE",
               isActive: true,
             },
