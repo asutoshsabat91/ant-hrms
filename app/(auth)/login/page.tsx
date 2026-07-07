@@ -56,31 +56,35 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side: Clean infographic / layout with Canva Brand Mascot assets */}
-      <div className="hidden lg:flex lg:w-1/2 bg-zinc-50/50 border-l border-zinc-100 flex-col justify-center items-center p-16 relative overflow-hidden select-none">
+      <div className="hidden lg:flex lg:w-1/2 bg-[radial-gradient(#e4e4e7_1.5px,transparent_1.5px)] [background-size:24px_24px] bg-zinc-50/70 border-l border-zinc-100 flex-col justify-center items-center p-12 relative overflow-hidden select-none">
         
+        {/* Peeking Ants in the bottom right corner */}
+        <div className="absolute bottom-0 right-0 w-24 h-64 pointer-events-none select-none z-20 transition-transform duration-500 hover:translate-x-1 hover:translate-y-1">
+          <Image 
+            src="/ants/peeking-ants.png" 
+            alt="Peeking Ants Mascot" 
+            width={96}
+            height={256}
+            className="object-contain object-bottom object-right"
+            priority
+          />
+        </div>
+
         {/* Sketched delicate stars and dots in the background */}
-        <div className="absolute top-20 left-20 opacity-25 pointer-events-none select-none">
+        <div className="absolute top-10 left-10 opacity-20 pointer-events-none select-none">
           <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M50 15 C50 35, 35 50, 15 50 C35 50, 50 65, 50 85 C50 65, 65 50, 85 50 C65 50, 50 35, 50 15 Z" />
           </svg>
         </div>
-        <div className="absolute bottom-24 right-24 opacity-25 pointer-events-none select-none">
+        <div className="absolute top-12 right-12 opacity-15 pointer-events-none select-none">
           <svg viewBox="0 0 100 100" className="w-6 h-6 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M50 20 C50 35, 35 50, 20 50 C35 50, 50 65, 50 80 C50 65, 65 50, 80 50 C65 50, 50 35, 50 20 Z" />
           </svg>
         </div>
-        <div className="absolute top-1/3 right-12 opacity-20 pointer-events-none select-none">
-          <svg viewBox="0 0 80 80" className="w-12 h-12 text-[#8e43ac]" fill="currentColor">
-            <circle cx="20" cy="20" r="1.5" />
-            <circle cx="45" cy="15" r="1" />
-            <circle cx="30" cy="45" r="2" />
-            <circle cx="55" cy="35" r="1.5" />
-          </svg>
-        </div>
 
-        <div className="w-full max-w-lg space-y-12 text-center relative z-10">
+        <div className="w-full max-w-xl space-y-8 text-center relative z-10">
           
-          <div className="space-y-4 relative">
+          <div className="space-y-3 relative">
             <div className="inline-block relative px-4 py-1">
               {/* Hand drawn oval circling the workspace directory label */}
               <div className="absolute inset-0 text-[#8e43ac]/30 w-full h-full pointer-events-none scale-110">
@@ -91,69 +95,120 @@ export default function LoginPage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#8e43ac] relative z-10">Workspace Directory</p>
             </div>
             
-            <h1 className="text-4xl font-extrabold tracking-tight text-zinc-950 max-w-sm mx-auto leading-tight">
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 max-w-md mx-auto leading-tight">
               Bridging Hires to SaaS Careers
             </h1>
             
             {/* Hand-drawn double underline brush effect under the heading */}
-            <div className="flex justify-center pt-1.5 opacity-65">
-              <svg viewBox="0 0 300 20" className="w-64 h-4 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <div className="flex justify-center pt-1 opacity-50">
+              <svg viewBox="0 0 300 20" className="w-56 h-3 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M15 8 C 100 6, 200 10, 285 8" />
                 <path d="M45 13 C 120 12, 195 14, 255 12" strokeWidth="1.5" />
               </svg>
             </div>
 
-            <p className="text-sm text-zinc-500 max-w-sm mx-auto leading-relaxed font-medium pt-2">
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed font-medium pt-1">
               Manage employee onboarding, geofenced attendance, leave policies, and professional payroll runs in a premium flat workspace.
             </p>
+
+            {/* Funky running race ants crossing the screen */}
+            <div className="flex justify-center pt-2 opacity-75 select-none pointer-events-none">
+              <Image 
+                src="/ants/running-race-ants.png" 
+                alt="Running Race Ants" 
+                width={120} 
+                height={40} 
+                className="object-contain"
+                priority
+              />
+            </div>
           </div>
           
-          {/* Static Infographic of Canva mascots */}
-          <div className="grid grid-cols-2 gap-6 items-stretch relative">
+          {/* Polaroid-style bulletin board showcasing the funky ant mascot actions */}
+          <div className="grid grid-cols-2 gap-4 items-stretch relative px-4">
             
-            {/* Mascot 1 Card with hand-drawn paperclip on the corner */}
-            <div className="bg-white p-8 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative">
-              
-              {/* Paperclip asset in card corner */}
-              <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-6 h-12 pointer-events-none select-none">
-                <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Card 1: Office Sleep */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm -rotate-2 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
+              <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
+                <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 70 L15 15 C 15 8, 25 8, 25 15 L25 50 C 25 57, 10 57, 10 50 L10 25 C 10 20, 18 20, 18 25 L18 40" />
                 </svg>
               </div>
-
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex-1 flex items-center justify-center min-h-[90px]">
                 <Image 
-                  src="/pitstop-ants.png" 
-                  alt="Colony Collaboration Mascot" 
-                  width={150} 
-                  height={110} 
-                  className="object-contain" 
+                  src="/ants/office-chair-sleep-ant.png" 
+                  alt="Deep Work Sleep Ant" 
+                  width={76} 
+                  height={65} 
+                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
                   priority
                 />
               </div>
-              <div className="mt-6 space-y-1 text-center">
-                <p className="text-[10px] font-bold text-zinc-900 uppercase tracking-wider">Pitstop Collaboration</p>
-                <p className="text-[9px] text-zinc-400 font-medium leading-relaxed">Efficient HR checklists and offboarding exit flows</p>
+              <div className="mt-4 space-y-0.5 text-center">
+                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Deep Work</p>
+                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Optimized developer workspaces</p>
               </div>
             </div>
 
-            {/* Mascot 2 Card */}
-            <div className="bg-white p-8 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between">
-              <div className="flex-1 flex items-center justify-center">
+            {/* Card 2: Coffee Cup */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm rotate-1 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
+              <div className="flex-1 flex items-center justify-center min-h-[90px]">
                 <Image 
-                  src="/basketball-ant.png" 
-                  alt="Goal Execution Mascot" 
-                  width={130} 
-                  height={110} 
-                  className="object-contain" 
+                  src="/ants/coffee-cup-ant.png" 
+                  alt="Daily Energy Coffee Ant" 
+                  width={60} 
+                  height={65} 
+                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
                   priority
                 />
               </div>
-              <div className="mt-6 space-y-1 text-center">
-                <p className="text-[10px] font-bold text-zinc-900 uppercase tracking-wider">Goal Execution</p>
-                <p className="text-[9px] text-zinc-400 font-medium leading-relaxed">Track progress limits and quarterly team success</p>
+              <div className="mt-4 space-y-0.5 text-center">
+                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Daily Brew</p>
+                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Active syncs & high energy</p>
               </div>
             </div>
+
+            {/* Card 3: Microscope Science */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm rotate-2 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
+              <div className="flex-1 flex items-center justify-center min-h-[90px]">
+                <Image 
+                  src="/ants/microscope-science-ant.png" 
+                  alt="Precision Science Ant" 
+                  width={64} 
+                  height={65} 
+                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  priority
+                />
+              </div>
+              <div className="mt-4 space-y-0.5 text-center">
+                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Precision Analytics</p>
+                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Geofenced timesheets & telemetry</p>
+              </div>
+            </div>
+
+            {/* Card 4: Book Stats */}
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm -rotate-1 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
+              <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
+                <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 70 L15 15 C 15 8, 25 8, 25 15 L25 50 C 25 57, 10 57, 10 50 L10 25 C 10 20, 18 20, 18 25 L18 40" />
+                </svg>
+              </div>
+              <div className="flex-1 flex items-center justify-center min-h-[90px]">
+                <Image 
+                  src="/ants/book-stats-ant.png" 
+                  alt="Sprint Metrics Ant" 
+                  width={68} 
+                  height={60} 
+                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  priority
+                />
+              </div>
+              <div className="mt-4 space-y-0.5 text-center">
+                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Goal Execution</p>
+                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Sprint reports & milestones</p>
+              </div>
+            </div>
+
           </div>
 
           {/* Location / Tech tag */}
