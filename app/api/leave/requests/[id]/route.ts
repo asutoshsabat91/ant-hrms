@@ -1,9 +1,11 @@
+
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { sendLeaveApprovalEmail } from "@/lib/mail";
 import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
+import { syncEmployeePayrollForDate } from "@/lib/utils/payrollEngine";
 
 const decisionSchema = z.object({
   action: z.enum(["APPROVE", "REJECT"]),
@@ -177,6 +179,14 @@ export async function PATCH(
     }
   } catch (err) {
     console.error("Failed post-leave decision integrations (email/calendar)", err);
+  }
+
+  if (result.status === "APPROVED") {
+    try {
+      await syncEmployeePayrollForDate(result.employeeId, result.startDate);
+    } catch (err) {
+      console.error("Failed to sync employee payroll on leave approval:", err);
+    }
   }
 
   return NextResponse.json({ request: result });

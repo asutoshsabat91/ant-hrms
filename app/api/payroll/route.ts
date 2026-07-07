@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { calculatePayroll } from "@/lib/utils/payrollEngine";
-import { differenceInCalendarDays, lastDayOfMonth, startOfMonth } from "date-fns";
+import { calculatePayroll, type PayrollCalculation } from "@/lib/utils/payrollEngine";
+import { differenceInCalendarDays } from "date-fns";
 
 const monthYearSchema = z.object({
   month: z.preprocess((value) => Number(value), z.number().int().min(1).max(12)).optional(),
@@ -14,6 +14,34 @@ const createSchema = z.object({
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2000),
 });
+
+const updateLinesSchema = z.object({
+  lines: z.array(
+    z.object({
+      employeeId: z.string(),
+      basicSalary: z.number(),
+      specialAllowance: z.number(),
+      meals: z.number().default(0),
+      lop: z.number().default(0),
+      lopDays: z.number().default(0),
+      tds: z.number().default(0),
+      arrears: z.number().default(0),
+    })
+  ),
+});
+
+function getPeriodDates(month: number, year: number) {
+  // Cycle starts 24th of previous month and ends 25th of current month
+  let prevMonth = month - 2;
+  let prevYear = year;
+  if (prevMonth < 0) {
+    prevMonth = 11;
+    prevYear -= 1;
+  }
+  const start = new Date(prevYear, prevMonth, 24);
+  const end = new Date(year, month - 1, 25);
+  return { start, end };
+}
 
 function countWorkingDays(start: Date, end: Date) {
   const current = new Date(start);
@@ -57,9 +85,15 @@ export async function GET(req: Request) {
   const now = new Date();
   const month = parsed.data.month ?? now.getMonth() + 1;
   const year = parsed.data.year ?? now.getFullYear();
-  const periodStart = startOfMonth(new Date(year, month - 1, 1));
-  const periodEnd = lastDayOfMonth(periodStart);
+  
+  // Custom payroll range: 24th of previous month to 25th of current month
+  const { start: periodStart, end: periodEnd } = getPeriodDates(month, year);
   const workingDays = countWorkingDays(periodStart, periodEnd);
+
+  // Get previous period to compute new joinee arrears
+  const prevMonthNum = month === 1 ? 12 : month - 1;
+  const prevYearNum = month === 1 ? year - 1 : year;
+  const { start: prevPeriodStart, end: prevPeriodEnd } = getPeriodDates(prevMonthNum, prevYearNum);
 
   const existingRun = await prisma.payrollRun.findUnique({
     where: { month_year: { month, year } },
@@ -86,10 +120,23 @@ export async function GET(req: Request) {
       leaveBalances: {
         where: { year },
       },
+      attendanceRecords: {
+        where: {
+          workDate: { gte: periodStart, lte: periodEnd },
+        },
+        select: { workDate: true, status: true },
+      },
     },
   });
 
   const payrollLines = employees.map((employee) => {
+    const attendedDays = new Set(
+      employee.attendanceRecords
+        .filter((r) => ["PRESENT", "ON_LEAVE", "HOLIDAY", "WFH", "HALF_DAY"].includes(r.status))
+        .map((r) => r.workDate.toISOString().split("T")[0])
+    );
+    const attendanceLopDays = Math.max(workingDays - attendedDays.size, 0);
+
     const leaveDays = employee.leaveRequests.reduce((total, leave) => {
       if (leave.leaveType.code === "LOP") {
         return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
@@ -102,40 +149,86 @@ export async function GET(req: Request) {
       return total;
     }, 0);
 
-    // Total approved leaves taken in the full year (sum of 'used' across all leave balance records)
+    const lopDaysResolved = employee.attendanceRecords.length > 0 ? attendanceLopDays : leaveDays;
+    const paidDays = Math.max(workingDays - lopDaysResolved, 0);
     const totalLeavesTaken = employee.leaveBalances.reduce((sum, bal) => sum + (bal.used || 0), 0);
 
-    const paidDays = Math.max(workingDays - leaveDays, 0);
-    const payroll = calculatePayroll(
-      {
-        basicSalary: employee.basicSalary,
-        hra: employee.hra,
-        specialAllowance: employee.specialAllowance,
-        professionalTax: employee.professionalTax,
-        pan: employee.pan,
-      },
-      paidDays,
-      workingDays
-    );
+    // New Joinee Logic
+    const isJoiningMonth = 
+      employee.joiningDate >= periodStart && 
+      employee.joiningDate <= periodEnd;
+
+    const joinedInPrevPeriod = 
+      employee.joiningDate >= prevPeriodStart && 
+      employee.joiningDate <= prevPeriodEnd;
+
+    let arrears = 0;
+    if (joinedInPrevPeriod) {
+      // Calculate arrears: (Monthly Salary / Days in Joining Month) * Working Days Worked
+      const monthlySalary = (employee.basicSalary ?? 0) + (employee.specialAllowance ?? 0);
+      const daysInJoiningMonth = new Date(employee.joiningDate.getFullYear(), employee.joiningDate.getMonth() + 1, 0).getDate();
+      const workingDaysWorked = countWorkingDays(employee.joiningDate, prevPeriodEnd);
+      arrears = Math.round((monthlySalary / daysInJoiningMonth) * workingDaysWorked);
+    }
+
+    let payroll: PayrollCalculation;
+    if (isJoiningMonth) {
+      // New Joinees get paid 0 in their joining month
+      payroll = {
+        grossEarnings: 0,
+        pf: 0,
+        esi: 0,
+        professionalTax: 0,
+        tds: 0,
+        lop: 0,
+        meals: 0,
+        arrears: 0,
+        totalDeductions: 0,
+        netPay: 0,
+        paidDays: 0,
+        lopDays: workingDays,
+      };
+    } else {
+      payroll = calculatePayroll(
+        {
+          basicSalary: employee.basicSalary,
+          hra: 0,
+          specialAllowance: employee.specialAllowance,
+          professionalTax: 0,
+          pan: employee.pan,
+        },
+        paidDays,
+        workingDays,
+        0, // meals default
+        0, // tds default
+        arrears
+      );
+    }
 
     return {
       employeeId: employee.id,
       employeeName: `${employee.firstName} ${employee.lastName}`,
       designation: employee.designation,
       basicSalary: employee.basicSalary ?? 0,
-      hra: employee.hra ?? 0,
+      hra: 0,
       specialAllowance: employee.specialAllowance ?? 0,
       grossEarnings: payroll.grossEarnings,
-      pf: payroll.pf,
-      esi: payroll.esi,
-      professionalTax: payroll.professionalTax,
+      pf: 0,
+      esi: 0,
+      professionalTax: 0,
       tds: payroll.tds,
       lop: payroll.lop,
+      meals: payroll.meals,
+      arrears: payroll.arrears,
       totalDeductions: payroll.totalDeductions,
       netPay: payroll.netPay,
       paidDays: payroll.paidDays,
       lopDays: payroll.lopDays,
       totalLeavesTaken,
+      bankAccountNo: employee.bankAccountNo,
+      bankName: employee.bankName,
+      ifscCode: employee.ifscCode,
+      pan: employee.pan,
     };
   });
 
@@ -149,25 +242,32 @@ export async function GET(req: Request) {
             employeeName: `${line.employee.firstName} ${line.employee.lastName}`,
             designation: line.employee.designation,
             basicSalary: line.basicSalary,
-            hra: line.hra,
+            hra: 0,
             specialAllowance: line.specialAllowance,
             grossEarnings: line.grossEarnings,
-            pf: line.pf,
-            esi: line.esi,
-            professionalTax: line.professionalTax,
+            pf: 0,
+            esi: 0,
+            professionalTax: 0,
             tds: line.tds,
             lop: line.lop,
+            meals: line.meals,
+            arrears: line.arrears,
             totalDeductions: line.totalDeductions,
             netPay: line.netPay,
             paidDays: line.paidDays,
             lopDays: line.lopDays,
             totalLeavesTaken: preview?.totalLeavesTaken ?? 0,
+            bankAccountNo: line.employee.bankAccountNo,
+            bankName: line.employee.bankName,
+            ifscCode: line.employee.ifscCode,
+            pan: line.employee.pan,
           };
         })
     : payrollLines;
 
   const totalGross = displayLines.reduce((sum, line) => sum + line.grossEarnings, 0);
   const totalNet = displayLines.reduce((sum, line) => sum + line.netPay, 0);
+  const totalDeductions = displayLines.reduce((sum, line) => sum + line.totalDeductions, 0);
 
   return NextResponse.json({
     month,
@@ -178,6 +278,7 @@ export async function GET(req: Request) {
     totalEmployees: displayLines.length,
     totalGross,
     totalNet,
+    totalDeductions,
     lines: displayLines,
   });
 }
@@ -195,9 +296,15 @@ export async function POST(req: Request) {
   }
 
   const { month, year } = parsed.data;
-  const periodStart = startOfMonth(new Date(year, month - 1, 1));
-  const periodEnd = lastDayOfMonth(periodStart);
+  
+  // Custom payroll period start & end dates
+  const { start: periodStart, end: periodEnd } = getPeriodDates(month, year);
   const workingDays = countWorkingDays(periodStart, periodEnd);
+
+  // Previous period ranges for new joinee arrears
+  const prevMonthNum = month === 1 ? 12 : month - 1;
+  const prevYearNum = month === 1 ? year - 1 : year;
+  const { start: prevPeriodStart, end: prevPeriodEnd } = getPeriodDates(prevMonthNum, prevYearNum);
 
   const existingRun = await prisma.payrollRun.findUnique({
     where: { month_year: { month, year } },
@@ -231,7 +338,6 @@ export async function POST(req: Request) {
   });
 
   const lines = employees.map((employee) => {
-    // LOP from attendance: days that are not PRESENT, ON_LEAVE, HOLIDAY, WFH, or HALF_DAY
     const attendedDays = new Set(
       employee.attendanceRecords
         .filter((r) => ["PRESENT", "ON_LEAVE", "HOLIDAY", "WFH", "HALF_DAY"].includes(r.status))
@@ -239,7 +345,6 @@ export async function POST(req: Request) {
     );
     const attendanceLopDays = Math.max(workingDays - attendedDays.size, 0);
 
-    // Fallback to leave-based LOP if no attendance data
     const leaveDays = employee.leaveRequests.reduce((total, leave) => {
       if (leave.leaveType.code === "LOP") {
         return total + overlapDays(leave.startDate, leave.endDate, periodStart, periodEnd);
@@ -254,29 +359,70 @@ export async function POST(req: Request) {
     const lopDaysResolved = employee.attendanceRecords.length > 0 ? attendanceLopDays : leaveDays;
 
     const paidDays = Math.max(workingDays - lopDaysResolved, 0);
-    const payroll = calculatePayroll(
-      {
-        basicSalary: employee.basicSalary,
-        hra: employee.hra,
-        specialAllowance: employee.specialAllowance,
-        professionalTax: employee.professionalTax,
-        pan: employee.pan,
-      },
-      paidDays,
-      workingDays
-    );
+
+    // New Joinee check
+    const isJoiningMonth = 
+      employee.joiningDate >= periodStart && 
+      employee.joiningDate <= periodEnd;
+
+    const joinedInPrevPeriod = 
+      employee.joiningDate >= prevPeriodStart && 
+      employee.joiningDate <= prevPeriodEnd;
+
+    let arrears = 0;
+    if (joinedInPrevPeriod) {
+      const monthlySalary = (employee.basicSalary ?? 0) + (employee.specialAllowance ?? 0);
+      const daysInJoiningMonth = new Date(employee.joiningDate.getFullYear(), employee.joiningDate.getMonth() + 1, 0).getDate();
+      const workingDaysWorked = countWorkingDays(employee.joiningDate, prevPeriodEnd);
+      arrears = Math.round((monthlySalary / daysInJoiningMonth) * workingDaysWorked);
+    }
+
+    let payroll: PayrollCalculation;
+    if (isJoiningMonth) {
+      payroll = {
+        grossEarnings: 0,
+        pf: 0,
+        esi: 0,
+        professionalTax: 0,
+        tds: 0,
+        lop: 0,
+        meals: 0,
+        arrears: 0,
+        totalDeductions: 0,
+        netPay: 0,
+        paidDays: 0,
+        lopDays: workingDays,
+      };
+    } else {
+      payroll = calculatePayroll(
+        {
+          basicSalary: employee.basicSalary,
+          hra: 0,
+          specialAllowance: employee.specialAllowance,
+          professionalTax: 0,
+          pan: employee.pan,
+        },
+        paidDays,
+        workingDays,
+        0, // meals default
+        0, // tds default
+        arrears
+      );
+    }
 
     return {
       employeeId: employee.id,
       basicSalary: employee.basicSalary ?? 0,
-      hra: employee.hra ?? 0,
+      hra: 0,
       specialAllowance: employee.specialAllowance ?? 0,
       grossEarnings: payroll.grossEarnings,
-      pf: payroll.pf,
-      esi: payroll.esi,
-      professionalTax: payroll.professionalTax,
+      pf: 0,
+      esi: 0,
+      professionalTax: 0,
       tds: payroll.tds,
       lop: payroll.lop,
+      meals: payroll.meals,
+      arrears: payroll.arrears,
       totalDeductions: payroll.totalDeductions,
       netPay: payroll.netPay,
       workingDays,
@@ -297,16 +443,18 @@ export async function POST(req: Request) {
         create: lines.map((line) => ({
           employeeId: line.employeeId,
           basicSalary: line.basicSalary,
-          hra: line.hra,
+          hra: 0,
           specialAllowance: line.specialAllowance,
           overtimePay: 0,
           bonus: 0,
           grossEarnings: line.grossEarnings,
-          pf: line.pf,
-          esi: line.esi,
-          professionalTax: line.professionalTax,
+          pf: 0,
+          esi: 0,
+          professionalTax: 0,
           tds: line.tds,
           lop: line.lop,
+          meals: line.meals,
+          arrears: line.arrears,
           totalDeductions: line.totalDeductions,
           netPay: line.netPay,
           workingDays: line.workingDays,
@@ -325,4 +473,50 @@ export async function POST(req: Request) {
     status: run.status,
     lineCount: run.lines.length,
   }, { status: 201 });
+}
+
+export async function PUT(req: Request) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json();
+  const parsed = updateLinesSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { lines } = parsed.data;
+
+  await prisma.$transaction(
+    lines.map((line) => {
+      const grossEarnings = line.basicSalary + line.specialAllowance + line.arrears;
+      const totalDeductions = line.meals + line.lop + line.tds;
+      const netPay = grossEarnings - totalDeductions;
+
+      return prisma.payrollLine.updateMany({
+        where: {
+          employeeId: line.employeeId,
+          run: {
+            status: "DRAFT",
+          },
+        },
+        data: {
+          basicSalary: line.basicSalary,
+          specialAllowance: line.specialAllowance,
+          meals: line.meals,
+          lop: line.lop,
+          lopDays: line.lopDays,
+          tds: line.tds,
+          arrears: line.arrears,
+          grossEarnings,
+          totalDeductions,
+          netPay,
+        },
+      });
+    })
+  );
+
+  return NextResponse.json({ success: true });
 }

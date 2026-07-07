@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { syncEmployeePayrollForDate } from "@/lib/utils/payrollEngine";
 
 function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[]) {
   let totalMs = 0;
@@ -172,6 +173,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         return updatedRequest;
       });
+
+      // Sync payroll line for this employee date to update LOP
+      await syncEmployeePayrollForDate(request.employeeId, new Date(request.date));
 
       return NextResponse.json({ success: true, request: result });
     }

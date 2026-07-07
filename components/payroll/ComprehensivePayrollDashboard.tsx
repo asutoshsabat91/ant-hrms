@@ -41,6 +41,8 @@ interface PayrollLine {
   professionalTax: number;
   tds: number;
   lop: number;
+  meals: number;
+  arrears: number;
   totalDeductions: number;
   netPay: number;
   paidDays: number;
@@ -247,8 +249,8 @@ function PayslipModal({
                 </div>
                 {[
                   { label: "Basic Salary", value: line.basicSalary },
-                  { label: "HRA", value: line.hra },
                   { label: "Special Allowance", value: line.specialAllowance },
+                  ...(line.arrears && line.arrears > 0 ? [{ label: "Arrears (Deferred Pay)", value: line.arrears }] : []),
                   ...(line.bonus && line.bonus > 0 ? [{ label: "Bonus", value: line.bonus }] : []),
                   ...(line.overtimePay && line.overtimePay > 0 ? [{ label: "Overtime Pay", value: line.overtimePay }] : []),
                 ].map(({ label, value }) => (
@@ -257,12 +259,6 @@ function PayslipModal({
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#09090b" }}>₹{value.toLocaleString("en-IN")}</span>
                   </div>
                 ))}
-                {line.lopDays > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", borderBottom: "1px solid #f4f4f5", background: "#fff7ed" }}>
-                    <span style={{ fontSize: 12, color: "#c2410c" }}>Loss of Pay ({line.lopDays}d)</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#c2410c" }}>-₹{line.lop.toLocaleString("en-IN")}</span>
-                  </div>
-                )}
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", background: "#09090b" }}>
                   <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.7)" }}>Gross Earnings</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>₹{line.grossEarnings.toLocaleString("en-IN")}</span>
@@ -275,9 +271,8 @@ function PayslipModal({
                   Deductions
                 </div>
                 {[
-                  { label: "Provident Fund (12%)", value: line.pf },
-                  { label: "ESI (0.75%)", value: line.esi },
-                  { label: "Professional Tax", value: line.professionalTax },
+                  { label: "Meals Taken", value: line.meals },
+                  { label: "Loss of Pay (LOP)", value: line.lop },
                   { label: "TDS", value: line.tds },
                 ].map(({ label, value }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", borderBottom: "1px solid #f4f4f5" }}>
@@ -348,9 +343,6 @@ function PayslipModal({
     document.body
   );
 }
-
-// ─── Main Dashboard ──────────────────────────────────────────────────────────
-
 export function ComprehensivePayrollDashboard() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -358,12 +350,23 @@ export function ComprehensivePayrollDashboard() {
   const [overview, setOverview] = useState<PayrollOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [savingEdits, setSavingEdits] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "payslips" | "breakdown" | "history">("overview");
   const [historyRuns, setHistoryRuns] = useState<{ id: string; month: number; year: number; status: string; totalNet?: number; totalGross?: number; createdAt: string; lineCount?: number }[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<PayrollLine | null>(null);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+
+  const [editedLines, setEditedLines] = useState<Record<string, {
+    basicSalary: number;
+    specialAllowance: number;
+    meals: number;
+    lop: number;
+    lopDays: number;
+    tds: number;
+    arrears: number;
+  }>>({});
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -385,6 +388,70 @@ export function ComprehensivePayrollDashboard() {
   }, []);
 
   useEffect(() => { fetchPayroll(month, year); }, [month, year, fetchPayroll]);
+
+  useEffect(() => {
+    if (overview?.lines) {
+      const initial: typeof editedLines = {};
+      overview.lines.forEach((line) => {
+        initial[line.employeeId] = {
+          basicSalary: line.basicSalary,
+          specialAllowance: line.specialAllowance,
+          meals: line.meals || 0,
+          lop: line.lop,
+          lopDays: line.lopDays,
+          tds: line.tds || 0,
+          arrears: line.arrears || 0,
+        };
+      });
+      setEditedLines(initial);
+    }
+  }, [overview]);
+
+  const updateLineField = useCallback((employeeId: string, field: string, val: number) => {
+    setEditedLines((prev) => {
+      const line = prev[employeeId] ? { ...prev[employeeId] } : {
+        basicSalary: 0,
+        specialAllowance: 0,
+        meals: 0,
+        lop: 0,
+        lopDays: 0,
+        tds: 0,
+        arrears: 0,
+      };
+      type LineField = "basicSalary" | "specialAllowance" | "meals" | "lop" | "lopDays" | "tds" | "arrears";
+      line[field as LineField] = val;
+      return {
+        ...prev,
+        [employeeId]: line,
+      };
+    });
+  }, []);
+
+  const saveOverrides = useCallback(async () => {
+    setSavingEdits(true);
+    setError(null);
+    try {
+      const payload = Object.entries(editedLines).map(([employeeId, vals]) => ({
+        employeeId,
+        ...vals,
+      }));
+      const res = await fetch("/api/payroll", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lines: payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to save changes.");
+      } else {
+        fetchPayroll(month, year);
+      }
+    } catch {
+      setError("Failed to save changes.");
+    } finally {
+      setSavingEdits(false);
+    }
+  }, [editedLines, month, year, fetchPayroll]);
 
   useEffect(() => {
     if (activeTab !== "history") return;
@@ -515,6 +582,18 @@ export function ComprehensivePayrollDashboard() {
             {submitting ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
             {overview?.hasRun ? "Payroll done" : submitting ? "Running…" : "Run payroll"}
           </button>
+
+          {/* Save Changes Button */}
+          {overview && overview.status === "DRAFT" && (
+            <button
+              onClick={saveOverrides}
+              disabled={savingEdits || loading}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {savingEdits ? <Loader2 size={13} className="animate-spin" /> : null}
+              Save Changes
+            </button>
+          )}
         </div>
       </div>
 
@@ -584,60 +663,158 @@ export function ComprehensivePayrollDashboard() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                     <tr>
-                      <th className="px-6 py-3">Employee</th>
-                      <th className="px-6 py-3">Basic</th>
-                      <th className="px-6 py-3">HRA</th>
-                      <th className="px-6 py-3">Special Allow.</th>
-                      <th className="px-6 py-3">Gross</th>
-                      <th className="px-6 py-3 text-rose-600">Deductions</th>
-                      <th className="px-6 py-3 text-emerald-700">Net Pay</th>
-                      <th className="px-6 py-3 text-amber-700">Leaves (YTD)</th>
-                      <th className="px-6 py-3 text-orange-700">LOP Days</th>
+                      <th className="px-4 py-3">Employee</th>
+                      <th className="px-4 py-3">Bank Account</th>
+                      <th className="px-4 py-3 text-right">Basic</th>
+                      <th className="px-4 py-3 text-right">Special Allow.</th>
+                      <th className="px-4 py-3 text-right">Arrears</th>
+                      <th className="px-4 py-3 text-right">Gross</th>
+                      <th className="px-4 py-3 text-right text-rose-600">Deductions</th>
+                      <th className="px-4 py-3 text-right text-emerald-700">Net Pay</th>
+                      <th className="px-4 py-3 text-center text-amber-700">Leaves (YTD)</th>
+                      <th className="px-4 py-3 text-center text-orange-700">LOP Days</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
-                    {overview.lines.map((line) => (
-                      <tr key={line.employeeId} className="hover:bg-zinc-50/50 transition-colors">
-                        <td className="px-6 py-3">
-                          <p className="font-bold text-zinc-900 text-xs">{line.employeeName}</p>
-                          <p className="text-[10px] text-zinc-400">{line.designation}</p>
-                        </td>
-                        <td className="px-6 py-3 text-xs font-medium text-zinc-700">₹{line.basicSalary.toLocaleString("en-IN")}</td>
-                        <td className="px-6 py-3 text-xs font-medium text-zinc-700">₹{line.hra.toLocaleString("en-IN")}</td>
-                        <td className="px-6 py-3 text-xs font-medium text-zinc-700">₹{line.specialAllowance.toLocaleString("en-IN")}</td>
-                        <td className="px-6 py-3 text-xs font-bold text-zinc-900">₹{line.grossEarnings.toLocaleString("en-IN")}</td>
-                        <td className="px-6 py-3 text-xs font-bold text-rose-600">₹{line.totalDeductions.toLocaleString("en-IN")}</td>
-                        <td className="px-6 py-3 text-xs font-extrabold text-emerald-700">₹{line.netPay.toLocaleString("en-IN")}</td>
-                        <td className="px-6 py-3">
-                          <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                            {line.totalLeavesTaken ?? 0}d
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          {line.lopDays > 0 ? (
-                            <span className="inline-flex items-center rounded-full bg-orange-50 border border-orange-200 px-2 py-0.5 text-[10px] font-bold text-orange-700">
-                              {line.lopDays}d LOP
+                    {overview.lines.map((line) => {
+                      const isDraft = overview.status === "DRAFT";
+                      const local = editedLines[line.employeeId] || {
+                        basicSalary: line.basicSalary,
+                        specialAllowance: line.specialAllowance,
+                        meals: line.meals,
+                        lop: line.lop,
+                        lopDays: line.lopDays,
+                        tds: line.tds,
+                        arrears: line.arrears,
+                      };
+
+                      const computedGross = local.basicSalary + local.specialAllowance + local.arrears;
+                      const computedDeductions = local.meals + local.lop + local.tds;
+                      const computedNet = computedGross - computedDeductions;
+
+                      return (
+                        <tr key={line.employeeId} className="hover:bg-zinc-50/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-bold text-zinc-900 text-xs">{line.employeeName}</p>
+                            <p className="text-[10px] text-zinc-400">{line.designation}</p>
+                          </td>
+                          <td className="px-4 py-3 text-xs font-semibold text-zinc-500">
+                            {line.bankAccountNo ? `****${line.bankAccountNo.slice(-4)}` : "—"}
+                          </td>
+                          
+                          {/* Basic Salary */}
+                          <td className="px-4 py-3 text-right">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.basicSalary}
+                                onChange={(e) => updateLineField(line.employeeId, "basicSalary", Number(e.target.value))}
+                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-zinc-700">₹{line.basicSalary.toLocaleString("en-IN")}</span>
+                            )}
+                          </td>
+
+                          {/* Special Allowance */}
+                          <td className="px-4 py-3 text-right">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.specialAllowance}
+                                onChange={(e) => updateLineField(line.employeeId, "specialAllowance", Number(e.target.value))}
+                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-zinc-700">₹{line.specialAllowance.toLocaleString("en-IN")}</span>
+                            )}
+                          </td>
+
+                          {/* Arrears */}
+                          <td className="px-4 py-3 text-right">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.arrears}
+                                onChange={(e) => updateLineField(line.employeeId, "arrears", Number(e.target.value))}
+                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-zinc-700">₹{line.arrears.toLocaleString("en-IN")}</span>
+                            )}
+                          </td>
+
+                          {/* Gross Earnings */}
+                          <td className="px-4 py-3 text-right text-xs font-bold text-zinc-900">
+                            ₹{computedGross.toLocaleString("en-IN")}
+                          </td>
+
+                          {/* Deductions */}
+                          <td className="px-4 py-3 text-right text-xs font-bold text-rose-600">
+                            ₹{computedDeductions.toLocaleString("en-IN")}
+                          </td>
+
+                          {/* Net Pay */}
+                          <td className="px-4 py-3 text-right text-xs font-extrabold text-emerald-700">
+                            ₹{computedNet.toLocaleString("en-IN")}
+                          </td>
+
+                          {/* Leaves YTD */}
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                              {line.totalLeavesTaken ?? 0}d
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-zinc-300 font-medium">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+
+                          {/* LOP Days */}
+                          <td className="px-4 py-3 text-center">
+                            {local.lopDays > 0 ? (
+                              <span className="inline-flex items-center rounded-full bg-orange-50 border border-orange-200 px-2 py-0.5 text-[10px] font-bold text-orange-700">
+                                {local.lopDays}d LOP
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-zinc-300 font-medium">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   <tfoot className="border-t-2 border-zinc-200 bg-zinc-50">
                     <tr>
-                      <td className="px-6 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">TOTAL</td>
-                      <td className="px-6 py-3" />
-                      <td className="px-6 py-3" />
-                      <td className="px-6 py-3" />
-                      <td className="px-6 py-3 text-xs font-extrabold text-zinc-900">₹{overview.totalGross.toLocaleString("en-IN")}</td>
-                      <td className="px-6 py-3 text-xs font-extrabold text-rose-600">
-                        ₹{(overview.totalGross - overview.totalNet).toLocaleString("en-IN")}
+                      <td className="px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">TOTAL</td>
+                      <td className="px-4 py-3" />
+                      <td className="px-4 py-3" />
+                      <td className="px-4 py-3" />
+                      <td className="px-4 py-3" />
+                      
+                      {/* Computed Total Gross */}
+                      <td className="px-4 py-3 text-right text-xs font-extrabold text-zinc-900">
+                        ₹{overview.lines.reduce((sum, line) => {
+                          const local = editedLines[line.employeeId] || line;
+                          return sum + (local.basicSalary + local.specialAllowance + local.arrears);
+                        }, 0).toLocaleString("en-IN")}
                       </td>
-                      <td className="px-6 py-3 text-xs font-extrabold text-emerald-700">₹{overview.totalNet.toLocaleString("en-IN")}</td>
-                      <td className="px-6 py-3" />
-                      <td className="px-6 py-3" />
+
+                      {/* Computed Total Deductions */}
+                      <td className="px-4 py-3 text-right text-xs font-extrabold text-rose-600">
+                        ₹{overview.lines.reduce((sum, line) => {
+                          const local = editedLines[line.employeeId] || line;
+                          return sum + (local.meals + local.lop + local.tds);
+                        }, 0).toLocaleString("en-IN")}
+                      </td>
+
+                      {/* Computed Total Net Pay */}
+                      <td className="px-4 py-3 text-right text-xs font-extrabold text-emerald-700">
+                        ₹{overview.lines.reduce((sum, line) => {
+                          const local = editedLines[line.employeeId] || line;
+                          const gross = local.basicSalary + local.specialAllowance + local.arrears;
+                          const ded = local.meals + local.lop + local.tds;
+                          return sum + (gross - ded);
+                        }, 0).toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-4 py-3" />
+                      <td className="px-4 py-3" />
                     </tr>
                   </tfoot>
                 </table>
@@ -712,9 +889,9 @@ export function ComprehensivePayrollDashboard() {
                       {/* Breakdown row */}
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { label: "PF", value: line.pf },
-                          { label: "TDS", value: line.tds },
-                          { label: "PT", value: line.professionalTax },
+                          { label: "Meals", value: line.meals || 0 },
+                          { label: "TDS", value: line.tds || 0 },
+                          { label: "LOP", value: line.lop || 0 },
                         ].map(({ label, value }) => (
                           <div key={label} className="rounded-lg bg-zinc-50 border border-zinc-100 p-2 text-center">
                             <p className="text-[9px] font-bold text-zinc-400 uppercase">{label}</p>
@@ -722,8 +899,7 @@ export function ComprehensivePayrollDashboard() {
                           </div>
                         ))}
                       </div>
-
-                      {/* Leave info */}
+{/* Leaves YTD */}
                       <div className="flex items-center justify-between rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
                         <div className="flex items-center gap-1.5">
                           <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
@@ -763,56 +939,124 @@ export function ComprehensivePayrollDashboard() {
             <div className="rounded-xl border border-zinc-100 bg-white shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-zinc-50">
                 <p className="text-sm font-bold text-zinc-900">Component-wise Salary Breakdown</p>
-                <p className="text-xs text-zinc-400 font-medium mt-0.5">Per-employee breakdown of all earnings and statutory deductions</p>
+                <p className="text-xs text-zinc-400 font-medium mt-0.5">Per-employee breakdown of all earnings, meals, and loss of pay</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-zinc-50/50 border-b border-zinc-100 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
                     <tr>
-                      <th className="px-4 py-3 sticky left-0 bg-zinc-50">Employee</th>
-                      <th className="px-4 py-3 text-blue-700">Basic</th>
-                      <th className="px-4 py-3 text-blue-600">HRA</th>
-                      <th className="px-4 py-3 text-blue-500">S.Allow.</th>
-                      <th className="px-4 py-3 font-extrabold text-zinc-700">Gross</th>
-                      <th className="px-4 py-3 text-rose-600">PF</th>
-                      <th className="px-4 py-3 text-rose-500">ESI</th>
-                      <th className="px-4 py-3 text-rose-400">Prof.Tax</th>
-                      <th className="px-4 py-3 text-rose-600">TDS</th>
-                      <th className="px-4 py-3 text-rose-700 font-extrabold">Total Ded.</th>
-                      <th className="px-4 py-3 text-emerald-700 font-extrabold">Net Pay</th>
-                      <th className="px-4 py-3 text-orange-600">LOP</th>
-                      <th className="px-4 py-3 text-amber-700">Leaves YTD</th>
+                      <th className="px-4 py-3 sticky left-0 bg-zinc-50 z-10">Employee</th>
+                      <th className="px-4 py-3 text-right text-blue-700">Basic</th>
+                      <th className="px-4 py-3 text-right text-blue-500">S.Allow.</th>
+                      <th className="px-4 py-3 text-right text-blue-400">Arrears</th>
+                      <th className="px-4 py-3 text-right font-extrabold text-zinc-700">Gross</th>
+                      <th className="px-4 py-3 text-right text-rose-500">Meals</th>
+                      <th className="px-4 py-3 text-right text-rose-600">LOP</th>
+                      <th className="px-4 py-3 text-right text-rose-400">TDS</th>
+                      <th className="px-4 py-3 text-right text-rose-700 font-extrabold">Total Ded.</th>
+                      <th className="px-4 py-3 text-right text-emerald-700 font-extrabold">Net Pay</th>
+                      <th className="px-4 py-3 text-center text-orange-600">LOP Days</th>
+                      <th className="px-4 py-3 text-center text-amber-700">Leaves YTD</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
-                    {overview.lines.map((line) => (
-                      <tr key={line.employeeId} className="hover:bg-zinc-50/50 transition-colors">
-                        <td className="px-4 py-3 sticky left-0 bg-white">
-                          <p className="font-bold text-zinc-900">{line.employeeName}</p>
-                          <p className="text-[9px] text-zinc-400">{line.designation}</p>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-zinc-700">₹{line.basicSalary.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 font-medium text-zinc-700">₹{line.hra.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 font-medium text-zinc-700">₹{line.specialAllowance.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 font-extrabold text-zinc-900">₹{line.grossEarnings.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 text-rose-600">₹{line.pf.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 text-rose-500">{line.esi > 0 ? `₹${line.esi.toLocaleString("en-IN")}` : "—"}</td>
-                        <td className="px-4 py-3 text-rose-400">₹{line.professionalTax.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 text-rose-600">{line.tds > 0 ? `₹${line.tds.toLocaleString("en-IN")}` : "—"}</td>
-                        <td className="px-4 py-3 font-extrabold text-rose-700">₹{line.totalDeductions.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 font-extrabold text-emerald-700">₹{line.netPay.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3">
-                          {line.lopDays > 0 ? (
-                            <span className="text-orange-600 font-bold">{line.lopDays}d</span>
-                          ) : <span className="text-zinc-300">—</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
-                            {line.totalLeavesTaken ?? 0}d
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {overview.lines.map((line) => {
+                      const isDraft = overview.status === "DRAFT";
+                      const local = editedLines[line.employeeId] || {
+                        basicSalary: line.basicSalary,
+                        specialAllowance: line.specialAllowance,
+                        meals: line.meals,
+                        lop: line.lop,
+                        lopDays: line.lopDays,
+                        tds: line.tds,
+                        arrears: line.arrears,
+                      };
+
+                      const computedGross = local.basicSalary + local.specialAllowance + local.arrears;
+                      const computedDeductions = local.meals + local.lop + local.tds;
+                      const computedNet = computedGross - computedDeductions;
+
+                      return (
+                        <tr key={line.employeeId} className="hover:bg-zinc-50/50 transition-colors">
+                          <td className="px-4 py-3 sticky left-0 bg-white z-10 border-r border-zinc-50">
+                            <p className="font-bold text-zinc-900">{line.employeeName}</p>
+                            <p className="text-[9px] text-zinc-400">{line.designation}</p>
+                          </td>
+                          <td className="px-4 py-3 text-right text-zinc-700 font-medium">₹{local.basicSalary.toLocaleString("en-IN")}</td>
+                          <td className="px-4 py-3 text-right text-zinc-700 font-medium">₹{local.specialAllowance.toLocaleString("en-IN")}</td>
+                          <td className="px-4 py-3 text-right text-zinc-700 font-medium">₹{local.arrears.toLocaleString("en-IN")}</td>
+                          <td className="px-4 py-3 text-right font-extrabold text-zinc-900">₹{computedGross.toLocaleString("en-IN")}</td>
+                          
+                          {/* Meals Deduction */}
+                          <td className="px-4 py-3 text-right">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.meals}
+                                onChange={(e) => updateLineField(line.employeeId, "meals", Number(e.target.value))}
+                                className="w-16 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : (
+                              <span className="text-rose-500">₹{line.meals.toLocaleString("en-IN")}</span>
+                            )}
+                          </td>
+
+                          {/* LOP Deduction */}
+                          <td className="px-4 py-3 text-right">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.lop}
+                                onChange={(e) => updateLineField(line.employeeId, "lop", Number(e.target.value))}
+                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : (
+                              <span className="text-rose-600">₹{line.lop.toLocaleString("en-IN")}</span>
+                            )}
+                          </td>
+
+                          {/* TDS */}
+                          <td className="px-4 py-3 text-right">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.tds}
+                                onChange={(e) => updateLineField(line.employeeId, "tds", Number(e.target.value))}
+                                className="w-16 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : (
+                              <span className="text-rose-400">₹{line.tds.toLocaleString("en-IN")}</span>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3 text-right font-extrabold text-rose-700">₹{computedDeductions.toLocaleString("en-IN")}</td>
+                          <td className="px-4 py-3 text-right font-extrabold text-emerald-700">₹{computedNet.toLocaleString("en-IN")}</td>
+                          
+                          {/* LOP Days */}
+                          <td className="px-4 py-3 text-center">
+                            {isDraft ? (
+                              <input
+                                type="number"
+                                value={local.lopDays}
+                                onChange={(e) => updateLineField(line.employeeId, "lopDays", Number(e.target.value))}
+                                className="w-12 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-center font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
+                              />
+                            ) : local.lopDays > 0 ? (
+                              <span className="text-orange-600 font-bold">{local.lopDays}d</span>
+                            ) : (
+                              <span className="text-zinc-300">—</span>
+                            )}
+                          </td>
+
+                          {/* Leaves YTD */}
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                              {line.totalLeavesTaken ?? 0}d
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

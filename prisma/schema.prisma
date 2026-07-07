@@ -436,6 +436,8 @@ model PayrollLine {
   professionalTax  Float      @default(0)
   tds              Float      @default(0)
   lop              Float      @default(0)
+  meals            Float      @default(0)
+  arrears          Float      @default(0)
   totalDeductions  Float
   netPay           Float
   payslipUrl       String?
