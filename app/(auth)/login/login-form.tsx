@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ArrowLeft, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -16,12 +16,22 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  firstName: z.string().min(1, "Required"),
-  lastName: z.string().min(1, "Required"),
+  firstName: z.string().min(1, "First Name is required"),
+  lastName: z.string().min(1, "Last Name is required"),
   gender: z.enum(["MALE", "FEMALE", "OTHER"] as const),
   phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  personalEmail: z.string().email("Enter a valid personal email"),
+  dateOfBirth: z.string().min(1, "Birth Date is required").refine((val) => {
+    if (!val) return false;
+    const dob = new Date(val);
+    const today = new Date();
+    const ageLimit = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return dob <= ageLimit;
+  }, { message: "You must be at least 18 years old" }),
+  personalEmail: z.string()
+    .email("Enter a valid personal email")
+    .refine((val) => val.toLowerCase().endsWith("@gmail.com"), {
+      message: "Personal email must be a Gmail address ending with @gmail.com",
+    }),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -45,6 +55,12 @@ export function LoginForm() {
   const [resetOtp, setResetOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // States for Registration OTP Flow
+  const [registerOtp, setRegisterOtp] = useState("");
+  const [registerOtpSent, setRegisterOtpSent] = useState(false);
+  const [sendingRegisterOtp, setSendingRegisterOtp] = useState(false);
+  const [registerSuccessMsg, setRegisterSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const authError = searchParams.get("error");
@@ -81,14 +97,57 @@ export function LoginForm() {
     router.refresh();
   }
 
+  async function sendRegisterOtp() {
+    const personalEmail = registerForm.getValues("personalEmail");
+    if (!personalEmail) {
+      setError("Please enter your personal email address first.");
+      return;
+    }
+    if (!personalEmail.toLowerCase().endsWith("@gmail.com")) {
+      setError("Please enter a valid Gmail address (ending with @gmail.com).");
+      return;
+    }
+
+    setSendingRegisterOtp(true);
+    setError(null);
+    setRegisterSuccessMsg(null);
+
+    try {
+      const res = await fetch("/api/auth/register/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ personalEmail: personalEmail.trim() })
+      });
+      const data = await res.json();
+      setSendingRegisterOtp(false);
+      if (!res.ok) {
+        setError(data.error || "Failed to send verification code.");
+        return;
+      }
+      setRegisterOtpSent(true);
+      if (data.simulated && data.otp) {
+        setRegisterSuccessMsg(`[Simulation Mode] OTP code generated: ${data.otp}`);
+      } else {
+        setRegisterSuccessMsg(`Verification OTP code sent successfully to ${personalEmail}. Check inbox/spam.`);
+      }
+    } catch {
+      setSendingRegisterOtp(false);
+      setError("An unexpected error occurred. Please try again.");
+    }
+  }
+
   async function onRegister(data: RegisterData) {
+    if (!registerOtp.trim()) {
+      setError("Please verify your Gmail address using the OTP first.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, otp: registerOtp.trim() }),
       });
       const payload = await res.json();
       if (!res.ok) {
@@ -96,6 +155,10 @@ export function LoginForm() {
         return;
       }
       setRegistered({ pending: true, personalEmail: data.personalEmail });
+      // Reset otp fields
+      setRegisterOtp("");
+      setRegisterOtpSent(false);
+      setRegisterSuccessMsg(null);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -291,17 +354,55 @@ export function LoginForm() {
           </div>
 
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Email</Label>
-            <input
-              type="email"
-              className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
-              placeholder="you@gmail.com"
-              {...registerForm.register("personalEmail")}
-            />
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Gmail Address</Label>
+            <div className="flex gap-2 mt-1">
+              <div className="relative flex-1">
+                <input
+                  type="email"
+                  className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                  placeholder="you@gmail.com"
+                  {...registerForm.register("personalEmail")}
+                />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
+              </div>
+              <Button
+                type="button"
+                onClick={sendRegisterOtp}
+                disabled={sendingRegisterOtp}
+                className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold px-4 rounded-xl text-xs flex items-center gap-1.5 h-11 shadow-sm"
+              >
+                {sendingRegisterOtp ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#8e43ac]" />
+                ) : (
+                  "Verify Gmail"
+                )}
+              </Button>
+            </div>
             {registerForm.formState.errors.personalEmail && (
               <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.personalEmail.message}</p>
             )}
           </div>
+
+          {registerSuccessMsg && (
+            <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac] leading-relaxed">
+              {registerSuccessMsg}
+            </div>
+          )}
+
+          {registerOtpSent && (
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Verification Code (OTP)</Label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all text-center"
+                placeholder="123456"
+                value={registerOtp}
+                onChange={(e) => setRegisterOtp(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -313,12 +414,15 @@ export function LoginForm() {
               />
             </div>
             <div>
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Date of Birth (optional)</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Date of Birth</Label>
               <input
                 type="date"
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-950 focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
                 {...registerForm.register("dateOfBirth")}
               />
+              {registerForm.formState.errors.dateOfBirth && (
+                <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.dateOfBirth.message}</p>
+              )}
             </div>
           </div>
 

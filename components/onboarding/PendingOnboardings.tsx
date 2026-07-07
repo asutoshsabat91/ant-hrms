@@ -57,13 +57,17 @@ export function PendingOnboardings({ requests, departments, managers, templates 
 
   if (requests.length === 0) return null;
 
-  async function handleAction(requestId: string, action: "APPROVE" | "REJECT") {
-    setLoadingId(requestId);
+  async function handleAction(requestId: string | string[], action: "APPROVE" | "REJECT", isQuick = false) {
+    if (Array.isArray(requestId)) {
+      setLoadingId("BULK");
+    } else {
+      setLoadingId(requestId);
+    }
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
-      const payload = action === "APPROVE"
+      const payload = action === "APPROVE" && !isQuick
         ? {
             requestId,
             action,
@@ -89,7 +93,7 @@ export function PendingOnboardings({ requests, departments, managers, templates 
         return;
       }
 
-      setSuccessMsg(`Joinee account successfully ${action === "APPROVE" ? "approved & created" : "rejected"}!`);
+      setSuccessMsg(`Joinee account(s) successfully ${action === "APPROVE" ? "approved & created" : "rejected"}!`);
       setExpandedId(null);
       router.refresh();
     } catch {
@@ -101,16 +105,33 @@ export function PendingOnboardings({ requests, departments, managers, templates 
 
   return (
     <div className="rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-950/20 via-zinc-900/30 to-zinc-950/10 p-6 shadow-xl backdrop-blur-md mb-6">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-400 animate-pulse" />
           <h2 className="text-base font-extrabold text-white uppercase tracking-wider">
             Pending Joinee Approvals ({requests.length})
           </h2>
         </div>
-        <span className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-purple-400 border border-purple-500/20">
-          Superadmin Authorization Required
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            disabled={loadingId !== null}
+            onClick={() => {
+              const allIds = requests.map(r => r.id);
+              handleAction(allIds, "APPROVE", true);
+            }}
+            className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-white border border-emerald-500/20 shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {loadingId === "BULK" ? (
+              <Loader2 className="h-3 w-3 animate-spin text-white" />
+            ) : (
+              <Check className="h-3 w-3 text-white" />
+            )}
+            Approve All Pending ({requests.length})
+          </button>
+          <span className="rounded-full bg-purple-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-purple-400 border border-purple-500/20">
+            Superadmin Authorization Required
+          </span>
+        </div>
       </div>
 
       {errorMsg && (
@@ -178,6 +199,14 @@ export function PendingOnboardings({ requests, departments, managers, templates 
 
                 <div className="flex items-center gap-2">
                   <button
+                    disabled={loadingId !== null}
+                    onClick={() => handleAction(request.id, "APPROVE", true)}
+                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-1.5 text-xs font-black text-emerald-400 transition-all uppercase tracking-wider flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                    Quick Approve
+                  </button>
+                  <button
                     onClick={() => {
                       if (isExpanded) {
                         setExpandedId(null);
@@ -195,10 +224,10 @@ export function PendingOnboardings({ requests, departments, managers, templates 
                     }}
                     className="rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3.5 py-1.5 text-xs font-black text-white transition-all uppercase tracking-wider"
                   >
-                    {isExpanded ? "Close Config" : "Configure & Approve"}
+                    {isExpanded ? "Close Config" : "Configure"}
                   </button>
                   <button
-                    disabled={isLoading}
+                    disabled={loadingId !== null}
                     onClick={() => handleAction(request.id, "REJECT")}
                     className="flex h-8 w-8 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all disabled:opacity-50"
                   >

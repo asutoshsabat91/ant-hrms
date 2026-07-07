@@ -55,181 +55,200 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "requestId is required" }, { status: 400 });
     }
 
-    const request = await prisma.onboardingRequest.findUnique({
-      where: { id: requestId }
-    });
+    const requestIds = Array.isArray(requestId) ? requestId : [requestId];
+    const results = [];
 
-    if (!request) {
-      return NextResponse.json({ error: "Onboarding request not found" }, { status: 404 });
-    }
-
-    if (request.status !== "PENDING") {
-      return NextResponse.json({ error: "Request has already been processed" }, { status: 400 });
-    }
-
-    if (action === "REJECT") {
-      await prisma.onboardingRequest.update({
-        where: { id: requestId },
-        data: { status: "REJECTED" }
+    for (const reqId of requestIds) {
+      const request = await prisma.onboardingRequest.findUnique({
+        where: { id: reqId }
       });
-      return NextResponse.json({ success: true, message: "Onboarding request rejected." });
-    }
 
-    // Otherwise APPROVE
-    let finalDeptId = departmentId;
-    if (!finalDeptId) {
-      let dept = await prisma.department.findFirst();
-      if (!dept) {
-        dept = await prisma.department.create({ data: { name: "General", code: "GEN" } });
-      }
-      finalDeptId = dept.id;
-    }
-
-    // Generate corporate email safely with incrementing suffix until unique
-    const base = `${request.firstName.toLowerCase().replace(/\s+/g, "")}.${request.lastName.toLowerCase().replace(/\s+/g, "")}`;
-    let corpEmail = `${base}@theantbox.com`;
-    let isEmailUnique = false;
-    let suffix = 1;
-    while (!isEmailUnique) {
-      const existing = await prisma.user.findUnique({ where: { email: corpEmail } });
-      if (!existing) {
-        isEmailUnique = true;
-      } else {
-        corpEmail = `${base}${suffix}@theantbox.com`;
-        suffix++;
-      }
-    }
-
-    const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
-    const passwordHash = await bcrypt.hash(tempPassword, 12);
-
-    // Generate unique employee ID safely in case of concurrent approvals
-    let employeeId = "";
-    let attempts = 0;
-    while (attempts < 5) {
-      const empCount = await prisma.employee.count();
-      const candidateId = `ANT-${String(empCount + 100 + attempts).padStart(3, "0")}`;
-      const exists = await prisma.employee.findUnique({ where: { employeeId: candidateId } });
-      if (!exists) {
-        employeeId = candidateId;
-        break;
-      }
-      attempts++;
-    }
-    if (!employeeId) {
-      employeeId = `ANT-${Date.now().toString().slice(-6)}`;
-    }
-
-    const compensation = ctc ? breakdownFromCTC(ctc, employmentType) : null;
-    const parsedJoiningDate = new Date(joiningDate);
-
-    // Create User and Employee
-    const user = await prisma.user.create({
-      data: {
-        email: corpEmail,
-        passwordHash,
-        role: "EMPLOYEE",
-        employee: {
-          create: {
-            firstName: request.firstName,
-            lastName: request.lastName,
-            email: corpEmail,
-            personalEmail: request.personalEmail,
-            phone: request.phone,
-            dateOfBirth: request.dateOfBirth,
-            gender: request.gender,
-            employeeId,
-            designation,
-            departmentId: finalDeptId,
-            managerId: managerId || undefined,
-            employmentType,
-            status: "ONBOARDING",
-            joiningDate: parsedJoiningDate,
-            probationEnds: addDays(parsedJoiningDate, 90),
-            ctc,
-            basicSalary: compensation?.basicSalary,
-            hra: compensation?.hra,
-            specialAllowance: compensation?.specialAllowance,
-            personalDetailsFilled: true,
-            onboardingWizardCompleted: true
-          }
+      if (!request) {
+        if (requestIds.length === 1) {
+          return NextResponse.json({ error: `Onboarding request not found: ${reqId}` }, { status: 404 });
         }
-      },
-      include: { employee: true }
-    });
+        continue;
+      }
 
-    const employee = user.employee!;
+      if (request.status !== "PENDING") {
+        if (requestIds.length === 1) {
+          return NextResponse.json({ error: `Request ${reqId} has already been processed` }, { status: 400 });
+        }
+        continue;
+      }
 
-    // Resolve onboarding tasks
-    let templateTasks = DEFAULT_TASKS;
-    const templateSource = templateId
-      ? await prisma.onboardingTemplate.findUnique({ where: { id: templateId }, include: { tasks: { orderBy: { order: "asc" } } } })
-      : await prisma.onboardingTemplate.findFirst({ where: { isDefault: true }, include: { tasks: { orderBy: { order: "asc" } } } });
+      if (action === "REJECT") {
+        await prisma.onboardingRequest.update({
+          where: { id: reqId },
+          data: { status: "REJECTED" }
+        });
+        results.push({ id: reqId, status: "REJECTED" });
+        continue;
+      }
 
-    if (templateSource?.tasks?.length) {
-      templateTasks = templateSource.tasks.map((t) => ({
-        title: t.title,
-        category: t.category,
-        assignedTo: t.assignedTo ?? "HR",
-        dueDaysFrom: t.dueDaysFrom,
-        order: t.order,
-        isRequired: t.isRequired,
-      }));
-    }
+      // Otherwise APPROVE
+      let finalDeptId = departmentId;
+      if (!finalDeptId) {
+        let dept = await prisma.department.findFirst();
+        if (!dept) {
+          dept = await prisma.department.create({ data: { name: "General", code: "GEN" } });
+        }
+        finalDeptId = dept.id;
+      }
 
-    // Populate tasks
-    const taskData = templateTasks.map((t) => {
-      const dueDate = t.dueDaysFrom >= 0
-        ? addDays(parsedJoiningDate, t.dueDaysFrom)
-        : subDays(parsedJoiningDate, Math.abs(t.dueDaysFrom));
-      return {
-        employeeId: employee.id,
-        title: t.title,
-        category: t.category,
-        assignedTo: t.assignedTo,
-        dueDate,
-        isRequired: t.isRequired,
-        order: t.order,
-        status: "PENDING" as const,
-      };
-    });
+      // Generate corporate email safely with incrementing suffix until unique
+      const base = `${request.firstName.toLowerCase().replace(/\s+/g, "")}.${request.lastName.toLowerCase().replace(/\s+/g, "")}`;
+      let corpEmail = `${base}@theantbox.com`;
+      let isEmailUnique = false;
+      let suffix = 1;
+      while (!isEmailUnique) {
+        const existing = await prisma.user.findUnique({ where: { email: corpEmail } });
+        if (!existing) {
+          isEmailUnique = true;
+        } else {
+          corpEmail = `${base}${suffix}@theantbox.com`;
+          suffix++;
+        }
+      }
 
-    await prisma.onboardingTask.createMany({ data: taskData });
+      const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
 
-    // Update status in onboarding request
-    await prisma.onboardingRequest.update({
-      where: { id: requestId },
-      data: { status: "APPROVED" }
-    });
+      // Generate unique employee ID safely in case of concurrent approvals
+      let employeeId = "";
+      let attempts = 0;
+      while (attempts < 10) {
+        const empCount = await prisma.employee.count();
+        const candidateId = `ANT-${String(empCount + 100 + attempts).padStart(3, "0")}`;
+        const exists = await prisma.employee.findUnique({ where: { employeeId: candidateId } });
+        if (!exists) {
+          employeeId = candidateId;
+          break;
+        }
+        attempts++;
+      }
+      if (!employeeId) {
+        employeeId = `ANT-${Date.now().toString().slice(-6)}`;
+      }
 
-    // Create the actual user account in Google Workspace Directory and check for errors
-    const workspaceRes = await createWorkspaceUser(corpEmail, tempPassword, request.firstName, request.lastName);
-    if (!workspaceRes.success && !workspaceRes.simulated) {
-      throw new Error(`Google Workspace account creation failed: ${workspaceRes.error || "Unknown error"}`);
-    }
+      const compensation = ctc ? breakdownFromCTC(ctc, employmentType) : null;
+      const parsedJoiningDate = new Date(joiningDate);
 
-    // Send welcome email with credentials to personalEmail
-    await sendOnboardingEmail(request.personalEmail, corpEmail, tempPassword, request.firstName);
-
-    try {
-      await appendEmployeeToSheet({
-        employeeId,
-        firstName: request.firstName,
-        lastName: request.lastName,
-        email: corpEmail,
-        designation,
-        joiningDate: parsedJoiningDate,
-        status: "ONBOARDING",
+      // Create User and Employee
+      const user = await prisma.user.create({
+        data: {
+          email: corpEmail,
+          passwordHash,
+          role: "EMPLOYEE",
+          employee: {
+            create: {
+              firstName: request.firstName,
+              lastName: request.lastName,
+              email: corpEmail,
+              personalEmail: request.personalEmail,
+              phone: request.phone,
+              dateOfBirth: request.dateOfBirth,
+              gender: request.gender,
+              employeeId,
+              designation,
+              departmentId: finalDeptId,
+              managerId: managerId || undefined,
+              employmentType,
+              status: "ONBOARDING",
+              joiningDate: parsedJoiningDate,
+              probationEnds: addDays(parsedJoiningDate, 90),
+              ctc,
+              basicSalary: compensation?.basicSalary,
+              hra: compensation?.hra,
+              specialAllowance: compensation?.specialAllowance,
+              personalDetailsFilled: true,
+              onboardingWizardCompleted: true
+            }
+          }
+        },
+        include: { employee: true }
       });
-    } catch (sheetErr) {
-      console.error("[Google Sheets] Sync failed during approval", sheetErr);
+
+      const employee = user.employee!;
+
+      // Resolve onboarding tasks
+      let templateTasks = DEFAULT_TASKS;
+      const templateSource = templateId
+        ? await prisma.onboardingTemplate.findUnique({ where: { id: templateId }, include: { tasks: { orderBy: { order: "asc" } } } })
+        : await prisma.onboardingTemplate.findFirst({ where: { isDefault: true }, include: { tasks: { orderBy: { order: "asc" } } } });
+
+      if (templateSource?.tasks?.length) {
+        templateTasks = templateSource.tasks.map((t) => ({
+          title: t.title,
+          category: t.category,
+          assignedTo: t.assignedTo ?? "HR",
+          dueDaysFrom: t.dueDaysFrom,
+          order: t.order,
+          isRequired: t.isRequired,
+        }));
+      }
+
+      // Populate tasks
+      const taskData = templateTasks.map((t) => {
+        const dueDate = t.dueDaysFrom >= 0
+          ? addDays(parsedJoiningDate, t.dueDaysFrom)
+          : subDays(parsedJoiningDate, Math.abs(t.dueDaysFrom));
+        return {
+          employeeId: employee.id,
+          title: t.title,
+          category: t.category,
+          assignedTo: t.assignedTo,
+          dueDate,
+          isRequired: t.isRequired,
+          order: t.order,
+          status: "PENDING" as const,
+        };
+      });
+
+      await prisma.onboardingTask.createMany({ data: taskData });
+
+      // Update status in onboarding request
+      await prisma.onboardingRequest.update({
+        where: { id: reqId },
+        data: { status: "APPROVED" }
+      });
+
+      // Create the actual user account in Google Workspace Directory and check for errors
+      const workspaceRes = await createWorkspaceUser(corpEmail, tempPassword, request.firstName, request.lastName);
+      if (!workspaceRes.success && !workspaceRes.simulated) {
+        throw new Error(`Google Workspace account creation failed for ${corpEmail}: ${workspaceRes.error || "Unknown error"}`);
+      }
+
+      // Send welcome email with credentials to personalEmail
+      await sendOnboardingEmail(request.personalEmail, corpEmail, tempPassword, request.firstName);
+
+      try {
+        await appendEmployeeToSheet({
+          employeeId,
+          firstName: request.firstName,
+          lastName: request.lastName,
+          email: corpEmail,
+          designation,
+          joiningDate: parsedJoiningDate,
+          status: "ONBOARDING",
+        });
+      } catch (sheetErr) {
+        console.error("[Google Sheets] Sync failed during approval", sheetErr);
+      }
+
+      results.push({
+        id: reqId,
+        status: "APPROVED",
+        corporateEmail: corpEmail,
+        temporaryPassword: tempPassword,
+        employeeId
+      });
     }
 
     return NextResponse.json({
       success: true,
-      corporateEmail: corpEmail,
-      temporaryPassword: tempPassword,
-      employeeId
+      message: `Successfully processed ${results.length} onboarding request(s).`,
+      results
     });
 
   } catch (err: unknown) {
