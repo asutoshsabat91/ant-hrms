@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
 import { breakdownFromCTC } from "@/lib/utils/payrollEngine";
@@ -97,20 +96,7 @@ export async function POST(req: Request) {
         finalDeptId = dept.id;
       }
 
-      // Generate corporate email safely with incrementing suffix until unique
-      const base = `${request.firstName.toLowerCase().replace(/\s+/g, "")}.${request.lastName.toLowerCase().replace(/\s+/g, "")}`;
-      let corpEmail = `${base}@theantbox.com`;
-      let isEmailUnique = false;
-      let suffix = 1;
-      while (!isEmailUnique) {
-        const existing = await prisma.user.findUnique({ where: { email: corpEmail } });
-        if (!existing) {
-          isEmailUnique = true;
-        } else {
-          corpEmail = `${base}${suffix}@theantbox.com`;
-          suffix++;
-        }
-      }
+      const loginEmail = request.personalEmail.toLowerCase().trim();
 
       const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
       const passwordHash = await bcrypt.hash(tempPassword, 12);
@@ -138,14 +124,14 @@ export async function POST(req: Request) {
       // Create User and Employee
       const user = await prisma.user.create({
         data: {
-          email: corpEmail,
+          email: loginEmail,
           passwordHash,
           role: "EMPLOYEE",
           employee: {
             create: {
               firstName: request.firstName,
               lastName: request.lastName,
-              email: corpEmail,
+              email: loginEmail,
               personalEmail: request.personalEmail,
               phone: request.phone,
               dateOfBirth: request.dateOfBirth,
@@ -214,21 +200,15 @@ export async function POST(req: Request) {
         data: { status: "APPROVED" }
       });
 
-      // Create the actual user account in Google Workspace Directory and check for errors
-      const workspaceRes = await createWorkspaceUser(corpEmail, tempPassword, request.firstName, request.lastName);
-      if (!workspaceRes.success && !workspaceRes.simulated) {
-        throw new Error(`Google Workspace account creation failed for ${corpEmail}: ${workspaceRes.error || "Unknown error"}`);
-      }
-
       // Send welcome email with credentials to personalEmail
-      await sendOnboardingEmail(request.personalEmail, corpEmail, tempPassword, request.firstName);
+      await sendOnboardingEmail(request.personalEmail, loginEmail, tempPassword, request.firstName);
 
       try {
         await appendEmployeeToSheet({
           employeeId,
           firstName: request.firstName,
           lastName: request.lastName,
-          email: corpEmail,
+          email: loginEmail,
           designation,
           joiningDate: parsedJoiningDate,
           status: "ONBOARDING",
@@ -242,18 +222,17 @@ export async function POST(req: Request) {
           `🎉 *New Team Member Announcement!* 🎉\n\n` +
           `Please join us in welcoming *${request.firstName} ${request.lastName}* to the team! \n` +
           `• *Designation:* ${designation}\n` +
-          `• *Official Email:* ${corpEmail}\n` +
+          `• *Email:* ${loginEmail}\n` +
           `• *Joining Date:* ${parsedJoiningDate.toLocaleDateString()}`
         );
       } catch (chatErr) {
         console.error("[Google Chat] Onboarding welcome notification failed", chatErr);
       }
 
-
       results.push({
         id: reqId,
         status: "APPROVED",
-        corporateEmail: corpEmail,
+        corporateEmail: loginEmail,
         temporaryPassword: tempPassword,
         employeeId
       });

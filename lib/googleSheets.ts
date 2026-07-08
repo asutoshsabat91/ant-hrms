@@ -2,9 +2,8 @@ import { google, sheets_v4 } from "googleapis";
 import type { Employee, LeaveRequest, CompanyEvent, Department, LeaveType, EmployeeStatus, EmploymentType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 function getSheetsClient() {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
@@ -497,9 +496,6 @@ export async function syncGoogleSheetsWithDb() {
             }
           });
           
-          // Auto-provision Google Workspace account
-          await createWorkspaceUser(finalEmail, "AntBox@2025", firstName, lastName);
-
           createdCount++;
         }
       }
