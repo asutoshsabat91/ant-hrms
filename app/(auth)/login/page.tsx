@@ -186,7 +186,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Card 4: Book Stats */}
+            {/* Card 4: Blueprint Planning */}
             <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm -rotate-1 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
               <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
                 <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -195,10 +195,10 @@ export default function LoginPage() {
               </div>
               <div className="flex-1 flex items-center justify-center min-h-[90px]">
                 <Image 
-                  src="/ants/book-stats-ant.png" 
-                  alt="Sprint Metrics Ant" 
-                  width={68} 
-                  height={60} 
+                  src="/ants/blueprints-walking-ant.png" 
+                  alt="Sprint Blueprints Ant" 
+                  width={72} 
+                  height={65} 
                   className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
                   priority
                 />
