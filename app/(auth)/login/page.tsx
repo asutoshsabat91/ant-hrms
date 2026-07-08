@@ -56,7 +56,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side: Clean infographic / layout with Canva Brand Mascot assets */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[radial-gradient(#e4e4e7_1.5px,transparent_1.5px)] [background-size:24px_24px] bg-zinc-50/70 border-l border-zinc-100 flex-col justify-center items-center p-12 relative overflow-hidden select-none">
+      <div className="hidden lg:flex lg:w-1/2 bg-[radial-gradient(#e4e4e7_1.5px,transparent_1.5px)] [background-size:24px_24px] bg-zinc-50/70 border-l border-zinc-100 flex-col justify-center items-center p-6 xl:p-10 relative overflow-hidden select-none">
         
         {/* Peeking Ants in the bottom right corner */}
         <div className="absolute bottom-0 right-0 w-24 h-64 pointer-events-none select-none z-20 transition-transform duration-500 hover:translate-x-1 hover:translate-y-1">
@@ -82,9 +82,9 @@ export default function LoginPage() {
           </svg>
         </div>
 
-        <div className="w-full max-w-xl space-y-8 text-center relative z-10">
+        <div className="w-full max-w-xl space-y-6 text-center relative z-10">
           
-          <div className="space-y-3 relative">
+          <div className="space-y-2 relative">
             <div className="inline-block relative px-4 py-1">
               {/* Hand drawn oval circling the workspace directory label */}
               <div className="absolute inset-0 text-[#8e43ac]/30 w-full h-full pointer-events-none scale-110">
@@ -100,24 +100,24 @@ export default function LoginPage() {
             </h1>
             
             {/* Hand-drawn double underline brush effect under the heading */}
-            <div className="flex justify-center pt-1 opacity-50">
+            <div className="flex justify-center pt-0.5 opacity-50">
               <svg viewBox="0 0 300 20" className="w-56 h-3 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M15 8 C 100 6, 200 10, 285 8" />
                 <path d="M45 13 C 120 12, 195 14, 255 12" strokeWidth="1.5" />
               </svg>
             </div>
 
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed font-medium pt-1">
+            <p className="text-xs text-zinc-600 max-w-sm mx-auto leading-relaxed font-semibold pt-1">
               Manage employee onboarding, geofenced attendance, leave policies, and professional payroll runs in a premium flat workspace.
             </p>
 
             {/* Funky running race ants crossing the screen */}
-            <div className="flex justify-center pt-2 opacity-75 select-none pointer-events-none">
+            <div className="flex justify-center pt-1.5 opacity-85 select-none pointer-events-none">
               <Image 
                 src="/ants/running-race-ants.png" 
                 alt="Running Race Ants" 
-                width={120} 
-                height={40} 
+                width={110} 
+                height={35} 
                 className="object-contain"
                 priority
               />
@@ -125,94 +125,94 @@ export default function LoginPage() {
           </div>
           
           {/* Polaroid-style bulletin board showcasing the funky ant mascot actions */}
-          <div className="grid grid-cols-2 gap-4 items-stretch relative px-4">
+          <div className="grid grid-cols-2 gap-4 items-stretch relative px-4 py-2">
             
             {/* Card 1: Office Sleep */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm -rotate-2 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
+            <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] -rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
               <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
                 <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 70 L15 15 C 15 8, 25 8, 25 15 L25 50 C 25 57, 10 57, 10 50 L10 25 C 10 20, 18 20, 18 25 L18 40" />
                 </svg>
               </div>
-              <div className="flex-1 flex items-center justify-center min-h-[90px]">
+              <div className="flex-1 flex items-center justify-center min-h-[80px]">
                 <Image 
                   src="/ants/office-chair-sleep-ant.png" 
                   alt="Deep Work Sleep Ant" 
-                  width={76} 
-                  height={65} 
-                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  width={68} 
+                  height={58} 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
-              <div className="mt-4 space-y-0.5 text-center">
-                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Deep Work</p>
-                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Optimized developer workspaces</p>
+              <div className="mt-3 space-y-0.5 text-center">
+                <p className="text-[10px] font-black text-zinc-950 uppercase tracking-wider">Deep Work</p>
+                <p className="text-[9px] text-zinc-600 font-bold leading-normal">Optimized developer workspaces</p>
               </div>
             </div>
 
             {/* Card 2: Coffee Cup */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm rotate-1 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
-              <div className="flex-1 flex items-center justify-center min-h-[90px]">
+            <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
+              <div className="flex-1 flex items-center justify-center min-h-[80px]">
                 <Image 
                   src="/ants/coffee-cup-ant.png" 
                   alt="Daily Energy Coffee Ant" 
-                  width={60} 
-                  height={65} 
-                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  width={54} 
+                  height={58} 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
-              <div className="mt-4 space-y-0.5 text-center">
-                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Daily Brew</p>
-                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Active syncs & high energy</p>
+              <div className="mt-3 space-y-0.5 text-center">
+                <p className="text-[10px] font-black text-zinc-950 uppercase tracking-wider">Daily Brew</p>
+                <p className="text-[9px] text-zinc-600 font-bold leading-normal">Active syncs & high energy</p>
               </div>
             </div>
 
             {/* Card 3: Microscope Science */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm rotate-2 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
-              <div className="flex-1 flex items-center justify-center min-h-[90px]">
+            <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
+              <div className="flex-1 flex items-center justify-center min-h-[80px]">
                 <Image 
                   src="/ants/microscope-science-ant.png" 
                   alt="Precision Science Ant" 
-                  width={64} 
-                  height={65} 
-                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  width={58} 
+                  height={58} 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
-              <div className="mt-4 space-y-0.5 text-center">
-                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Precision Analytics</p>
-                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Geofenced timesheets & telemetry</p>
+              <div className="mt-3 space-y-0.5 text-center">
+                <p className="text-[10px] font-black text-zinc-950 uppercase tracking-wider">Precision Analytics</p>
+                <p className="text-[9px] text-zinc-600 font-bold leading-normal">Geofenced timesheets & telemetry</p>
               </div>
             </div>
 
             {/* Card 4: Blueprint Planning */}
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/60 flex flex-col items-center justify-between relative shadow-sm -rotate-1 hover:rotate-0 hover:scale-105 hover:shadow-md hover:border-purple-500/20 transition-all duration-300 group">
+            <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] -rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
               <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
                 <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 70 L15 15 C 15 8, 25 8, 25 15 L25 50 C 25 57, 10 57, 10 50 L10 25 C 10 20, 18 20, 18 25 L18 40" />
                 </svg>
               </div>
-              <div className="flex-1 flex items-center justify-center min-h-[90px]">
+              <div className="flex-1 flex items-center justify-center min-h-[80px]">
                 <Image 
                   src="/ants/blueprints-walking-ant.png" 
                   alt="Sprint Blueprints Ant" 
-                  width={72} 
-                  height={65} 
-                  className="object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300" 
+                  width={64} 
+                  height={58} 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
-              <div className="mt-4 space-y-0.5 text-center">
-                <p className="text-[10px] font-extrabold text-zinc-800 uppercase tracking-wider">Goal Execution</p>
-                <p className="text-[9px] text-zinc-400 font-bold leading-normal">Sprint reports & milestones</p>
+              <div className="mt-3 space-y-0.5 text-center">
+                <p className="text-[10px] font-black text-zinc-950 uppercase tracking-wider">Goal Execution</p>
+                <p className="text-[9px] text-zinc-600 font-bold leading-normal">Sprint reports & milestones</p>
               </div>
             </div>
 
           </div>
 
           {/* Location / Tech tag */}
-          <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest select-none flex items-center justify-center gap-3">
+          <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest select-none flex items-center justify-center gap-3 pt-1">
             <span>Bhubaneswar HQ</span>
             <span className="h-1 w-1 rounded-full bg-zinc-300" />
             <span>SaaS HRMS Suite</span>
