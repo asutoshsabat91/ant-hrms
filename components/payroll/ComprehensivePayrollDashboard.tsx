@@ -427,6 +427,58 @@ export function ComprehensivePayrollDashboard() {
     });
   }, []);
 
+  const [focusedInput, setFocusedInput] = useState<{ employeeId: string; field: string } | null>(null);
+
+  const renderEditableCell = useCallback((
+    employeeId: string,
+    field: string,
+    value: number,
+    widthClass: string = "w-24"
+  ) => {
+    const isFocused = focusedInput?.employeeId === employeeId && focusedInput?.field === field;
+    const displayVal = isFocused 
+      ? (value === 0 ? "" : value.toString()) 
+      : `₹${value.toLocaleString("en-IN")}`;
+
+    return (
+      <input
+        type="text"
+        value={displayVal}
+        onFocus={() => setFocusedInput({ employeeId, field })}
+        onBlur={() => setFocusedInput(null)}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, "");
+          updateLineField(employeeId, field, digits ? parseInt(digits, 10) : 0);
+        }}
+        className={`${widthClass} rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm`}
+      />
+    );
+  }, [focusedInput, updateLineField]);
+
+  const renderEditableDaysCell = useCallback((
+    employeeId: string,
+    field: string,
+    value: number,
+    widthClass: string = "w-16"
+  ) => {
+    const isFocused = focusedInput?.employeeId === employeeId && focusedInput?.field === field;
+    const displayVal = isFocused && value === 0 ? "" : value.toString();
+
+    return (
+      <input
+        type="text"
+        value={displayVal}
+        onFocus={() => setFocusedInput({ employeeId, field })}
+        onBlur={() => setFocusedInput(null)}
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, "");
+          updateLineField(employeeId, field, digits ? parseInt(digits, 10) : 0);
+        }}
+        className={`${widthClass} rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-center font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm`}
+      />
+    );
+  }, [focusedInput, updateLineField]);
+
   const saveOverrides = useCallback(async () => {
     setSavingEdits(true);
     setError(null);
@@ -667,7 +719,6 @@ export function ComprehensivePayrollDashboard() {
                       <th className="px-4 py-3">Bank Account</th>
                       <th className="px-4 py-3 text-right">Basic</th>
                       <th className="px-4 py-3 text-right">Special Allow.</th>
-                      <th className="px-4 py-3 text-right">Arrears</th>
                       <th className="px-4 py-3 text-right">Gross</th>
                       <th className="px-4 py-3 text-right text-rose-600">Deductions</th>
                       <th className="px-4 py-3 text-right text-emerald-700">Net Pay</th>
@@ -685,10 +736,10 @@ export function ComprehensivePayrollDashboard() {
                         lop: line.lop,
                         lopDays: line.lopDays,
                         tds: line.tds,
-                        arrears: line.arrears,
+                        arrears: 0,
                       };
 
-                      const computedGross = local.basicSalary + local.specialAllowance + local.arrears;
+                      const computedGross = local.basicSalary + local.specialAllowance;
                       const computedDeductions = local.meals + local.lop + local.tds;
                       const computedNet = computedGross - computedDeductions;
 
@@ -705,12 +756,7 @@ export function ComprehensivePayrollDashboard() {
                           {/* Basic Salary */}
                           <td className="px-4 py-3 text-right">
                             {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.basicSalary}
-                                onChange={(e) => updateLineField(line.employeeId, "basicSalary", Number(e.target.value))}
-                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
+                              renderEditableCell(line.employeeId, "basicSalary", local.basicSalary)
                             ) : (
                               <span className="text-xs font-medium text-zinc-700">₹{line.basicSalary.toLocaleString("en-IN")}</span>
                             )}
@@ -719,28 +765,9 @@ export function ComprehensivePayrollDashboard() {
                           {/* Special Allowance */}
                           <td className="px-4 py-3 text-right">
                             {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.specialAllowance}
-                                onChange={(e) => updateLineField(line.employeeId, "specialAllowance", Number(e.target.value))}
-                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
+                              renderEditableCell(line.employeeId, "specialAllowance", local.specialAllowance)
                             ) : (
                               <span className="text-xs font-medium text-zinc-700">₹{line.specialAllowance.toLocaleString("en-IN")}</span>
-                            )}
-                          </td>
-
-                          {/* Arrears */}
-                          <td className="px-4 py-3 text-right">
-                            {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.arrears}
-                                onChange={(e) => updateLineField(line.employeeId, "arrears", Number(e.target.value))}
-                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-2 py-1 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-zinc-700">₹{line.arrears.toLocaleString("en-IN")}</span>
                             )}
                           </td>
 
@@ -786,13 +813,12 @@ export function ComprehensivePayrollDashboard() {
                       <td className="px-4 py-3" />
                       <td className="px-4 py-3" />
                       <td className="px-4 py-3" />
-                      <td className="px-4 py-3" />
                       
                       {/* Computed Total Gross */}
                       <td className="px-4 py-3 text-right text-xs font-extrabold text-zinc-900">
                         ₹{overview.lines.reduce((sum, line) => {
                           const local = editedLines[line.employeeId] || line;
-                          return sum + (local.basicSalary + local.specialAllowance + local.arrears);
+                          return sum + (local.basicSalary + local.specialAllowance);
                         }, 0).toLocaleString("en-IN")}
                       </td>
 
@@ -808,7 +834,7 @@ export function ComprehensivePayrollDashboard() {
                       <td className="px-4 py-3 text-right text-xs font-extrabold text-emerald-700">
                         ₹{overview.lines.reduce((sum, line) => {
                           const local = editedLines[line.employeeId] || line;
-                          const gross = local.basicSalary + local.specialAllowance + local.arrears;
+                          const gross = local.basicSalary + local.specialAllowance;
                           const ded = local.meals + local.lop + local.tds;
                           return sum + (gross - ded);
                         }, 0).toLocaleString("en-IN")}
@@ -948,7 +974,6 @@ export function ComprehensivePayrollDashboard() {
                       <th className="px-4 py-3 sticky left-0 bg-zinc-50 z-10">Employee</th>
                       <th className="px-4 py-3 text-right text-blue-700">Basic</th>
                       <th className="px-4 py-3 text-right text-blue-500">S.Allow.</th>
-                      <th className="px-4 py-3 text-right text-blue-400">Arrears</th>
                       <th className="px-4 py-3 text-right font-extrabold text-zinc-700">Gross</th>
                       <th className="px-4 py-3 text-right text-rose-500">Meals</th>
                       <th className="px-4 py-3 text-right text-rose-600">LOP</th>
@@ -969,10 +994,10 @@ export function ComprehensivePayrollDashboard() {
                         lop: line.lop,
                         lopDays: line.lopDays,
                         tds: line.tds,
-                        arrears: line.arrears,
+                        arrears: 0,
                       };
 
-                      const computedGross = local.basicSalary + local.specialAllowance + local.arrears;
+                      const computedGross = local.basicSalary + local.specialAllowance;
                       const computedDeductions = local.meals + local.lop + local.tds;
                       const computedNet = computedGross - computedDeductions;
 
@@ -984,18 +1009,12 @@ export function ComprehensivePayrollDashboard() {
                           </td>
                           <td className="px-4 py-3 text-right text-zinc-700 font-medium">₹{local.basicSalary.toLocaleString("en-IN")}</td>
                           <td className="px-4 py-3 text-right text-zinc-700 font-medium">₹{local.specialAllowance.toLocaleString("en-IN")}</td>
-                          <td className="px-4 py-3 text-right text-zinc-700 font-medium">₹{local.arrears.toLocaleString("en-IN")}</td>
                           <td className="px-4 py-3 text-right font-extrabold text-zinc-900">₹{computedGross.toLocaleString("en-IN")}</td>
                           
                           {/* Meals Deduction */}
                           <td className="px-4 py-3 text-right">
                             {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.meals}
-                                onChange={(e) => updateLineField(line.employeeId, "meals", Number(e.target.value))}
-                                className="w-16 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
+                              renderEditableCell(line.employeeId, "meals", local.meals, "w-16")
                             ) : (
                               <span className="text-rose-500">₹{line.meals.toLocaleString("en-IN")}</span>
                             )}
@@ -1004,12 +1023,7 @@ export function ComprehensivePayrollDashboard() {
                           {/* LOP Deduction */}
                           <td className="px-4 py-3 text-right">
                             {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.lop}
-                                onChange={(e) => updateLineField(line.employeeId, "lop", Number(e.target.value))}
-                                className="w-20 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
+                              renderEditableCell(line.employeeId, "lop", local.lop, "w-20")
                             ) : (
                               <span className="text-rose-600">₹{line.lop.toLocaleString("en-IN")}</span>
                             )}
@@ -1018,12 +1032,7 @@ export function ComprehensivePayrollDashboard() {
                           {/* TDS */}
                           <td className="px-4 py-3 text-right">
                             {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.tds}
-                                onChange={(e) => updateLineField(line.employeeId, "tds", Number(e.target.value))}
-                                className="w-16 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-right font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
+                              renderEditableCell(line.employeeId, "tds", local.tds, "w-16")
                             ) : (
                               <span className="text-rose-400">₹{line.tds.toLocaleString("en-IN")}</span>
                             )}
@@ -1035,12 +1044,7 @@ export function ComprehensivePayrollDashboard() {
                           {/* LOP Days */}
                           <td className="px-4 py-3 text-center">
                             {isDraft ? (
-                              <input
-                                type="number"
-                                value={local.lopDays}
-                                onChange={(e) => updateLineField(line.employeeId, "lopDays", Number(e.target.value))}
-                                className="w-12 rounded border border-zinc-200 bg-zinc-50/30 px-1 py-0.5 text-xs text-center font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:bg-white focus:shadow-sm"
-                              />
+                              renderEditableDaysCell(line.employeeId, "lopDays", local.lopDays, "w-12")
                             ) : local.lopDays > 0 ? (
                               <span className="text-orange-600 font-bold">{local.lopDays}d</span>
                             ) : (
