@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
+import { triggerN8nWebhook } from "@/lib/utils/n8n";
 
 const onboardingSchema = z.object({
   mode: z.enum(["invite", "complete", "direct"]).optional(),
@@ -276,6 +277,19 @@ export async function POST(req: Request) {
       // Sync with Google Sheets
       await appendEmployeeToSheet(result);
 
+      try {
+        await triggerN8nWebhook("N8N_OFFER_WEBHOOK_URL", {
+          event: "offer.requested",
+          candidateName: `${data.firstName} ${data.lastName}`,
+          email: data.personalEmail || data.email,
+          designation: data.designation,
+          salary: data.ctc || 0,
+          joiningDate: data.joiningDate,
+        });
+      } catch (n8nErr) {
+        console.error("[N8N] Offer webhook failed", n8nErr);
+      }
+
       return NextResponse.json({ employee: result }, { status: 201 });
     }
 
@@ -387,6 +401,19 @@ export async function POST(req: Request) {
 
     // Sync with Google Sheets
     await appendEmployeeToSheet(result);
+
+    try {
+      await triggerN8nWebhook("N8N_OFFER_WEBHOOK_URL", {
+        event: "offer.requested",
+        candidateName: `${data.firstName} ${data.lastName}`,
+        email: data.personalEmail || data.email,
+        designation: data.designation,
+        salary: data.ctc || 0,
+        joiningDate: data.joiningDate,
+      });
+    } catch (n8nErr) {
+      console.error("[N8N] Offer webhook failed", n8nErr);
+    }
 
     const onboardingTasks = await prisma.onboardingTask.findMany({
       where: { employeeId: result.id },

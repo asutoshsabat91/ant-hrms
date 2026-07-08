@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendLeaveApprovalEmail } from "@/lib/mail";
 import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
 import { syncEmployeePayrollForDate } from "@/lib/utils/payrollEngine";
+import { triggerN8nWebhook } from "@/lib/utils/n8n";
 
 const decisionSchema = z.object({
   action: z.enum(["APPROVE", "REJECT"]),
@@ -176,6 +177,20 @@ export async function PATCH(
         endDate: result.endDate,
         allDay: true,
       });
+
+      try {
+        await triggerN8nWebhook("N8N_LEAVE_WEBHOOK_URL", {
+          event: "leave.approved",
+          employeeName,
+          officialEmail: result.employee.email,
+          startDate: result.startDate.toISOString().split("T")[0],
+          endDate: result.endDate.toISOString().split("T")[0],
+          leaveType: result.leaveType.name,
+          days: result.days,
+        });
+      } catch (n8nErr) {
+        console.error("[N8N] Leave webhook failed", n8nErr);
+      }
     }
   } catch (err) {
     console.error("Failed post-leave decision integrations (email/calendar)", err);

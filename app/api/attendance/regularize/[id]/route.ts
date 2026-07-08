@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { syncEmployeePayrollForDate } from "@/lib/utils/payrollEngine";
+import { triggerN8nWebhook } from "@/lib/utils/n8n";
 
 function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[]) {
   let totalMs = 0;
@@ -176,6 +177,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
       // Sync payroll line for this employee date to update LOP
       await syncEmployeePayrollForDate(request.employeeId, new Date(request.date));
+
+      try {
+        await triggerN8nWebhook("N8N_LEAVE_WEBHOOK_URL", {
+          event: "regularization.approved",
+          employeeName: `${request.employee.firstName} ${request.employee.lastName}`,
+          officialEmail: request.employee.email,
+          date: new Date(request.date).toISOString().split("T")[0],
+          type: request.type,
+        });
+      } catch (n8nErr) {
+        console.error("[N8N] Regularization webhook failed", n8nErr);
+      }
 
       return NextResponse.json({ success: true, request: result });
     }
