@@ -529,6 +529,28 @@ export function ComprehensivePayrollDashboard() {
     finally { setSubmitting(false); }
   }, [overview, month, year, fetchPayroll]);
 
+  const updatePayrollStatus = useCallback(async (newStatus: "DRAFT" | "APPROVED" | "PAID") => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/payroll", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month, year, status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to update payroll status.");
+      } else {
+        fetchPayroll(month, year);
+      }
+    } catch {
+      setError("Failed to update payroll status.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [month, year, fetchPayroll]);
+
   const filteredLines = useMemo(() => {
     if (!overview?.lines) return [];
     if (!search) return overview.lines;
@@ -644,6 +666,30 @@ export function ComprehensivePayrollDashboard() {
             >
               {savingEdits ? <Loader2 size={13} className="animate-spin" /> : null}
               Save Changes
+            </button>
+          )}
+
+          {/* Approve Payroll Button */}
+          {overview && overview.status === "DRAFT" && (
+            <button
+              onClick={() => updatePayrollStatus("APPROVED")}
+              disabled={submitting || loading}
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
+              Approve Payroll
+            </button>
+          )}
+
+          {/* Mark as Paid Button */}
+          {overview && overview.status === "APPROVED" && (
+            <button
+              onClick={() => updatePayrollStatus("PAID")}
+              disabled={submitting || loading}
+              className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
+              Mark as Paid
             </button>
           )}
         </div>

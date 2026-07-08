@@ -520,3 +520,35 @@ export async function PUT(req: Request) {
 
   return NextResponse.json({ success: true });
 }
+
+export async function PATCH(req: Request) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json();
+  const schema = z.object({
+    month: z.number().int().min(1).max(12),
+    year: z.number().int().min(2000),
+    status: z.enum(["DRAFT", "APPROVED", "PAID"]),
+  });
+
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { month, year, status } = parsed.data;
+
+  try {
+    const updated = await prisma.payrollRun.update({
+      where: { month_year: { month, year } },
+      data: { status },
+    });
+    return NextResponse.json(updated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Failed to update status.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
