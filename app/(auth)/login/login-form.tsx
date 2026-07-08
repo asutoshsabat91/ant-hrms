@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ArrowLeft, Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, ArrowLeft, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -255,7 +255,7 @@ export function LoginForm() {
   if (registered && registered.pending) {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 space-y-4">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 space-y-4 shadow-sm">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
             <p className="font-extrabold text-zinc-900 text-lg">Registration Submitted!</p>
@@ -263,10 +263,10 @@ export function LoginForm() {
           <p className="text-sm text-zinc-600 leading-relaxed font-medium">
             Your details have been submitted to the Superadmin for approval.
           </p>
-          <div className="rounded-xl bg-white border border-zinc-200 p-4 space-y-3">
+          <div className="rounded-xl bg-white border border-zinc-200 p-4 space-y-3 shadow-inner">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Email</p>
-              <p className="text-sm font-semibold text-[#8e43ac] mt-0.5 select-all">{registered.personalEmail}</p>
+              <p className="text-sm font-semibold text-amber-600 mt-0.5 select-all">{registered.personalEmail}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Status</p>
@@ -274,11 +274,11 @@ export function LoginForm() {
             </div>
           </div>
           <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-            Once approved by the admin, your official corporate email account will be generated and a welcome message containing your login credentials will be sent to your personal email address.
+            Once approved by the admin, your official corporate email account will be generated and a welcome credentials message will be sent.
           </p>
         </div>
         <Button
-          className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+          className="w-full bg-[#fcd34d] hover:bg-[#fbbf24] text-zinc-950 font-bold h-12 rounded-full transition-all shadow-sm"
           onClick={() => {
             setMode("login");
             setRegistered(null);
@@ -307,40 +307,40 @@ export function LoginForm() {
         <div>
           <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Create Account</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
-            New to AntBox? Provide your details to request your corporate account.
+            New to AntBox? Provide details to request a corporate account.
           </p>
         </div>
 
         <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">First Name</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">First Name</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 placeholder="Riya"
                 {...registerForm.register("firstName")}
               />
               {registerForm.formState.errors.firstName && (
-                <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.firstName.message}</p>
+                <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{registerForm.formState.errors.firstName.message}</p>
               )}
             </div>
             <div>
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Last Name</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Last Name</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 placeholder="Sharma"
                 {...registerForm.register("lastName")}
               />
               {registerForm.formState.errors.lastName && (
-                <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.lastName.message}</p>
+                <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{registerForm.formState.errors.lastName.message}</p>
               )}
             </div>
           </div>
 
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Gender</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Gender</Label>
             <select
-              className="mt-1 w-full h-11 px-3.5 rounded-xl border border-zinc-200 bg-white text-sm text-zinc-900 outline-none focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20"
+              className="mt-1 w-full h-11 px-5 rounded-full border border-zinc-200 bg-white text-sm text-zinc-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 shadow-sm"
               {...registerForm.register("gender")}
             >
               <option value="" className="text-zinc-400">Select gender…</option>
@@ -349,54 +349,53 @@ export function LoginForm() {
               <option value="OTHER" className="text-zinc-900">Other</option>
             </select>
             {registerForm.formState.errors.gender && (
-              <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.gender.message}</p>
+              <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{registerForm.formState.errors.gender.message}</p>
             )}
           </div>
 
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Gmail Address</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Personal Gmail Address</Label>
             <div className="flex gap-2 mt-1">
               <div className="relative flex-1">
                 <input
                   type="email"
-                  className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                  className="w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                   placeholder="you@gmail.com"
                   {...registerForm.register("personalEmail")}
                 />
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
               </div>
               <Button
                 type="button"
                 onClick={sendRegisterOtp}
                 disabled={sendingRegisterOtp}
-                className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold px-4 rounded-xl text-xs flex items-center gap-1.5 h-11 shadow-sm"
+                className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold px-4 rounded-full text-xs flex items-center gap-1.5 h-11 shadow-sm shrink-0"
               >
                 {sendingRegisterOtp ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#8e43ac]" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
                 ) : (
-                  "Verify Gmail"
+                  "Verify"
                 )}
               </Button>
             </div>
             {registerForm.formState.errors.personalEmail && (
-              <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.personalEmail.message}</p>
+              <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{registerForm.formState.errors.personalEmail.message}</p>
             )}
           </div>
 
           {registerSuccessMsg && (
-            <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac] leading-relaxed">
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs font-bold text-amber-800 leading-relaxed shadow-sm">
               {registerSuccessMsg}
             </div>
           )}
 
           {registerOtpSent && (
             <div>
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Verification Code (OTP)</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Verification Code (OTP)</Label>
               <input
                 type="text"
                 required
                 maxLength={6}
-                className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all text-center"
+                className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all shadow-sm"
                 placeholder="123456"
                 value={registerOtp}
                 onChange={(e) => setRegisterOtp(e.target.value)}
@@ -406,28 +405,28 @@ export function LoginForm() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Phone (optional)</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Phone</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 placeholder="+91 98765..."
                 {...registerForm.register("phone")}
               />
             </div>
             <div>
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Date of Birth</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Date of Birth</Label>
               <input
                 type="date"
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-950 focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-950 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 {...registerForm.register("dateOfBirth")}
               />
               {registerForm.formState.errors.dateOfBirth && (
-                <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.dateOfBirth.message}</p>
+                <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{registerForm.formState.errors.dateOfBirth.message}</p>
               )}
             </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800">
+            <div className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800 shadow-sm">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -435,7 +434,7 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all mt-2"
+            className="w-full bg-[#fcd34d] hover:bg-[#fbbf24] text-zinc-950 font-bold h-12 rounded-full transition-all mt-2 shadow-sm"
             disabled={loading}
           >
             {loading ? "Creating account…" : "Submit Details for Approval"}
@@ -462,28 +461,27 @@ export function LoginForm() {
         <div>
           <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Forgot Password</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
-            Enter your corporate email address or name. We will verify and help you change your password.
+            Enter your corporate email address. We will verify and help you reset your password.
           </p>
         </div>
 
         <form onSubmit={handleForgot} className="space-y-4">
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Corporate Email or Name</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Corporate Email or Name</Label>
             <div className="relative mt-1">
               <input
                 type="text"
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 placeholder="you@theantbox.com or name"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
               />
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800">
+            <div className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800 shadow-sm">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -491,10 +489,10 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+            className="w-full bg-[#fcd34d] hover:bg-[#fbbf24] text-zinc-950 font-bold h-12 rounded-full transition-all shadow-sm"
             disabled={loading}
           >
-            {loading ? "Verifying Account..." : "Send Verification Code"}
+            {loading ? "Verifying..." : "Send Verification Code"}
           </Button>
         </form>
       </div>
@@ -518,24 +516,24 @@ export function LoginForm() {
         <div>
           <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Change Password</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
-            Please verify using the temporary OTP/code sent to <span className="text-[#8e43ac] font-semibold">{forgotEmail}</span>.
+            Please verify using the temporary OTP/code sent to <span className="text-amber-600 font-bold">{forgotEmail}</span>.
           </p>
         </div>
 
         {successMsg && (
-          <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac] leading-relaxed">
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs font-bold text-amber-800 leading-relaxed shadow-sm">
             {successMsg}
           </div>
         )}
 
         <form onSubmit={handleReset} className="space-y-4">
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Verification Code (OTP)</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Verification Code (OTP)</Label>
             <input
               type="text"
               required
               maxLength={6}
-              className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all"
+              className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all shadow-sm"
               placeholder="123456"
               value={resetOtp}
               onChange={(e) => setResetOtp(e.target.value)}
@@ -543,21 +541,20 @@ export function LoginForm() {
           </div>
 
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">New Password</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">New Password</Label>
             <div className="relative mt-1">
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-5 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 placeholder="At least 6 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#8e43ac] transition-colors z-20"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors z-20"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -565,22 +562,21 @@ export function LoginForm() {
           </div>
 
           <div>
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Confirm New Password</Label>
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-1">Confirm New Password</Label>
             <div className="relative mt-1">
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800">
+            <div className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800 shadow-sm">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -588,7 +584,7 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+            className="w-full bg-[#fcd34d] hover:bg-[#fbbf24] text-zinc-950 font-bold h-12 rounded-full transition-all shadow-sm"
             disabled={loading}
           >
             {loading ? "Changing Password..." : "Change Password"}
@@ -601,12 +597,12 @@ export function LoginForm() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Sign in</h2>
-        <p className="mt-1.5 text-xs text-zinc-500 font-medium">Welcome back to AntBox People Platform</p>
+        <h2 className="text-3xl font-black text-zinc-950 tracking-tight">Create an account</h2>
+        <p className="mt-1 text-xs text-zinc-500 font-medium">Sign up and get 30 day free trial</p>
       </div>
 
       {successMsg && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs font-bold text-emerald-800 flex items-center gap-2">
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3 text-xs font-bold text-emerald-800 flex items-center gap-2 shadow-sm">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -614,25 +610,24 @@ export function LoginForm() {
 
       <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
         <div>
-          <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Address</Label>
+          <Label htmlFor="email" className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-500 px-1">Email Address</Label>
           <div className="relative mt-1">
             <input
               id="email"
               type="email"
-              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+              className="w-full h-12 px-5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
               placeholder="you@theantbox.com"
               {...loginForm.register("email")}
             />
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
           </div>
           {loginForm.formState.errors.email && (
-            <p className="mt-1 text-[10px] font-bold text-red-600">{loginForm.formState.errors.email.message}</p>
+            <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{loginForm.formState.errors.email.message}</p>
           )}
         </div>
 
         <div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Password</Label>
+          <div className="flex items-center justify-between px-1">
+            <Label htmlFor="password" className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-500">Password</Label>
             <button
               type="button"
               onClick={() => {
@@ -640,7 +635,7 @@ export function LoginForm() {
                 setError(null);
                 setSuccessMsg(null);
               }}
-              className="text-[10px] font-bold text-[#8e43ac] hover:text-[#703387] transition-colors uppercase tracking-wider"
+              className="text-[10px] font-bold text-amber-500 hover:text-amber-600 transition-colors uppercase tracking-wider"
             >
               Forgot?
             </button>
@@ -649,25 +644,24 @@ export function LoginForm() {
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+              className="w-full h-12 pl-5 pr-12 bg-white border border-zinc-200 text-zinc-900 rounded-full focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none text-sm font-medium transition-all shadow-sm"
               {...loginForm.register("password")}
             />
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-950 transition-colors z-20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors z-20"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {loginForm.formState.errors.password && (
-            <p className="mt-1 text-[10px] font-bold text-red-600">{loginForm.formState.errors.password.message}</p>
+            <p className="mt-1 text-[10px] font-bold text-red-600 px-1">{loginForm.formState.errors.password.message}</p>
           )}
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800">
+          <div className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-800 shadow-sm">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -675,77 +669,71 @@ export function LoginForm() {
 
         <Button
           type="submit"
-          className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+          className="w-full bg-[#fcd34d] hover:bg-[#fbbf24] text-zinc-950 font-black h-12 rounded-full transition-all shadow-md mt-2 flex items-center justify-center gap-2"
           disabled={loading}
         >
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-zinc-900" />
+          ) : (
+            "Submit"
+          )}
         </Button>
 
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-zinc-400 font-extrabold tracking-wider text-[8px]">Or</span>
-          </div>
+        {/* Third Party Apple and Google Buttons Grid */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <Button
+            type="button"
+            className="w-full bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold h-11 rounded-full transition-all flex items-center justify-center gap-1.5 shadow-sm text-xs"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.7-1.13 1.84-.99 2.94.12 1.06 2.16 2.05 2.82-1.33" />
+            </svg>
+            <span>Apple</span>
+          </Button>
+          <Button
+            type="button"
+            onClick={() => signIn("google", { callbackUrl })}
+            className="w-full bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold h-11 rounded-full transition-all flex items-center justify-center gap-1.5 shadow-sm text-xs"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                fill="#EA4335"
+              />
+            </svg>
+            <span>Google</span>
+          </Button>
         </div>
-
-        <Button
-          type="button"
-          onClick={() => signIn("google", { callbackUrl })}
-          className="w-full bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold h-11 rounded-xl transition-all flex items-center justify-center gap-2"
-        >
-          <svg className="h-4 w-4 animate-none" viewBox="0 0 24 24">
-            <path
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              fill="#4285F4"
-            />
-            <path
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              fill="#EA4335"
-            />
-          </svg>
-          <span>Sign in with Google</span>
-        </Button>
       </form>
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-zinc-200" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-3 text-zinc-400 font-bold tracking-widest text-[9px]">Or</span>
-        </div>
-      </div>
-
-      {/* New Joinee CTA */}
-      <div className="relative pt-4">
-        {/* Sketched curly arrow pointing down to the CTA */}
-        <div className="absolute -top-6 right-8 text-[#8e43ac] opacity-40 pointer-events-none select-none hidden sm:block">
-          <svg viewBox="0 0 100 60" className="w-12 h-10 transform -rotate-12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M70 10 Q 50 5 35 25 T 30 50" />
-            <path d="M20 40 L30 50 L40 45" />
-          </svg>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setMode("register");
-            setError(null);
-            setSuccessMsg(null);
-          }}
-          className="w-full rounded-xl border border-dashed border-[#8e43ac]/40 bg-[#8e43ac]/5 py-3 text-xs font-bold text-[#8e43ac] hover:border-[#8e43ac] hover:bg-[#8e43ac]/10 transition-all uppercase tracking-wider relative z-10"
-        >
-          New Joinee? Create Account →
-        </button>
+      {/* Mode switcher links / CTA */}
+      <div className="relative pt-4 text-center">
+        <p className="text-xs text-zinc-500 font-semibold">
+          Have an account?{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setMode("register");
+              setError(null);
+              setSuccessMsg(null);
+            }}
+            className="text-amber-600 hover:text-amber-700 font-bold hover:underline transition-colors ml-1"
+          >
+            Sign up
+          </button>
+        </p>
       </div>
     </div>
   );
