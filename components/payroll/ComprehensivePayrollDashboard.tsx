@@ -551,6 +551,46 @@ export function ComprehensivePayrollDashboard() {
     }
   }, [month, year, fetchPayroll]);
 
+  const exportBankPayoutCSV = useCallback(() => {
+    if (!overview || !overview.lines) return;
+    
+    const headers = ["S.No", "Employee Name", "Bank Name", "Account Number", "IFSC Code", "Net Salary (INR)"];
+    
+    const rows = overview.lines.map((line, index) => {
+      const local = editedLines[line.employeeId] || line;
+      const computedGross = local.basicSalary + local.specialAllowance;
+      const computedDeductions = local.meals + local.lop + local.tds;
+      const computedNet = computedGross - computedDeductions;
+      
+      return [
+        index + 1,
+        line.employeeName,
+        line.bankName || "—",
+        line.bankAccountNo ? `="${line.bankAccountNo}"` : "—",
+        line.ifscCode || "—",
+        computedNet
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => {
+        const strVal = String(val).replace(/"/g, '""');
+        return strVal.includes(",") ? `"${strVal}"` : strVal;
+      }).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `AntBox_Bank_Payout_Sheet_${MONTHS[month - 1]}_${year}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [overview, editedLines, month, year]);
+
   const filteredLines = useMemo(() => {
     if (!overview?.lines) return [];
     if (!search) return overview.lines;
@@ -690,6 +730,17 @@ export function ComprehensivePayrollDashboard() {
             >
               {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
               Mark as Paid
+            </button>
+          )}
+
+          {/* Export Payout Sheet Button */}
+          {overview && (
+            <button
+              onClick={exportBankPayoutCSV}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm disabled:opacity-50"
+            >
+              Export Payout Sheet
             </button>
           )}
         </div>
