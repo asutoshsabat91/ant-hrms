@@ -32,6 +32,23 @@ export function calculatePayroll(
   const specialAllowance = employee.specialAllowance ?? 0;
   const lopDays = Math.max(0, totalWorkingDays - paidDays);
 
+  if (basicSalary === 0 && specialAllowance === 0) {
+    return {
+      grossEarnings: 0,
+      pf: 0,
+      esi: 0,
+      professionalTax: 0,
+      tds: 0,
+      lop: 0,
+      meals: 0,
+      arrears: 0,
+      totalDeductions: 0,
+      netPay: 0,
+      paidDays,
+      lopDays,
+    };
+  }
+
   const fullGross = basicSalary + specialAllowance;
   
   // Calculate earned salary components prorated by paidDays / totalWorkingDays
