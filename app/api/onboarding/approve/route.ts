@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
+import { createOfferLetterFromTemplate } from "@/lib/googleDocs";
 import { breakdownFromCTC } from "@/lib/utils/payrollEngine";
 import { sendGoogleChatNotification } from "@/lib/googleChat";
 import { addDays, subDays } from "date-fns";
@@ -200,8 +201,24 @@ export async function POST(req: Request) {
         data: { status: "APPROVED" }
       });
 
+      let pdfBuffer: Buffer | undefined;
+      try {
+        const offerRes = await createOfferLetterFromTemplate({
+          candidateName: `${request.firstName} ${request.lastName}`,
+          email: request.personalEmail,
+          designation,
+          salary: ctc || 0,
+          joiningDate: parsedJoiningDate.toISOString(),
+        });
+        if (offerRes.success && offerRes.pdfBuffer) {
+          pdfBuffer = offerRes.pdfBuffer;
+        }
+      } catch (docErr) {
+        console.error("[Google Docs] Failed to build offer letter attachment", docErr);
+      }
+
       // Send welcome email with credentials to personalEmail
-      await sendOnboardingEmail(request.personalEmail, loginEmail, tempPassword, request.firstName);
+      await sendOnboardingEmail(request.personalEmail, loginEmail, tempPassword, request.firstName, pdfBuffer);
 
       try {
         await appendEmployeeToSheet({

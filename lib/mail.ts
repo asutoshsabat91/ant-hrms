@@ -142,10 +142,12 @@ export async function sendEmail({
   to,
   subject,
   html,
+  attachments,
 }: {
   to: string;
   subject: string;
   html: string;
+  attachments?: Array<{ filename: string; content: Buffer }>;
 }) {
   const transporter = getTransporter();
   const from = process.env.GMAIL_SMTP_FROM || process.env.GMAIL_SMTP_USER || "people@theantbox.com";
@@ -156,6 +158,7 @@ export async function sendEmail({
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
     console.log(`Body Snippet: ${html.substring(0, 300)}...`);
+    console.log(`Has Attachments: ${attachments ? "Yes" : "No"}`);
     console.log("=========================================");
     return { success: true, simulated: true };
   }
@@ -166,6 +169,7 @@ export async function sendEmail({
       to,
       subject,
       html,
+      attachments,
     });
     console.log(`[Mailer] Email sent successfully: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
@@ -180,21 +184,22 @@ export async function sendOnboardingEmail(
   personalEmail: string,
   corpEmail: string,
   tempPassword: string,
-  firstName: string
+  firstName: string,
+  pdfBuffer?: Buffer
 ) {
   const escFirstName = escapeHtml(firstName);
   const escCorpEmail = escapeHtml(corpEmail);
   const escTempPassword = escapeHtml(tempPassword);
 
-  const subject = "Welcome to AntBox! Your Corporate Account is Ready";
+  const subject = "Welcome to AntBox! Your Onboarding Setup is Ready";
   const bodyHtml = `
     <h2>Welcome to the colony, ${escFirstName}!</h2>
-    <p>We are absolutely thrilled to welcome you to the AntBox team. Your corporate workspace account has been successfully configured.</p>
+    <p>We are thrilled to welcome you to the AntBox team. Your HR login account has been successfully configured.</p>
     <p>Please use the following credentials to sign in to the AntBox HR Portal:</p>
     
     <div class="card">
       <div class="card-row">
-        <span class="card-label">Corporate Email</span>
+        <span class="card-label">Login Email</span>
         <span class="card-value">${escCorpEmail}</span>
       </div>
       <div class="card-row">
@@ -203,7 +208,9 @@ export async function sendOnboardingEmail(
       </div>
     </div>
 
-    <p>Please log in, change your password, and proceed with uploading your required onboarding documents.</p>
+    ${pdfBuffer ? `<p>We have also attached your official <b>Offer Letter PDF</b> to this email for your records.</p>` : ""}
+
+    <p>Please log in, complete your security setup, and proceed with uploading your required onboarding documents.</p>
     
     <center>
       <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login" class="btn">Access HR Portal</a>
@@ -214,6 +221,7 @@ export async function sendOnboardingEmail(
     to: personalEmail,
     subject,
     html: generateEmailTemplate(subject, bodyHtml),
+    attachments: pdfBuffer ? [{ filename: "Offer_Letter.pdf", content: pdfBuffer }] : undefined,
   });
 }
 

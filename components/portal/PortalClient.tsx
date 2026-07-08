@@ -13,6 +13,7 @@ import {
   Camera,
 } from "lucide-react";
 import type { Employee, Department } from "@prisma/client";
+import { FloatingAIChatbot } from "./FloatingAIChatbot";
 
 type EmployeeWithDept = Employee & { department: Department };
 
@@ -1718,6 +1719,8 @@ export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
         </div>
       )}
 
+      {/* Floating HR AI Chatbot widget */}
+      <FloatingAIChatbot />
     </div>
   );
 }

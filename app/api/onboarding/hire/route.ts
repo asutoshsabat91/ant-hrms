@@ -8,6 +8,7 @@ import type { TaskCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
+import { createOfferLetterFromTemplate } from "@/lib/googleDocs";
 import { sendGoogleChatNotification } from "@/lib/googleChat";
 
 const onboardingSchema = z.object({
@@ -266,9 +267,25 @@ export async function POST(req: Request) {
         return employee;
       });
 
+      let pdfBuffer: Buffer | undefined;
+      try {
+        const offerRes = await createOfferLetterFromTemplate({
+          candidateName: `${data.firstName} ${data.lastName}`,
+          email: data.personalEmail || data.email,
+          designation: data.designation,
+          salary: data.ctc || 0,
+          joiningDate: data.joiningDate,
+        });
+        if (offerRes.success && offerRes.pdfBuffer) {
+          pdfBuffer = offerRes.pdfBuffer;
+        }
+      } catch (docErr) {
+        console.error("[Google Docs] Failed to build offer letter attachment", docErr);
+      }
+
       // Send the welcome email with credentials to personalEmail (fallback to work email if personal not provided)
       const targetEmail = data.personalEmail || data.email;
-      await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName);
+      await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName, pdfBuffer);
 
       // Sync with Google Sheets
       await appendEmployeeToSheet(result);
@@ -387,9 +404,25 @@ export async function POST(req: Request) {
       return employee;
     });
 
+    let pdfBuffer: Buffer | undefined;
+    try {
+      const offerRes = await createOfferLetterFromTemplate({
+        candidateName: `${data.firstName} ${data.lastName}`,
+        email: data.personalEmail || data.email,
+        designation: data.designation,
+        salary: data.ctc || 0,
+        joiningDate: data.joiningDate,
+      });
+      if (offerRes.success && offerRes.pdfBuffer) {
+        pdfBuffer = offerRes.pdfBuffer;
+      }
+    } catch (docErr) {
+      console.error("[Google Docs] Failed to build offer letter attachment", docErr);
+    }
+
     // Send the welcome email with credentials to personalEmail (fallback to work email if personal not provided)
     const targetEmail = data.personalEmail || data.email;
-    await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName);
+    await sendOnboardingEmail(targetEmail, data.email.toLowerCase(), tempPassword, data.firstName, pdfBuffer);
 
     // Sync with Google Sheets
     await appendEmployeeToSheet(result);
