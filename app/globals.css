@@ -94,71 +94,32 @@
     --sidebar-ring: #7c3aed;
   }
   .dark {
-    --background: #09090d; /* Rich cyber dark background */
-    --foreground: #f4f4f7;
-    --card: #121118; /* Dark violet card panel background */
-    --card-foreground: #f4f4f7;
-    --popover: #121118;
-    --popover-foreground: #f4f4f7;
-    --primary: #c084fc; /* Bright neon violet primary accent */
-    --primary-foreground: #09090d;
-    --secondary: #1c1926; /* Elevated element bg */
-    --secondary-foreground: #f4f4f7;
-    --muted: #1c1926;
-    --muted-foreground: #948fa3; /* Soft violet/grey text */
-    --accent: #1c1926;
-    --accent-foreground: #f4f4f7;
-    --destructive: #f43f5e;
-    --border: #1f1b2d; /* Cyber-purple borders */
-    --input: #1c1926;
-    --ring: #c084fc;
-    
-    --sidebar-bg: #09090c;
-    --sidebar-active: #1c1926;
-    --sidebar-text: #8e8a9f;
-    --sidebar-active-text: #ffffff;
-    --sidebar-border: #1f1b2d;
-    
-    --purple: #c084fc;
-    --purple-light: rgba(192, 132, 252, 0.05);
-    --purple-mid: rgba(192, 132, 252, 0.15);
-  }
-
-  /* Global dark-theme overrides for light-theme hardcoded elements (excludes login panel) */
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .bg-white {
-    background-color: var(--card) !important;
-  }
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-zinc-900,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-slate-900,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-zinc-800,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-slate-800,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-zinc-950,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-black {
-    color: var(--foreground) !important;
-  }
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-zinc-500,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-slate-500,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-zinc-600,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-slate-600,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .text-zinc-400 {
-    color: var(--muted-foreground) !important;
-  }
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .border-zinc-200,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .border-slate-200,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .border-zinc-100,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .border-slate-100 {
-    border-color: var(--border) !important;
-  }
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .bg-zinc-50,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .bg-slate-50,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .bg-zinc-100,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .bg-slate-100 {
-    background-color: #17161f !important;
-  }
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .shadow-sm,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .shadow-md,
-  .dark *:not(.light-theme-forced):not(.light-theme-forced *) .shadow {
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4) !important;
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #18181b;
+    --card-foreground: #fafafa;
+    --popover: #18181b;
+    --popover-foreground: #fafafa;
+    --primary: #fafafa;
+    --primary-foreground: #18181b;
+    --secondary: #27272a;
+    --secondary-foreground: #fafafa;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+    --destructive: #ef4444;
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #fafafa;
+    --sidebar: #18181b;
+    --sidebar-foreground: #a1a1aa;
+    --sidebar-primary: #fafafa;
+    --sidebar-primary-foreground: #18181b;
+    --sidebar-accent: #27272a;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #27272a;
+    --sidebar-ring: #fafafa;
   }
   * {
     border-color: var(--border);
