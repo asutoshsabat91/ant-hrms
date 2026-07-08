@@ -9,7 +9,7 @@ import bcrypt from "bcryptjs";
 import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
-import { triggerN8nWebhook } from "@/lib/utils/n8n";
+import { sendGoogleChatNotification } from "@/lib/googleChat";
 
 const onboardingSchema = z.object({
   mode: z.enum(["invite", "complete", "direct"]).optional(),
@@ -278,16 +278,15 @@ export async function POST(req: Request) {
       await appendEmployeeToSheet(result);
 
       try {
-        await triggerN8nWebhook("N8N_OFFER_WEBHOOK_URL", {
-          event: "offer.requested",
-          candidateName: `${data.firstName} ${data.lastName}`,
-          email: data.personalEmail || data.email,
-          designation: data.designation,
-          salary: data.ctc || 0,
-          joiningDate: data.joiningDate,
-        });
-      } catch (n8nErr) {
-        console.error("[N8N] Offer webhook failed", n8nErr);
+        await sendGoogleChatNotification(
+          `✉️ *Offer Letter Generated* ✉️\n\n` +
+          `An offer letter has been sent to candidate *${data.firstName} ${data.lastName}*! \n` +
+          `• *Designation:* ${data.designation}\n` +
+          `• *CTC:* ₹${data.ctc || 0}\n` +
+          `• *Joining Date:* ${new Date(data.joiningDate).toLocaleDateString()}`
+        );
+      } catch (chatErr) {
+        console.error("[Google Chat] Offer notification failed", chatErr);
       }
 
       return NextResponse.json({ employee: result }, { status: 201 });
@@ -403,16 +402,15 @@ export async function POST(req: Request) {
     await appendEmployeeToSheet(result);
 
     try {
-      await triggerN8nWebhook("N8N_OFFER_WEBHOOK_URL", {
-        event: "offer.requested",
-        candidateName: `${data.firstName} ${data.lastName}`,
-        email: data.personalEmail || data.email,
-        designation: data.designation,
-        salary: data.ctc || 0,
-        joiningDate: data.joiningDate,
-      });
-    } catch (n8nErr) {
-      console.error("[N8N] Offer webhook failed", n8nErr);
+      await sendGoogleChatNotification(
+        `✉️ *Offer Letter Generated* ✉️\n\n` +
+        `An offer letter has been sent to candidate *${data.firstName} ${data.lastName}*! \n` +
+        `• *Designation:* ${data.designation}\n` +
+        `• *CTC:* ₹${data.ctc || 0}\n` +
+        `• *Joining Date:* ${new Date(data.joiningDate).toLocaleDateString()}`
+      );
+    } catch (chatErr) {
+      console.error("[Google Chat] Offer notification failed", chatErr);
     }
 
     const onboardingTasks = await prisma.onboardingTask.findMany({

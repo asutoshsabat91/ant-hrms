@@ -6,7 +6,7 @@ import { z } from "zod";
 import { sendLeaveApprovalEmail } from "@/lib/mail";
 import { createGoogleCalendarEvent } from "@/lib/googleCalendar";
 import { syncEmployeePayrollForDate } from "@/lib/utils/payrollEngine";
-import { triggerN8nWebhook } from "@/lib/utils/n8n";
+import { sendGoogleChatNotification } from "@/lib/googleChat";
 
 const decisionSchema = z.object({
   action: z.enum(["APPROVE", "REJECT"]),
@@ -179,17 +179,14 @@ export async function PATCH(
       });
 
       try {
-        await triggerN8nWebhook("N8N_LEAVE_WEBHOOK_URL", {
-          event: "leave.approved",
-          employeeName,
-          officialEmail: result.employee.email,
-          startDate: result.startDate.toISOString().split("T")[0],
-          endDate: result.endDate.toISOString().split("T")[0],
-          leaveType: result.leaveType.name,
-          days: result.days,
-        });
-      } catch (n8nErr) {
-        console.error("[N8N] Leave webhook failed", n8nErr);
+        await sendGoogleChatNotification(
+          `🌴 *Out of Office Announcement* 🌴\n\n` +
+          `*${employeeName}* is on approved *${result.leaveType.name}* leave. \n` +
+          `• *Duration:* ${result.days} day${result.days === 1 ? "" : "s"} \n` +
+          `• *Dates:* ${result.startDate.toISOString().split("T")[0]} to ${result.endDate.toISOString().split("T")[0]}`
+        );
+      } catch (chatErr) {
+        console.error("[Google Chat] Leave approved notification failed", chatErr);
       }
     }
   } catch (err) {

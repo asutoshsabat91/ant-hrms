@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { syncEmployeePayrollForDate } from "@/lib/utils/payrollEngine";
-import { triggerN8nWebhook } from "@/lib/utils/n8n";
+import { sendGoogleChatNotification } from "@/lib/googleChat";
 
 function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[]) {
   let totalMs = 0;
@@ -179,15 +179,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       await syncEmployeePayrollForDate(request.employeeId, new Date(request.date));
 
       try {
-        await triggerN8nWebhook("N8N_LEAVE_WEBHOOK_URL", {
-          event: "regularization.approved",
-          employeeName: `${request.employee.firstName} ${request.employee.lastName}`,
-          officialEmail: request.employee.email,
-          date: new Date(request.date).toISOString().split("T")[0],
-          type: request.type,
-        });
-      } catch (n8nErr) {
-        console.error("[N8N] Regularization webhook failed", n8nErr);
+        await sendGoogleChatNotification(
+          `⏱️ *Attendance Regularized* ⏱️\n\n` +
+          `*${request.employee.firstName} ${request.employee.lastName}*'s attendance regularization request has been approved. \n` +
+          `• *Date:* ${new Date(request.date).toDateString()}\n` +
+          `• *Adjustment:* ${request.type}`
+        );
+      } catch (chatErr) {
+        console.error("[Google Chat] Regularization notification failed", chatErr);
       }
 
       return NextResponse.json({ success: true, request: result });

@@ -7,7 +7,7 @@ import { createWorkspaceUser } from "@/lib/googleWorkspace";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
 import { breakdownFromCTC } from "@/lib/utils/payrollEngine";
-import { triggerN8nWebhook } from "@/lib/utils/n8n";
+import { sendGoogleChatNotification } from "@/lib/googleChat";
 import { addDays, subDays } from "date-fns";
 import type { TaskCategory } from "@prisma/client";
 
@@ -238,20 +238,17 @@ export async function POST(req: Request) {
       }
 
       try {
-        await triggerN8nWebhook("N8N_ONBOARDING_WEBHOOK_URL", {
-          event: "onboarding.approved",
-          hireId: employee.id,
-          firstName: request.firstName,
-          lastName: request.lastName,
-          personalEmail: request.personalEmail,
-          officialEmail: corpEmail,
-          designation,
-          department: employee.departmentId || "General",
-          joiningDate: parsedJoiningDate.toISOString(),
-        });
-      } catch (n8nErr) {
-        console.error("[N8N] Onboarding webhook failed", n8nErr);
+        await sendGoogleChatNotification(
+          `🎉 *New Team Member Announcement!* 🎉\n\n` +
+          `Please join us in welcoming *${request.firstName} ${request.lastName}* to the team! \n` +
+          `• *Designation:* ${designation}\n` +
+          `• *Official Email:* ${corpEmail}\n` +
+          `• *Joining Date:* ${parsedJoiningDate.toLocaleDateString()}`
+        );
+      } catch (chatErr) {
+        console.error("[Google Chat] Onboarding welcome notification failed", chatErr);
       }
+
 
       results.push({
         id: reqId,
