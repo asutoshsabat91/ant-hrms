@@ -65,7 +65,7 @@ export default function LoginPage() {
             alt="Peeking Ants Mascot" 
             width={176}
             height={320}
-            className="object-contain object-bottom object-right filter brightness-[0.35] contrast-[2]"
+            className="object-contain object-bottom object-right"
             priority
           />
         </div>
@@ -118,7 +118,7 @@ export default function LoginPage() {
                 alt="Running Race Ants" 
                 width={110} 
                 height={35} 
-                className="object-contain filter brightness-[0.35] contrast-[2]"
+                className="object-contain"
                 priority
               />
             </div>
@@ -141,7 +141,7 @@ export default function LoginPage() {
                   alt="Deep Work Sleep Ant" 
                   width={68} 
                   height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105 filter brightness-[0.35] contrast-[2]" 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                   alt="Daily Energy Coffee Ant" 
                   width={54} 
                   height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105 filter brightness-[0.35] contrast-[2]" 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
@@ -179,7 +179,7 @@ export default function LoginPage() {
                   alt="Precision Science Ant" 
                   width={58} 
                   height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105 filter brightness-[0.35] contrast-[2]" 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
@@ -203,7 +203,7 @@ export default function LoginPage() {
                   alt="Sprint Blueprints Ant" 
                   width={64} 
                   height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105 filter brightness-[0.35] contrast-[2]" 
+                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
                   priority
                 />
               </div>
