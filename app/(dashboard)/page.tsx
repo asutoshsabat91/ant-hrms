@@ -140,6 +140,8 @@ export default async function DashboardPage() {
   let radarMetrics = { activeCandidates: 14, avgReadiness: 87.4, sprintsLive: 6, pposClaimed: 8 };
   let attendancePulseData: { name: string; attendance: number }[] = [];
 
+  let allEmployeesList: unknown[] = [];
+
   try {
     const [statsResult, activityResult, onboardingHiresResult, pulseData, onboardingTasks, totalHiresCount, activeDepts, activeInternsCount] = await Promise.all([
       getDashboardStats(),
@@ -168,7 +170,7 @@ export default async function DashboardPage() {
       pposClaimed: activeInternsCount || 8,
     };
 
-    const [depts, leaveGrouped, payrollRun, offboarding, pendingLvReqs, pendingLvCount] = await Promise.all([
+    const [depts, leaveGrouped, payrollRun, offboarding, pendingLvReqs, pendingLvCount, dbEmployees] = await Promise.all([
       prisma.department.findMany({
         include: { employees: { where: { status: { in: ["ACTIVE", "ONBOARDING"] } }, select: { id: true } } },
       }),
@@ -190,6 +192,10 @@ export default async function DashboardPage() {
         },
       }),
       prisma.leaveRequest.count({ where: { status: "PENDING" } }),
+      prisma.employee.findMany({
+        include: { leaveRequests: true },
+        orderBy: { employeeId: "asc" },
+      }),
     ]);
 
     deptData = depts.map((d) => ({ name: d.code, headcount: d.employees.length })).filter((d) => d.headcount > 0);
@@ -198,6 +204,7 @@ export default async function DashboardPage() {
     upcomingOffboarding = offboarding;
     pendingLeaves = pendingLvReqs;
     pendingLeaveCount = pendingLvCount;
+    allEmployeesList = dbEmployees;
   } catch { /* fallback */ }
 
   const displayActiveCount = stats.activeCount || 0;
@@ -322,7 +329,10 @@ export default async function DashboardPage() {
 
       {/* Master Employee Database (Google Sheets) */}
       <ScrollReveal delayClass="reveal-delay-3">
-        <MasterSheetsSyncWidget spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} />
+        <MasterSheetsSyncWidget 
+          spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} 
+          employees={allEmployeesList}
+        />
       </ScrollReveal>
 
       {/* Onboarding + Activity */}
