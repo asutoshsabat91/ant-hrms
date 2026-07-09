@@ -103,6 +103,10 @@ export function OnboardingMilestones({
   }
 
   async function saveBanking() {
+    if (!bankName.trim() || !bankAccountNo.trim() || !ifscCode.trim() || !pan.trim()) {
+      setBankMsg({ ok: false, text: "All fields except UAN are compulsory. Please fill in all details." });
+      return;
+    }
     setBankSaving(true); setBankMsg(null);
     try {
       const res = await fetch("/api/onboarding/banking", {
@@ -118,6 +122,10 @@ export function OnboardingMilestones({
   }
 
   async function saveIdForm() {
+    if (!bg.trim() || !linkedIn.trim()) {
+      setIdMsg({ ok: false, text: "Blood Group and LinkedIn URL are compulsory. Please fill in all details." });
+      return;
+    }
     setIdSaving(true); setIdMsg(null);
     try {
       const res = await fetch("/api/onboarding/idform", {

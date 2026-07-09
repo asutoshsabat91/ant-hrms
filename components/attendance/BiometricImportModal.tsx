@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Upload, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { X, Upload, CheckCircle, AlertTriangle, Info, FileSpreadsheet } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface BiometricImportModalProps {
@@ -10,6 +10,7 @@ interface BiometricImportModalProps {
 }
 
 export function BiometricImportModal({ isOpen, onOpenChange }: BiometricImportModalProps) {
+  const [activeTab, setActiveTab] = useState<"SHEETS" | "CSV">("SHEETS");
   const [csvText, setCsvText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{
@@ -48,7 +49,7 @@ export function BiometricImportModal({ isOpen, onOpenChange }: BiometricImportMo
     reader.readAsText(file);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitCsv = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!csvText.trim()) {
       setErrorMsg("Please paste CSV data or upload a file first.");
@@ -64,6 +65,30 @@ export function BiometricImportModal({ isOpen, onOpenChange }: BiometricImportMo
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ csv: csvText.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to import attendance data.");
+      }
+
+      setResult(data);
+      router.refresh();
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unexpected error occurred during import.";
+      setErrorMsg(errMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSheetsImport = async () => {
+    setSubmitting(true);
+    setErrorMsg(null);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/attendance/import/sheets", {
+        method: "POST",
       });
       const data = await res.json();
       if (!res.ok) {
@@ -137,18 +162,37 @@ export function BiometricImportModal({ isOpen, onOpenChange }: BiometricImportMo
           </div>
         </div>
 
-        {/* Info notice */}
-        <div className="flex gap-2.5 p-3 bg-zinc-50 border border-zinc-200 rounded-xl mb-4 text-xs text-zinc-600 leading-relaxed">
-          <Info size={16} className="text-zinc-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-zinc-950">CSV Format Requirements:</span>
-            <ul className="list-disc pl-4 mt-1 space-y-0.5 font-medium text-zinc-500">
-              <li>Header row: <code className="text-zinc-800 font-bold bg-zinc-100 px-1 rounded">employeeId,punchedAt,punchType</code></li>
-              <li>Values: e.g. <code className="text-zinc-800 bg-zinc-100 px-1 rounded">ANT001, 2026-06-25 09:30:00, IN</code></li>
-              <li>Only processes employees where deployed company is <span className="font-bold text-zinc-950">&quot;AntBox&quot;</span></li>
-            </ul>
+        {/* Tab Selectors */}
+        {!result && (
+          <div className="flex border-b border-zinc-100 mb-4">
+            <button
+              onClick={() => {
+                setActiveTab("SHEETS");
+                setErrorMsg(null);
+              }}
+              className={`flex-1 pb-2 text-xs font-bold transition-all border-b-2 ${
+                activeTab === "SHEETS"
+                  ? "border-zinc-950 text-zinc-950"
+                  : "border-transparent text-zinc-400 hover:text-zinc-600"
+              }`}
+            >
+              Google Sheet Import
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("CSV");
+                setErrorMsg(null);
+              }}
+              className={`flex-1 pb-2 text-xs font-bold transition-all border-b-2 ${
+                activeTab === "CSV"
+                  ? "border-zinc-950 text-zinc-950"
+                  : "border-transparent text-zinc-400 hover:text-zinc-600"
+              }`}
+            >
+              CSV / Text Paste
+            </button>
           </div>
-        </div>
+        )}
 
         {result ? (
           <div className="space-y-4">
@@ -184,8 +228,48 @@ export function BiometricImportModal({ isOpen, onOpenChange }: BiometricImportMo
               Done
             </button>
           </div>
+        ) : activeTab === "SHEETS" ? (
+          <div className="space-y-4">
+            <div className="flex gap-2.5 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-600 leading-relaxed">
+              <Info size={16} className="text-zinc-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-zinc-950">Google Sheets Integration:</span>
+                <p className="mt-1 text-zinc-500 font-medium">
+                  The system will read punches directly from the worksheet tab named <span className="font-bold text-zinc-950">&quot;Biometric Import&quot;</span> in your active Master Google Sheet.
+                </p>
+                <p className="mt-1.5 text-zinc-500 font-semibold">
+                  Required columns: <code className="text-zinc-800 font-bold bg-zinc-100 px-1 rounded">employeeId, punchedAt, punchType</code>
+                </p>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold">
+                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-100">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 border border-zinc-200 text-zinc-700 font-bold text-xs rounded-xl hover:bg-zinc-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSheetsImport}
+                disabled={submitting}
+                className="px-5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+              >
+                <FileSpreadsheet size={14} />
+                {submitting ? "Syncing Sheets..." : "Sync from Google Sheet"}
+              </button>
+            </div>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmitCsv} className="space-y-4">
             {/* CSV Paste Text Area */}
             <div>
               <div className="flex items-center justify-between mb-1.5">

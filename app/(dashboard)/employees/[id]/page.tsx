@@ -8,6 +8,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, AlertCircle, FileText, CreditCard, IdCard } from "lucide-react";
+import { EditProfileButton } from "@/components/employees/EditProfileButton";
 
 export default async function EmployeeProfilePage({
   params,
@@ -69,6 +70,9 @@ export default async function EmployeeProfilePage({
             <Link href="/employees" className={cn(buttonVariants({ variant: "outline" }))}>
               Back to directory
             </Link>
+            {session.user.role === "ADMIN" && (
+              <EditProfileButton employee={employee} />
+            )}
             {isOnboarding && (
               <Link
                 href={`/onboarding/${employee.id}`}
@@ -208,6 +212,10 @@ export default async function EmployeeProfilePage({
               <div>
                 <dt className="text-[10px] font-bold uppercase text-zinc-400">Phone</dt>
                 <dd className="text-sm font-semibold text-zinc-900 mt-1">{employee.phone ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] font-bold uppercase text-zinc-400">Deployed Company</dt>
+                <dd className="text-sm font-semibold text-zinc-900 mt-1">{employee.deployedCompany ?? "—"}</dd>
               </div>
               {employee.bloodGroup && (
                 <div>

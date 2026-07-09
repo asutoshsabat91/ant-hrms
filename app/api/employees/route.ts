@@ -104,3 +104,76 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to create employee" }, { status: 500 });
   }
 }
+
+const updateSchema = z.object({
+  id: z.string(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  designation: z.string().min(1).optional(),
+  deployedCompany: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  personalEmail: z.string().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  bloodGroup: z.string().nullable().optional(),
+  permanentAddress: z.string().nullable().optional(),
+  emergencyContact: z.string().nullable().optional(),
+  emergencyPhone: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  bankAccountNo: z.string().nullable().optional(),
+  ifscCode: z.string().nullable().optional(),
+  pan: z.string().nullable().optional(),
+  uan: z.string().nullable().optional(),
+  ctc: z.number().nullable().optional(),
+});
+
+export async function PUT(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user || !["ADMIN"].includes(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden. Admin only." }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const parsed = updateSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+    const { id, ...data } = parsed.data;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatePayload: any = { ...data };
+    if (data.ctc !== undefined) {
+      if (data.ctc) {
+        const comp = breakdownFromCTC(data.ctc);
+        updatePayload.ctc = data.ctc;
+        updatePayload.basicSalary = comp.basicSalary;
+        updatePayload.hra = comp.hra;
+        updatePayload.specialAllowance = comp.specialAllowance;
+        updatePayload.pf = comp.pf;
+      } else {
+        updatePayload.ctc = null;
+        updatePayload.basicSalary = null;
+        updatePayload.hra = null;
+        updatePayload.specialAllowance = null;
+        updatePayload.pf = null;
+      }
+    }
+
+    const updated = await prisma.employee.update({
+      where: { id },
+      data: updatePayload,
+    });
+
+    // Automatically sync back to Google Sheets to keep sheet updated in real time!
+    try {
+      const { syncGoogleSheetsWithDb } = await import("@/lib/googleSheets");
+      await syncGoogleSheetsWithDb();
+    } catch (sheetErr) {
+      console.error("[Google Sheets] Sync failed during profile update:", sheetErr);
+    }
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error("[EMPLOYEES PUT]", e);
+    return NextResponse.json({ error: "Failed to update employee" }, { status: 500 });
+  }
+}

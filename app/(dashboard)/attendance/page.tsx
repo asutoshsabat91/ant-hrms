@@ -1,4 +1,4 @@
-import { Download, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getAttendanceOverview } from "@/lib/attendance";
@@ -6,6 +6,7 @@ import { AttendancePageClient } from "@/components/attendance/AttendancePageClie
 import { RegularizationApprovalList } from "@/components/attendance/RegularizationApprovalList";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BiometricImportButton } from "@/components/attendance/BiometricImportButton";
+import { ExportAttendanceButton } from "@/components/attendance/ExportAttendanceButton";
 
 function formatTime(value: Date | string | null) {
   if (!value) return "—";
@@ -103,14 +104,7 @@ export default async function AttendancePage() {
             </div>
             <div className="flex items-center gap-2">
               {isSuperAdmin && <BiometricImportButton />}
-              <a
-                href="/api/attendance/export"
-                download="Attendance_Report.csv"
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all duration-300 hover:-translate-y-0.5 shadow-sm"
-              >
-                <Download className="h-3.5 w-3.5 text-zinc-500" />
-                Export CSV
-              </a>
+              <ExportAttendanceButton spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} />
             </div>
           </div>
 

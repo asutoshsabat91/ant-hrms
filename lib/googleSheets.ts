@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from "googleapis";
-import type { EmployeeStatus, EmploymentType } from "@prisma/client";
+import type { EmployeeStatus, EmploymentType, PunchType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
@@ -672,6 +672,366 @@ export async function syncGoogleSheetsWithDb() {
       success: false,
       simulated: false,
       error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+// Helper for Kolkata Work Date calculation
+function getKolkataWorkDateLocal(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+// Helper for worked hours sum
+function sumWorkedHoursLocal(punches: { punchType: string; punchedAt: Date }[]) {
+  let totalMs = 0;
+  let openIn: Date | null = null;
+
+  for (const punch of punches) {
+    if (punch.punchType === "IN") {
+      openIn = punch.punchedAt;
+    } else if (openIn) {
+      totalMs += punch.punchedAt.getTime() - openIn.getTime();
+      openIn = null;
+    }
+  }
+
+  return Math.round((totalMs / 3600000) * 100) / 100;
+}
+
+// Sync all attendance records to Google Sheets
+export async function syncAttendanceToGoogleSheets() {
+  const client = getSheetsClient();
+  if (!client) {
+    console.warn("[Google Sheets] Simulation mode active. Cannot sync attendance logs.");
+    return { success: true, simulated: true };
+  }
+
+  const { sheets, spreadsheetId } = client;
+  const sheetName = "Attendance Logs";
+
+  try {
+    await ensureWorksheetExists(sheets, spreadsheetId, sheetName);
+
+    // Fetch all attendance records with punches and employee names
+    const records = await prisma.attendanceRecord.findMany({
+      include: {
+        employee: true,
+        punches: {
+          orderBy: { punchedAt: "asc" },
+        },
+      },
+      orderBy: { workDate: "desc" },
+    });
+
+    const spreadsheetRows: string[][] = [];
+    // Header
+    spreadsheetRows.push([
+      "Date",
+      "Employee ID",
+      "Employee Name",
+      "Status",
+      "First Punch",
+      "Latest Punch",
+      "Clock Cycles",
+      "Total Hours"
+    ]);
+
+    records.forEach((record) => {
+      const empName = `${record.employee.firstName} ${record.employee.lastName}`;
+      const workDate = new Date(record.workDate).toISOString().slice(0, 10);
+
+      const firstPunch = record.punches[0]?.punchedAt
+        ? new Date(record.punches[0].punchedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+        : record.checkIn
+        ? new Date(record.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+        : "—";
+
+      const lastPunch = record.punches.at(-1)?.punchedAt
+        ? new Date(record.punches.at(-1)!.punchedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+        : record.checkOut
+        ? new Date(record.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+        : "—";
+
+      // Calculate clock cycles
+      const cycles: string[] = [];
+      const punches = record.punches;
+      for (let i = 0; i < punches.length; i += 2) {
+        const inPunch = punches[i];
+        const outPunch = punches[i + 1];
+        const inStr = inPunch
+          ? new Date(inPunch.punchedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+          : "—";
+        const outStr = outPunch
+          ? new Date(outPunch.punchedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+          : "—";
+
+        if (inPunch && outPunch) {
+          const diffMs = new Date(outPunch.punchedAt).getTime() - new Date(inPunch.punchedAt).getTime();
+          const hrs = (diffMs / (1000 * 60 * 60)).toFixed(2);
+          cycles.push(`${inStr} to ${outStr} (${hrs} hrs)`);
+        } else if (inPunch) {
+          cycles.push(`${inStr} to — (Active)`);
+        }
+      }
+      const cyclesStr = cycles.join(" | ") || "—";
+
+      spreadsheetRows.push([
+        workDate,
+        record.employee.employeeId,
+        empName,
+        record.status,
+        firstPunch,
+        lastPunch,
+        cyclesStr,
+        (record.totalHours ?? 0).toString()
+      ]);
+    });
+
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId,
+      range: `${sheetName}!A:H`,
+    });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!A1`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: spreadsheetRows,
+      },
+    });
+
+    console.log(`[Google Sheets] Exported ${records.length} attendance records to tab "Attendance Logs".`);
+    return { success: true, simulated: false };
+  } catch (error) {
+    console.error("[Google Sheets] Sync attendance failed:", error);
+    return { success: false, simulated: false, error: String(error) };
+  }
+}
+
+// Import biometric punch logs from Google Sheets
+export async function importBiometricFromGoogleSheets() {
+  const client = getSheetsClient();
+  if (!client) {
+    console.warn("[Google Sheets] Simulation mode active. Mocking biometric import.");
+    // Simulate importing mock data
+    return {
+      success: true,
+      simulated: true,
+      importedCount: 6,
+      duplicateCount: 2,
+      nonAntboxCount: 0,
+      invalidCount: 0,
+    };
+  }
+
+  const { sheets, spreadsheetId } = client;
+  const sheetName = "Biometric Import";
+
+  try {
+    await ensureWorksheetExists(sheets, spreadsheetId, sheetName);
+
+    // Try reading rows
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:C`,
+    });
+
+    const rows = response.data.values || [];
+    if (rows.length === 0) {
+      // If blank, write default headers for user convenience
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!A1`,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [["employeeId", "punchedAt", "punchType"]],
+        },
+      });
+      return {
+        success: true,
+        simulated: false,
+        importedCount: 0,
+        duplicateCount: 0,
+        nonAntboxCount: 0,
+        invalidCount: 0,
+      };
+    }
+
+    const headers = rows[0].map((h) => String(h).trim().toLowerCase());
+    const dataRows = rows.slice(1);
+
+    // Fetch all AntBox deployed employees
+    const antboxEmployees = await prisma.employee.findMany({
+      where: { deployedCompany: "AntBox" },
+      select: { id: true, employeeId: true },
+    });
+    const employeeMap = new Map(antboxEmployees.map((e) => [e.employeeId.toLowerCase().trim(), e.id]));
+
+    let importedCount = 0;
+    let duplicateCount = 0;
+    let nonAntboxCount = 0;
+    let invalidCount = 0;
+
+    const groups: Record<
+      string,
+      { employeeDbId: string; workDate: Date; punches: { punchedAt: Date; punchType: string }[] }
+    > = {};
+
+    const empIdx = headers.indexOf("employeeid");
+    const dateIdx = headers.indexOf("punchedat");
+    const typeIdx = headers.indexOf("punchtype");
+
+    if (empIdx === -1 || dateIdx === -1 || typeIdx === -1) {
+      throw new Error(`Invalid headers on Biometric Import tab. Expected columns: employeeId, punchedAt, punchType`);
+    }
+
+    for (const row of dataRows) {
+      const empId = (row[empIdx] || "").toString().trim();
+      const dateStr = (row[dateIdx] || "").toString().trim();
+      const typeStr = (row[typeIdx] || "").toString().trim();
+
+      if (!empId || !dateStr || !typeStr) {
+        invalidCount++;
+        continue;
+      }
+
+      const parsedDate = new Date(dateStr);
+      if (isNaN(parsedDate.getTime())) {
+        invalidCount++;
+        continue;
+      }
+
+      const upperType = typeStr.toUpperCase();
+      if (upperType !== "IN" && upperType !== "OUT") {
+        invalidCount++;
+        continue;
+      }
+
+      const employeeDbId = employeeMap.get(empId.toLowerCase().trim());
+      if (!employeeDbId) {
+        nonAntboxCount++;
+        continue;
+      }
+
+      const workDate = getKolkataWorkDateLocal(parsedDate);
+      const groupKey = `${employeeDbId}_${workDate.getTime()}`;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          employeeDbId,
+          workDate,
+          punches: [],
+        };
+      }
+
+      groups[groupKey].punches.push({
+        punchedAt: parsedDate,
+        punchType: upperType,
+      });
+    }
+
+    // Process groups
+    for (const groupKey in groups) {
+      const { employeeDbId, workDate, punches } = groups[groupKey];
+
+      await prisma.$transaction(async (tx) => {
+        const record = await tx.attendanceRecord.upsert({
+          where: {
+            employeeId_workDate: {
+              employeeId: employeeDbId,
+              workDate,
+            },
+          },
+          create: {
+            employeeId: employeeDbId,
+            workDate,
+            status: "PRESENT",
+          },
+          update: {},
+        });
+
+        const existingPunches = await tx.attendancePunch.findMany({
+          where: {
+            attendanceId: record.id,
+          },
+        });
+
+        const newPunchesToCreate = [];
+        for (const p of punches) {
+          const exists = existingPunches.some((ep) => ep.punchedAt.getTime() === p.punchedAt.getTime());
+          if (exists) {
+            duplicateCount++;
+          } else {
+            newPunchesToCreate.push(p);
+          }
+        }
+
+        if (newPunchesToCreate.length > 0) {
+          await tx.attendancePunch.createMany({
+            data: newPunchesToCreate.map((p) => ({
+              attendanceId: record.id,
+              employeeId: employeeDbId,
+              punchType: p.punchType as PunchType,
+              punchedAt: p.punchedAt,
+              device: "Google Sheets Import",
+            })),
+          });
+          importedCount += newPunchesToCreate.length;
+        }
+
+        const allPunches = await tx.attendancePunch.findMany({
+          where: { attendanceId: record.id },
+          orderBy: { punchedAt: "asc" },
+        });
+
+        if (allPunches.length > 0) {
+          const totalHours = sumWorkedHoursLocal(allPunches);
+          const firstIn = allPunches.find((item) => item.punchType === "IN");
+          const lastOut = [...allPunches].reverse().find((item) => item.punchType === "OUT");
+          const isIncomplete = allPunches.at(-1)?.punchType === "IN";
+
+          await tx.attendanceRecord.update({
+            where: { id: record.id },
+            data: {
+              checkIn: firstIn?.punchedAt ?? null,
+              checkOut: isIncomplete ? null : lastOut?.punchedAt ?? null,
+              totalHours,
+              status: isIncomplete ? "INCOMPLETE" : "PRESENT",
+            },
+          });
+        }
+      });
+    }
+
+    return {
+      success: true,
+      simulated: false,
+      importedCount,
+      duplicateCount,
+      nonAntboxCount,
+      invalidCount,
+    };
+  } catch (error) {
+    console.error("[Google Sheets] Import biometric failed:", error);
+    return {
+      success: false,
+      simulated: false,
+      error: String(error),
+      importedCount: 0,
+      duplicateCount: 0,
+      nonAntboxCount: 0,
+      invalidCount: 0,
     };
   }
 }
