@@ -381,15 +381,24 @@ function RequiredDocCard({
           <ArrowRight className="h-3 w-3 ml-auto" />
         </button>
       )}
-      {isDone && uploadedDoc?.fileUrl && !uploadedDoc.fileUrl.startsWith("data:") && !uploadedDoc.fileUrl.includes("example.com") && (
-        <a
-          href={uploadedDoc.fileUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[10px] font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-colors"
+      {isDone && uploadedDoc?.fileUrl && (
+        <button
+          onClick={() => {
+            try {
+              const link = document.createElement("a");
+              link.href = uploadedDoc.fileUrl;
+              link.download = uploadedDoc.title;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } catch (err) {
+              console.error("Failed to view required document:", err);
+            }
+          }}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[10px] font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-colors cursor-pointer"
         >
           <Download className="h-3 w-3" /> View Document
-        </a>
+        </button>
       )}
     </div>
   );
@@ -398,33 +407,50 @@ function RequiredDocCard({
 // ─── Document Row (for additional docs list) ────────────────────────────────
 
 function DocumentRow({ doc, isAdmin }: { doc: DocumentRecord; isAdmin: boolean }) {
-  const isBase64 = doc.fileUrl?.startsWith("data:");
+  const handleView = () => {
+    if (!doc.fileUrl) return;
+    try {
+      const link = document.createElement("a");
+      link.href = doc.fileUrl;
+      link.download = doc.title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Failed to download document:", err);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-white p-3.5 shadow-sm hover:border-zinc-200 hover:shadow transition-all group">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-50 border border-zinc-100">
-        <FileText className="h-4 w-4 text-zinc-400" />
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 bg-white p-3.5 shadow-sm hover:border-zinc-200 hover:bg-zinc-50/20 transition-all">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-50 border border-zinc-100">
+          <FileText className="h-4 w-4 text-zinc-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-zinc-900 truncate">{doc.title}</p>
+          <p className="text-[10px] text-zinc-400 mt-0.5">
+            {DOC_TYPE_LABELS[doc.type]} · {format(new Date(doc.issuedDate), "dd MMM yyyy")}
+          </p>
+          {isAdmin && (
+            <p className="text-[10px] text-[#8e43ac] font-bold mt-0.5 truncate">{doc.employee.firstName} {doc.employee.lastName}</p>
+          )}
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-zinc-900 truncate">{doc.title}</p>
-        <p className="text-[10px] text-zinc-400 mt-0.5">
-          {DOC_TYPE_LABELS[doc.type]} · {format(new Date(doc.issuedDate), "dd MMM yyyy")}
-        </p>
-        {isAdmin && (
-          <p className="text-[10px] text-zinc-300 mt-0.5 truncate">{doc.employee.firstName} {doc.employee.lastName}</p>
+      
+      <div className="flex items-center gap-2 shrink-0">
+        {doc.fileUrl && (
+          <button
+            onClick={handleView}
+            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 transition-all cursor-pointer shadow-sm"
+            title="Download / View document"
+          >
+            <Download className="h-3 w-3" /> View File
+          </button>
         )}
-      </div>
-      {!isBase64 && doc.fileUrl && !doc.fileUrl.includes("example.com") && (
-        <a
-          href={doc.fileUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1.5 hover:bg-zinc-50"
-        >
-          <Download className="h-3.5 w-3.5 text-zinc-400" />
-        </a>
-      )}
-      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 shrink-0">
-        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 shrink-0">
+          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+        </div>
       </div>
     </div>
   );
