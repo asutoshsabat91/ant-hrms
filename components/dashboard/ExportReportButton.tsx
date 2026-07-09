@@ -8,6 +8,10 @@ export function ExportReportButton({ spreadsheetId }: { spreadsheetId?: string }
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
+    if (!spreadsheetId) {
+      alert("Google Sheets integration is not configured. Please set GOOGLE_SPREADSHEET_ID in your environment variables.");
+      return;
+    }
     setLoading(true);
     try {
       // Trigger background sync to write latest database status into the unified sheet
@@ -17,8 +21,7 @@ export function ExportReportButton({ spreadsheetId }: { spreadsheetId?: string }
     } finally {
       setLoading(false);
       // Redirect directly to the live Google Sheets document
-      const sheetId = spreadsheetId || "1_tXgE1Hn9i6igZ_lUkMaH3YnX7UM8lHN8AuA";
-      window.open(`https://docs.google.com/spreadsheets/d/${sheetId}/edit`, "_blank");
+      window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`, "_blank");
     }
   };
 
