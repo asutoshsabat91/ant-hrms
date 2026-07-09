@@ -13,6 +13,7 @@ export default async function OnboardingPage() {
         department: true,
         manager: true,
         onboardingTasks: { orderBy: { order: "asc" } },
+        documents: true,
       },
       orderBy: { joiningDate: "asc" },
     }),
@@ -76,25 +77,33 @@ export default async function OnboardingPage() {
       />
 
       <OnboardingHub
-        employees={employees.map((employee) => ({
-          id: employee.id,
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          designation: employee.designation,
-          employeeId: employee.employeeId,
-          joiningDate: employee.joiningDate.toISOString(),
-          department: { name: employee.department.name },
-          manager: employee.manager
-            ? { firstName: employee.manager.firstName, lastName: employee.manager.lastName }
-            : null,
-          onboardingTasks: employee.onboardingTasks.map((task) => ({
-            id: task.id,
-            title: task.title,
-            category: task.category,
-            status: task.status,
-            dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-          })),
-        }))}
+        employees={employees.map((employee) => {
+          const hasIdProof = employee.documents.some((d) =>
+            d.title?.toLowerCase().includes("aadhaar") ||
+            d.title?.toLowerCase().includes("pan") ||
+            d.title?.toLowerCase().includes("certificate") ||
+            d.title?.toLowerCase().includes("degree")
+          );
+          const hasBanking = !!(employee.bankName && employee.bankAccountNo && employee.ifscCode);
+          const hasIdForm = employee.documents.some((d) => d.title === "ID Card Form Data");
+
+          return {
+            id: employee.id,
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            designation: employee.designation,
+            employeeId: employee.employeeId,
+            joiningDate: employee.joiningDate.toISOString(),
+            department: { name: employee.department.name },
+            manager: employee.manager
+              ? { firstName: employee.manager.firstName, lastName: employee.manager.lastName }
+              : null,
+            hasIdProof,
+            hasBanking,
+            hasIdForm,
+            status: employee.status,
+          };
+        })}
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
