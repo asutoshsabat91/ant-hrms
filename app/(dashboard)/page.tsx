@@ -23,7 +23,7 @@ import { PayrollSummaryCard } from "@/components/dashboard/PayrollSummaryCard";
 import { UpcomingOffboardingWidget } from "@/components/dashboard/UpcomingOffboardingWidget";
 import { PendingLeavesWidget } from "@/components/dashboard/PendingLeavesWidget";
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard";
-import { MasterSheetsSyncWidget } from "@/components/dashboard/MasterSheetsSyncWidget";
+import { MasterSheetsSyncWidget, type SyncEmployee } from "@/components/dashboard/MasterSheetsSyncWidget";
 import { LiveWorkspacePulse } from "@/components/dashboard/LiveWorkspacePulse";
 import { getDashboardStats, getRecentActivity, getAttendancePulse } from "@/lib/dashboard";
 import { getDynamicBalances } from "@/lib/leave";
@@ -140,7 +140,7 @@ export default async function DashboardPage() {
   let radarMetrics = { activeCandidates: 14, avgReadiness: 87.4, sprintsLive: 6, pposClaimed: 8 };
   let attendancePulseData: { name: string; attendance: number }[] = [];
 
-  let allEmployeesList: unknown[] = [];
+  let allEmployeesList: SyncEmployee[] = [];
 
   try {
     const [statsResult, activityResult, onboardingHiresResult, pulseData, onboardingTasks, totalHiresCount, activeDepts, activeInternsCount] = await Promise.all([
