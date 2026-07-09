@@ -9,8 +9,6 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { HeadcountTrendChart } from "@/components/dashboard/HeadcountTrendChart";
 import { JoiningSoonWidget } from "@/components/dashboard/JoiningSoonWidget";
-import { DashboardAttendanceLogs } from "@/components/dashboard/DashboardAttendanceLogs";
-import { LeaveBalancesCard } from "@/components/dashboard/LeaveBalancesCard";
 import { CompanyCalendarWidget } from "@/components/dashboard/CompanyCalendarWidget";
 import { UpcomingHolidaysWidget } from "@/components/dashboard/UpcomingHolidaysWidget";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
@@ -211,91 +209,90 @@ export default async function DashboardPage() {
         </div>
       </ScrollReveal>
 
-      {/* Employee widgets row (admin also sees punch-in) */}
-      <div className="grid gap-4 lg:grid-cols-3 items-start">
-        {isAdmin ? (
-          <ScrollReveal delayClass="reveal-delay-1" className="lg:col-span-2">
-            <LiveWorkspacePulse
-              activeCount={displayActiveCount}
-              presentPct={displayPresentPct}
-              onLeaveCount={stats.onLeaveToday}
-              pendingApprovals={pendingLeaveCount}
-            />
-          </ScrollReveal>
-        ) : (
-          <>
-            <ScrollReveal delayClass="reveal-delay-1">
-              <DashboardAttendanceLogs punches={todayPunches} />
-            </ScrollReveal>
-            <ScrollReveal delayClass="reveal-delay-2">
-              <LeaveBalancesCard balances={leaveBalances} />
-            </ScrollReveal>
-          </>
-        )}
-        <ScrollReveal delayClass="reveal-delay-3" className="space-y-4">
-          <CompanyCalendarWidget holidays={holidays} leaves={calendarLeaves} leaveTypes={leaveTypes} />
-          <UpcomingHolidaysWidget holidays={holidays} />
-        </ScrollReveal>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <StatCard label="Headcount" value={displayActiveCount} subtext="+18 this quarter" />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
-          <StatCard label="Today's Attendance" value={`${displayPresentPct}%`} subtext={`${displayPresentToday} of ${displayActiveCount} present`} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-3">
-          <StatCard label="On Leave Today" value={stats.onLeaveToday} subtext={`${stats.leavePct}% of team`} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-4">
-          <StatCard label="Pending Approvals" value={pendingLeaveCount} subtext="leave requests" />
-        </ScrollReveal>
-      </div>
-
-      {/* Analytics Row: Dept chart, Leave donut, Pending leaves */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <DeptHeadcountChart data={deptData} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
-          <LeaveStatsChart data={leaveStats} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-3">
-          <PendingLeavesWidget leaves={pendingLeaves} count={pendingLeaveCount} />
-        </ScrollReveal>
-      </div>
-
-      {/* Charts Grid: Headcount Trend spanning full width */}
-      <div className="w-full">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <HeadcountTrendChart activeCount={displayActiveCount} />
-        </ScrollReveal>
-      </div>
-
-      {/* Master Employee Database (Google Sheets) */}
-      <ScrollReveal delayClass="reveal-delay-3">
-        <MasterSheetsSyncWidget 
-          spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} 
-          employees={allEmployeesList}
+      {/* Full-width Workspace Pulse header banner for Admins */}
+      <ScrollReveal delayClass="reveal-delay-1">
+        <LiveWorkspacePulse
+          activeCount={displayActiveCount}
+          presentPct={displayPresentPct}
+          onLeaveCount={stats.onLeaveToday}
+          pendingApprovals={pendingLeaveCount}
         />
       </ScrollReveal>
 
-      {/* Onboarding + Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <JoiningSoonWidget hires={onboardingHires} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
-          <ActivityFeed items={activity} />
-        </ScrollReveal>
-      </div>
+      {/* Main Grid: Left analytics stack & Right calendar stack */}
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
+        {/* Left Stack (2 columns) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Stat Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ScrollReveal delayClass="reveal-delay-1">
+              <StatCard label="Headcount" value={displayActiveCount} subtext="+18 this quarter" />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-2">
+              <StatCard label="Today's Attendance" value={`${displayPresentPct}%`} subtext={`${displayPresentToday} of ${displayActiveCount} present`} />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-3">
+              <StatCard label="On Leave Today" value={stats.onLeaveToday} subtext={`${stats.leavePct}% of team`} />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-4">
+              <StatCard label="Pending Approvals" value={pendingLeaveCount} subtext="leave requests" />
+            </ScrollReveal>
+          </div>
 
-      {/* Quick Actions */}
-      <ScrollReveal delayClass="reveal-delay-4" className="pt-2">
-        <QuickActions isAdmin={isAdmin} />
-      </ScrollReveal>
+          {/* Analytics Row: Dept chart, Leave donut */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ScrollReveal delayClass="reveal-delay-1">
+              <DeptHeadcountChart data={deptData} />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-2">
+              <LeaveStatsChart data={leaveStats} />
+            </ScrollReveal>
+          </div>
+
+          {/* Pending Leaves */}
+          <ScrollReveal delayClass="reveal-delay-3">
+            <PendingLeavesWidget leaves={pendingLeaves} count={pendingLeaveCount} />
+          </ScrollReveal>
+
+          {/* Headcount Trend Chart */}
+          <ScrollReveal delayClass="reveal-delay-4">
+            <HeadcountTrendChart activeCount={displayActiveCount} />
+          </ScrollReveal>
+
+          {/* Master Employee Database (Google Sheets) */}
+          <ScrollReveal delayClass="reveal-delay-5">
+            <MasterSheetsSyncWidget 
+              spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} 
+              employees={allEmployeesList}
+            />
+          </ScrollReveal>
+
+          {/* Onboarding + Activity */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            <ScrollReveal delayClass="reveal-delay-6">
+              <JoiningSoonWidget hires={onboardingHires} />
+            </ScrollReveal>
+            <ScrollReveal delayClass="reveal-delay-7">
+              <ActivityFeed items={activity} />
+            </ScrollReveal>
+          </div>
+
+          {/* Quick Actions */}
+          <ScrollReveal delayClass="reveal-delay-8" className="pt-2">
+            <QuickActions isAdmin={isAdmin} />
+          </ScrollReveal>
+        </div>
+
+        {/* Right Stack (1 column): Calendar and Holidays */}
+        <div className="space-y-4">
+          <ScrollReveal delayClass="reveal-delay-2">
+            <CompanyCalendarWidget holidays={holidays} leaves={calendarLeaves} leaveTypes={leaveTypes} />
+          </ScrollReveal>
+          <ScrollReveal delayClass="reveal-delay-3">
+            <UpcomingHolidaysWidget holidays={holidays} />
+          </ScrollReveal>
+        </div>
+      </div>
 
       <ScrollIndicator />
     </div>
