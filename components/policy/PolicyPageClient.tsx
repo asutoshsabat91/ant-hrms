@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Edit, Trash2, AlertCircle, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -46,6 +47,12 @@ export function PolicyPageClient({ isSuperAdmin, initialLeaveTypes }: PolicyPage
 
   // Delete State
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Mounted state for portal rendering
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingType({
@@ -288,7 +295,7 @@ export function PolicyPageClient({ isSuperAdmin, initialLeaveTypes }: PolicyPage
       </div>
 
       {/* Optimized Edit / Create Policy Modal */}
-      {modalOpen && editingType && (
+      {modalOpen && editingType && mounted && createPortal(
         <LeavePolicyModal
           editingType={editingType}
           onClose={() => {
@@ -298,7 +305,8 @@ export function PolicyPageClient({ isSuperAdmin, initialLeaveTypes }: PolicyPage
           onSave={handleSave}
           saveLoading={saveLoading}
           errorMsg={errorMsg}
-        />
+        />,
+        document.body
       )}
     </div>
   );
@@ -336,29 +344,12 @@ function LeavePolicyModal({
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999 }}>
-      {/* Backdrop */}
-      <div
-        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }}
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+      {/* Backdrop click area */}
+      <div className="absolute inset-0 cursor-default" onClick={onClose} />
+      
       {/* Panel */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "100%",
-          maxWidth: 440,
-          background: "#fff",
-          borderRadius: 16,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-          padding: 24,
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-      >
+      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 max-h-[90vh] overflow-y-auto border border-zinc-100 transition-all duration-200 scale-100">
         <div className="border-b border-zinc-100 pb-3 mb-4">
           <h3 className="text-base font-bold text-zinc-950">
             {localType.id ? "Edit Leave Policy" : "Create Leave Policy"}
@@ -384,7 +375,7 @@ function LeavePolicyModal({
               placeholder="e.g. Earned Leave"
               value={localType.name || ""}
               onChange={(e) => setLocalType({ ...localType, name: e.target.value })}
-              className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-medium focus:outline-none text-zinc-900"
+              className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-medium focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
             />
           </div>
 
@@ -398,7 +389,7 @@ function LeavePolicyModal({
               placeholder="e.g. EARNED"
               value={localType.code || ""}
               onChange={(e) => setLocalType({ ...localType, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })}
-              className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-mono font-semibold focus:outline-none disabled:bg-zinc-50 disabled:text-zinc-400 text-zinc-900"
+              className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-mono font-semibold focus:border-zinc-950 focus:outline-none disabled:bg-zinc-50 disabled:text-zinc-400 text-zinc-900 bg-white"
             />
             {!localType.id && (
               <p className="text-[9px] text-zinc-400 mt-1 font-medium">
@@ -417,7 +408,7 @@ function LeavePolicyModal({
                 required
                 value={localType.daysPerYear ?? 0}
                 onChange={(e) => setLocalType({ ...localType, daysPerYear: parseInt(e.target.value) || 0 })}
-                className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:outline-none text-zinc-900"
+                className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
               />
             </div>
             <div>
@@ -425,7 +416,7 @@ function LeavePolicyModal({
               <select
                 value={localType.accrual || "ANNUAL"}
                 onChange={(e) => setLocalType({ ...localType, accrual: e.target.value })}
-                className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-medium focus:outline-none text-zinc-900"
+                className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-medium focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
               >
                 {ACCRUAL_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -446,7 +437,7 @@ function LeavePolicyModal({
               placeholder="e.g. 24 for 24-hr advance notice"
               value={localType.priorNoticeHours ?? 0}
               onChange={(e) => setLocalType({ ...localType, priorNoticeHours: parseInt(e.target.value) || 0 })}
-              className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:outline-none text-zinc-900"
+              className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
             />
             <p className="text-[9px] text-zinc-400 mt-1 font-medium">
               Enter 0 to disable prior notice constraint. (e.g. 24 requires applying 24 hrs prior to start).
@@ -462,7 +453,7 @@ function LeavePolicyModal({
                 return (
                   <label
                     key={type.value}
-                    className="flex items-center gap-2 border border-zinc-200 rounded-lg p-2 cursor-pointer hover:bg-zinc-50 text-xs font-semibold text-zinc-700"
+                    className="flex items-center gap-2 border border-zinc-200 rounded-lg p-2 cursor-pointer hover:bg-zinc-50 text-xs font-semibold text-zinc-700 bg-white"
                   >
                     <input
                       type="checkbox"
@@ -479,7 +470,7 @@ function LeavePolicyModal({
 
           {/* Paid Status */}
           <div>
-            <label className="flex items-center gap-2 border border-zinc-200 rounded-lg p-2.5 cursor-pointer hover:bg-zinc-50 text-xs font-semibold text-zinc-800">
+            <label className="flex items-center gap-2 border border-zinc-200 rounded-lg p-2.5 cursor-pointer hover:bg-zinc-50 text-xs font-semibold text-zinc-800 bg-white">
               <input
                 type="checkbox"
                 checked={localType.isPaid ?? true}
