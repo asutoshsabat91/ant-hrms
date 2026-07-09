@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from "googleapis";
-import type { Employee, LeaveRequest, CompanyEvent, Department, LeaveType, EmployeeStatus, EmploymentType } from "@prisma/client";
+import type { EmployeeStatus, EmploymentType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
@@ -147,108 +147,9 @@ export async function updateEmployeeInSheet(
   }
 }
 
-// 3. Export all types (Dashboard, Leaves, Calendar)
-export async function exportDataToGoogleSheets(data: {
-  employees: Array<Employee & { department?: Department | null }>;
-  leaveRequests: Array<
-    LeaveRequest & {
-      employee?: (Employee & { user?: unknown }) | null;
-      leaveType?: LeaveType | null;
-    }
-  >;
-  companyEvents: CompanyEvent[];
-}) {
-  const client = getSheetsClient();
-  if (!client) return { success: true, simulated: true };
-
-  try {
-    const { sheets, spreadsheetId } = client;
-
-    // A. Export Employees
-    await ensureWorksheetExists(sheets, spreadsheetId, "Employees");
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Employees!A:Z" });
-    const employeeHeaders = [
-      "Employee ID",
-      "First Name",
-      "Last Name",
-      "Official Email",
-      "Designation",
-      "Deployed Company",
-      "Joining Date",
-      "Status",
-    ];
-    const employeeRows = data.employees.map((emp) => [
-      emp.employeeId,
-      emp.firstName,
-      emp.lastName,
-      emp.email,
-      emp.designation,
-      emp.deployedCompany || "AntBox",
-      emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : "",
-      emp.status,
-    ]);
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Employees!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: [employeeHeaders, ...employeeRows] },
-    });
-
-    // B. Export Leaves
-    await ensureWorksheetExists(sheets, spreadsheetId, "Leaves");
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Leaves!A:Z" });
-    const leaveHeaders = [
-      "Employee ID",
-      "Employee Name",
-      "Leave Type",
-      "Start Date",
-      "End Date",
-      "Days",
-      "Reason",
-      "Status",
-    ];
-    const leaveRows = data.leaveRequests.map((req) => [
-      req.employee?.employeeId || "—",
-      `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`,
-      req.leaveType?.name || "—",
-      req.startDate ? new Date(req.startDate).toLocaleDateString() : "",
-      req.endDate ? new Date(req.endDate).toLocaleDateString() : "",
-      req.days,
-      req.reason || "",
-      req.status,
-    ]);
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Leaves!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: [leaveHeaders, ...leaveRows] },
-    });
-
-    // C. Export Calendar
-    await ensureWorksheetExists(sheets, spreadsheetId, "Calendar");
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Calendar!A:Z" });
-    const calendarHeaders = ["Title", "Description", "Category", "Start Date", "End Date", "All Day"];
-    const calendarRows = data.companyEvents.map((evt) => [
-      evt.title,
-      evt.description || "",
-      evt.category,
-      evt.startDate ? new Date(evt.startDate).toLocaleDateString() : "",
-      evt.endDate ? new Date(evt.endDate).toLocaleDateString() : "",
-      evt.allDay ? "Yes" : "No",
-    ]);
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Calendar!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: [calendarHeaders, ...calendarRows] },
-    });
-
-    console.log("[Google Sheets] Exported all HRMS data sheets successfully.");
-    return { success: true };
-  } catch (error) {
-    console.error("[Google Sheets] Failed to export data:", error);
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
-  }
+// 3. Export all types (Dashboard, Leaves, Calendar) - redirected to unified sync
+export async function exportDataToGoogleSheets() {
+  return syncGoogleSheetsWithDb();
 }
 
 // 4. Import Employees from Google Sheets
@@ -339,10 +240,36 @@ export async function syncGoogleSheetsWithDb() {
     let updatedCount = 0;
     let createdCount = 0;
 
-    if (rows.length > 1) {
-      const headers = rows[0].map((h: string) => h.trim().toLowerCase());
-      const dataRows = rows.slice(1);
+    let headers: string[] = [];
+    let employeeDataRows: string[][] = [];
+    let isParsingEmployees = false;
 
+    for (let i = 0; i < rows.length; i++) {
+      const firstCell = (rows[i]?.[0] || "").toString().trim();
+      if (firstCell.startsWith("SECTION 1:")) {
+        const headerRow = rows[i + 1] || [];
+        headers = headerRow.map((h) => String(h).trim().toLowerCase());
+        isParsingEmployees = true;
+        i++; // skip header row in the next loop
+        continue;
+      }
+      
+      if (isParsingEmployees) {
+        if (firstCell.startsWith("SECTION ") || firstCell === "") {
+          isParsingEmployees = false;
+          break;
+        }
+        employeeDataRows.push(rows[i]);
+      }
+    }
+
+    // Fallback if no sections exist yet
+    if (headers.length === 0 && rows.length > 0) {
+      headers = rows[0].map((h) => String(h).trim().toLowerCase());
+      employeeDataRows = rows.slice(1);
+    }
+
+    if (employeeDataRows.length > 0 && headers.length > 0) {
       const getColVal = (row: string[], possibleHeaders: string[]) => {
         for (const ph of possibleHeaders) {
           const idx = headers.indexOf(ph.toLowerCase());
@@ -358,7 +285,7 @@ export async function syncGoogleSheetsWithDb() {
         });
       }
 
-      for (const row of dataRows) {
+      for (const row of employeeDataRows) {
         const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
         const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
 
@@ -382,13 +309,35 @@ export async function syncGoogleSheetsWithDb() {
         const gender = getColVal(row, ["Gender"]);
         const bloodGroup = getColVal(row, ["Blood Group", "bloodgroup"]);
         const address = getColVal(row, ["Permanent Address", "address", "permanentaddress"]);
-        const emergencyContact = getColVal(row, ["Emergency Contact", "emergencycontact"]);
-        const emergencyPhone = getColVal(row, ["Emergency Phone", "emergencyphone"]);
+        const emergencyContact = getColVal(row, ["Emergency Contact Name", "Emergency Contact", "emergencycontact"]);
+        const emergencyPhone = getColVal(row, ["Emergency Contact Phone", "Emergency Phone", "emergencyphone"]);
         const bankName = getColVal(row, ["Bank Name", "bankname"]);
-        const bankAccountNo = getColVal(row, ["Bank Account No", "bankaccountno", "account number"]);
+        const bankAccountNo = getColVal(row, ["Bank Account Number", "Bank Account No", "bankaccountno", "account number"]);
         const ifscCode = getColVal(row, ["IFSC Code", "ifsccode", "ifsc"]);
         const pan = getColVal(row, ["PAN", "pan card", "pancard"]);
         const uan = getColVal(row, ["UAN", "uan number", "uannumber"]);
+
+        const ctcVal = getColVal(row, ["CTC", "ctc"]);
+        const ctc = ctcVal ? parseFloat(ctcVal) : 0;
+
+        const basicVal = getColVal(row, ["Basic Salary", "basicsalary", "basic"]);
+        const basicSalary = basicVal ? parseFloat(basicVal) : 0;
+
+        const hraVal = getColVal(row, ["HRA", "hra"]);
+        const hra = hraVal ? parseFloat(hraVal) : 0;
+
+        const specialVal = getColVal(row, ["Special Allowance", "specialallowance", "special"]);
+        const specialAllowance = specialVal ? parseFloat(specialVal) : 0;
+
+        const pfVal = getColVal(row, ["PF", "pf"]);
+        const pf = pfVal ? parseFloat(pfVal) : 0;
+
+        const ptVal = getColVal(row, ["Professional Tax", "professionaltax", "pt"]);
+        const professionalTax = ptVal ? parseFloat(ptVal) : 200;
+
+        const city = getColVal(row, ["City", "city"]);
+        const state = getColVal(row, ["State", "state"]) || "Odisha";
+        const pincode = getColVal(row, ["Pincode", "pincode"]);
 
         const joiningDateStr = getColVal(row, ["Joining Date", "joiningdate"]);
         let joiningDate = new Date();
@@ -442,6 +391,9 @@ export async function syncGoogleSheetsWithDb() {
           gender: gender || null,
           bloodGroup: bloodGroup || null,
           permanentAddress: address || null,
+          city: city || null,
+          state: state || "Odisha",
+          pincode: pincode || null,
           emergencyContact: emergencyContact || null,
           emergencyPhone: emergencyPhone || null,
           bankName: bankName || null,
@@ -453,14 +405,36 @@ export async function syncGoogleSheetsWithDb() {
           dateOfBirth,
           status,
           employmentType,
-          departmentId
+          departmentId,
+          ctc,
+          basicSalary,
+          hra,
+          specialAllowance,
+          pf,
+          professionalTax,
         };
+
+        const sheetPassword = getColVal(row, ["Password", "Password (Bcrypt Hash)", "password"]);
+        let newPasswordHash: string | undefined = undefined;
+        if (sheetPassword && !sheetPassword.startsWith("$2a$") && !sheetPassword.startsWith("$2b$") && !sheetPassword.startsWith("$2y$")) {
+          newPasswordHash = await bcrypt.hash(sheetPassword, 12);
+        }
 
         if (existingEmp) {
           await prisma.employee.update({
             where: { id: existingEmp.id },
             data: updatePayload
           });
+
+          const isActive = status !== "INACTIVE" && status !== "ALUMNI";
+          await prisma.user.update({
+            where: { id: existingEmp.userId },
+            data: {
+              isActive,
+              ...(newPasswordHash ? { passwordHash: newPasswordHash } : {})
+            }
+          });
+
           updatedCount++;
         } else {
           const baseEmail = email ? email.toLowerCase() : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@theantbox.com`;
@@ -477,8 +451,8 @@ export async function syncGoogleSheetsWithDb() {
             finalEmpId = `ANT-${String(empTotal + 100).padStart(3, "0")}`;
           }
 
-          const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
-          const passwordHash = await bcrypt.hash(tempPassword, 12);
+          const tempPassword = sheetPassword || crypto.randomBytes(6).toString("hex") + "!";
+          const passwordHash = newPasswordHash || await bcrypt.hash(tempPassword, 12);
 
           await prisma.user.create({
             data: {
@@ -501,77 +475,173 @@ export async function syncGoogleSheetsWithDb() {
       }
     }
 
-    // 2. Fetch all employees from DB and push back to Google Sheets
-    const allEmployees = await prisma.employee.findMany({
-      include: {
-        department: true,
-        documents: true,
-        leaveRequests: {
-          where: { status: "APPROVED" }
-        }
-      },
-      orderBy: { employeeId: "asc" }
-    });
+    // 2. Fetch all database models and update Google Sheets format to match Export Report
+    const [allEmployees, allLeaves, allReimbursements, allSeparations] = await Promise.all([
+      prisma.employee.findMany({
+        include: { department: true },
+        orderBy: { employeeId: "asc" }
+      }),
+      prisma.leaveRequest.findMany({
+        include: { employee: true, leaveType: true },
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.reimbursement.findMany({
+        include: { employee: true },
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.separation.findMany({
+        include: { employee: true },
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
 
-    const spreadsheetHeaders = [
-      "Employee ID",
-      "First Name",
-      "Last Name",
-      "Official Email",
-      "Personal Email",
-      "Phone",
-      "Designation",
-      "Department Code",
-      "Deployed Company",
-      "Employment Type",
-      "Status",
-      "Joining Date",
-      "Date of Birth",
-      "Gender",
-      "Blood Group",
-      "Permanent Address",
-      "Emergency Contact",
-      "Emergency Phone",
-      "Bank Name",
-      "Bank Account No",
-      "IFSC Code",
-      "PAN",
-      "UAN",
-      "Documents Submitted",
-      "Total Leaves Taken"
-    ];
+    const spreadsheetRows: unknown[][] = [];
+    
+    // Header Info
+    spreadsheetRows.push(["ANTBOX HRMS STATUS REPORT"]);
+    spreadsheetRows.push(["Generated At:", new Date().toISOString()]);
+    spreadsheetRows.push(["Generated By:", "System Sync"]);
+    spreadsheetRows.push([]); // space
 
-    const spreadsheetRows = allEmployees.map((emp) => {
-      const docTitles = emp.documents.map((d) => d.title).join(", ") || "None";
-      const leavesTaken = emp.leaveRequests.reduce((sum, r) => sum + r.days, 0);
+    // Section 1
+    spreadsheetRows.push(["SECTION 1: HEADCOUNT OVERVIEW (ACTIVE & ONBOARDING)"]);
+    spreadsheetRows.push([
+      "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
+      "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
+      "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Department",
+      "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
+      "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
+      "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"
+    ]);
 
-      return [
+    const users = await prisma.user.findMany({ select: { email: true, passwordHash: true } });
+    const userPasswordMap = new Map(users.map(u => [u.email.toLowerCase(), u.passwordHash]));
+
+    allEmployees.forEach((emp) => {
+      const personalEmail = emp.personalEmail || "—";
+      const phone = emp.phone || "—";
+      const dob = emp.dateOfBirth ? new Date(emp.dateOfBirth).toISOString().slice(0, 10) : "—";
+      const gender = emp.gender || "—";
+      const bloodGroup = emp.bloodGroup || "—";
+      const permAddress = emp.permanentAddress || "—";
+      const city = emp.city || "—";
+      const state = emp.state || "Odisha";
+      const pincode = emp.pincode || "—";
+      const emergencyContact = emp.emergencyContact || "—";
+      const emergencyPhone = emp.emergencyPhone || "—";
+      const joiningDate = emp.joiningDate ? new Date(emp.joiningDate).toISOString().slice(0, 10) : "—";
+      const ctc = emp.ctc ?? 0;
+      const basic = emp.basicSalary ?? 0;
+      const hra = emp.hra ?? 0;
+      const special = emp.specialAllowance ?? 0;
+      const pf = emp.pf ?? 0;
+      const pt = emp.professionalTax ?? 200;
+      const bankName = emp.bankName || "—";
+      const bankAccountNo = emp.bankAccountNo || "—";
+      const ifsc = emp.ifscCode || "—";
+      const pan = emp.pan || "—";
+      const uan = emp.uan || "—";
+      const passwordHash = userPasswordMap.get(emp.email.toLowerCase()) || "";
+
+      spreadsheetRows.push([
         emp.employeeId,
         emp.firstName,
         emp.lastName,
         emp.email,
-        emp.personalEmail || "",
-        emp.phone || "",
+        personalEmail,
+        phone,
+        dob,
+        gender,
+        bloodGroup,
+        permAddress,
+        city,
+        state,
+        pincode,
+        emergencyContact,
+        emergencyPhone,
         emp.designation,
-        emp.department?.code || "",
-        emp.deployedCompany || "AntBox",
+        emp.department?.name ?? "—",
         emp.employmentType,
         emp.status,
-        emp.joiningDate ? emp.joiningDate.toISOString().split("T")[0] : "",
-        emp.dateOfBirth ? emp.dateOfBirth.toISOString().split("T")[0] : "",
-        emp.gender || "",
-        emp.bloodGroup || "",
-        emp.permanentAddress || emp.address || "",
-        emp.emergencyContact || "",
-        emp.emergencyPhone || "",
-        emp.bankName || "",
-        emp.bankAccountNo || "",
-        emp.ifscCode || "",
-        emp.pan || "",
-        emp.uan || "",
-        docTitles,
-        leavesTaken.toString()
-      ];
+        joiningDate,
+        ctc,
+        basic,
+        hra,
+        special,
+        pf,
+        pt,
+        bankName,
+        bankAccountNo,
+        ifsc,
+        pan,
+        uan,
+        passwordHash
+      ]);
+    });
+
+    spreadsheetRows.push([]); // space
+
+    // Section 2
+    spreadsheetRows.push(["SECTION 2: RECENT LEAVE REQUESTS"]);
+    spreadsheetRows.push([
+      "Employee ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Days", "Reason", "Status"
+    ]);
+    allLeaves.forEach((req) => {
+      const empName = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`;
+      const startDate = req.startDate ? new Date(req.startDate).toISOString().slice(0, 10) : "—";
+      const endDate = req.endDate ? new Date(req.endDate).toISOString().slice(0, 10) : "—";
+      spreadsheetRows.push([
+        req.employee?.employeeId ?? "—",
+        empName,
+        req.leaveType?.name ?? "—",
+        startDate,
+        endDate,
+        req.days,
+        req.reason || "",
+        req.status
+      ]);
+    });
+
+    spreadsheetRows.push([]); // space
+
+    // Section 3
+    spreadsheetRows.push(["SECTION 3: REIMBURSEMENT CLAIMS"]);
+    spreadsheetRows.push([
+      "Employee ID", "Employee Name", "Title", "Category", "Amount", "Currency", "Date", "Status"
+    ]);
+    allReimbursements.forEach((r) => {
+      const empName = `${r.employee?.firstName ?? ""} ${r.employee?.lastName ?? ""}`;
+      const claimDate = r.date ? new Date(r.date).toISOString().slice(0, 10) : "—";
+      spreadsheetRows.push([
+        r.employee?.employeeId ?? "—",
+        empName,
+        r.title,
+        r.category,
+        r.amount,
+        r.currency,
+        claimDate,
+        r.status
+      ]);
+    });
+
+    spreadsheetRows.push([]); // space
+
+    // Section 4
+    spreadsheetRows.push(["SECTION 4: SEPARATION INITIATIONS"]);
+    spreadsheetRows.push([
+      "Employee ID", "Employee Name", "Status", "Notice Days", "Reason", "Initiated At"
+    ]);
+    allSeparations.forEach((s) => {
+      const empName = `${s.employee?.firstName ?? ""} ${s.employee?.lastName ?? ""}`;
+      const initiatedAt = s.initiatedAt ? new Date(s.initiatedAt).toISOString().slice(0, 10) : "—";
+      spreadsheetRows.push([
+        s.employee?.employeeId ?? "—",
+        empName,
+        s.status,
+        s.noticeDays,
+        s.reason,
+        initiatedAt
+      ]);
     });
 
     await sheets.spreadsheets.values.clear({
@@ -584,7 +654,7 @@ export async function syncGoogleSheetsWithDb() {
       range: `${sheetName}!A1`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [spreadsheetHeaders, ...spreadsheetRows]
+        values: spreadsheetRows
       }
     });
 

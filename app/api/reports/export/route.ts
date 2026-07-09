@@ -9,7 +9,7 @@ export async function GET() {
   }
 
   try {
-    const [employees, leaveRequests, reimbursements, separations, companyEvents] = await Promise.all([
+    const [employees, leaveRequests, reimbursements, separations, , users] = await Promise.all([
       prisma.employee.findMany({
         include: { department: true },
         orderBy: { employeeId: "asc" },
@@ -26,18 +26,17 @@ export async function GET() {
         include: { employee: true },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.companyEvent.findMany({
-        orderBy: { startDate: "asc" },
-      }),
+      Promise.resolve(null),
+      prisma.user.findMany({
+        select: { email: true, passwordHash: true }
+      })
     ]);
+
+    const userPasswordMap = new Map(users.map(u => [u.email.toLowerCase(), u.passwordHash]));
 
     // Live export sync directly to Google Sheets worksheets
     try {
-      await exportDataToGoogleSheets({
-        employees,
-        leaveRequests,
-        companyEvents,
-      });
+      await exportDataToGoogleSheets();
     } catch (sheetErr) {
       console.error("[Google Sheets] Live export sync failed:", sheetErr);
     }
@@ -51,7 +50,7 @@ export async function GET() {
 
     // 2. Section: Headcount & Employees Overview
     csvContent += `SECTION 1: HEADCOUNT OVERVIEW (ACTIVE & ONBOARDING)\n`;
-    csvContent += `Employee ID,First Name,Last Name,Official Email,Personal Email,Phone,Date of Birth,Gender,Blood Group,Permanent Address,City,State,Pincode,Emergency Contact Name,Emergency Contact Phone,Designation,Department,Employment Type,Status,Joining Date,CTC,Basic Salary,HRA,Special Allowance,PF,Professional Tax,Bank Name,Bank Account Number,IFSC Code,PAN,UAN\n`;
+    csvContent += `Employee ID,First Name,Last Name,Official Email,Personal Email,Phone,Date of Birth,Gender,Blood Group,Permanent Address,City,State,Pincode,Emergency Contact Name,Emergency Contact Phone,Designation,Department,Employment Type,Status,Joining Date,CTC,Basic Salary,HRA,Special Allowance,PF,Professional Tax,Bank Name,Bank Account Number,IFSC Code,PAN,UAN,Password (Bcrypt Hash)\n`;
     employees.forEach((emp) => {
       const personalEmail = emp.personalEmail || "—";
       const phone = emp.phone || "—";
@@ -76,8 +75,9 @@ export async function GET() {
       const ifsc = emp.ifscCode || "—";
       const pan = emp.pan || "—";
       const uan = emp.uan || "—";
+      const passwordHash = userPasswordMap.get(emp.email.toLowerCase()) || "";
 
-      csvContent += `"${emp.employeeId}","${emp.firstName}","${emp.lastName}","${emp.email}","${personalEmail}","${phone}","${dob}","${gender}","${bloodGroup}","${permAddress}","${city}","${state}","${pincode}","${emergencyContact}","${emergencyPhone}","${emp.designation}","${emp.department?.name ?? "—"}","${emp.employmentType}","${emp.status}","${joiningDate}",${ctc},${basic},${hra},${special},${pf},${pt},"${bankName}","${bankAccountNo}","${ifsc}","${pan}","${uan}"\n`;
+      csvContent += `"${emp.employeeId}","${emp.firstName}","${emp.lastName}","${emp.email}","${personalEmail}","${phone}","${dob}","${gender}","${bloodGroup}","${permAddress}","${city}","${state}","${pincode}","${emergencyContact}","${emergencyPhone}","${emp.designation}","${emp.department?.name ?? "—"}","${emp.employmentType}","${emp.status}","${joiningDate}",${ctc},${basic},${hra},${special},${pf},${pt},"${bankName}","${bankAccountNo}","${ifsc}","${pan}","${uan}","${passwordHash}"\n`;
     });
     csvContent += `\n`;
 

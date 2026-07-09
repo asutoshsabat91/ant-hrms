@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OfficeLocationCard } from "@/components/settings/OfficeLocationCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface SettingsPageClientProps {
   user: {
@@ -26,6 +30,51 @@ export function SettingsPageClient({
   officeLon,
   officeRadius,
 }: SettingsPageClientProps) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (newPassword.length < 6) {
+      setErrorMsg("New password must be at least 6 characters long.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg("New passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update password.");
+      }
+      setSuccessMsg("Password changed successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       {/* Profile Card */}
@@ -60,29 +109,66 @@ export function SettingsPageClient({
         </CardContent>
       </Card>
 
-      {/* App Status */}
+      {/* Change Password Card */}
       <Card className="border border-zinc-200 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-zinc-950 font-bold text-base">App Status</CardTitle>
-          <CardDescription className="text-zinc-500 text-xs">Environment and runtime info</CardDescription>
+          <CardTitle className="text-zinc-950 font-bold text-base">Security</CardTitle>
+          <CardDescription className="text-zinc-500 text-xs">Update your credentials password</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Environment</p>
-            <p className="text-sm font-medium text-zinc-900 mt-0.5">{process.env.NODE_ENV ?? "development"}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Next.js</p>
-            <p className="text-sm font-medium text-zinc-900 mt-0.5">14.2.35</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Database</p>
-            <p className="text-sm font-medium text-zinc-900 mt-0.5">PostgreSQL via Prisma</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Office Location</p>
-            <p className="text-sm font-mono text-zinc-600 mt-0.5">{officeLat}, {officeLon}</p>
-          </div>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Current Password</label>
+              <Input
+                type="password"
+                required
+                className="mt-1"
+                placeholder="••••••••"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">New Password</label>
+              <Input
+                type="password"
+                required
+                className="mt-1"
+                placeholder="At least 6 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Confirm New Password</label>
+              <Input
+                type="password"
+                required
+                className="mt-1"
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+
+            {errorMsg && (
+              <div className="flex gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-semibold">
+                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {successMsg && (
+              <div className="flex gap-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs font-semibold">
+                <CheckCircle2 size={14} className="flex-shrink-0 mt-0.5" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            <Button type="submit" disabled={loading} size="sm" className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-semibold">
+              {loading ? "Updating..." : "Update Password"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

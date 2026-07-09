@@ -14,7 +14,6 @@ import {
   CalendarDays,
   Wallet,
   FileText,
-  Briefcase,
   Calendar,
   Settings,
   LogOut,
@@ -36,7 +35,6 @@ const ADMIN_NAV = [
   { title: "Leave",        href: "/leave",        icon: CalendarDays },
   { title: "Payroll",      href: "/payroll",      icon: Wallet },
   { title: "Documents",    href: "/documents",    icon: FileText },
-  { title: "Portal",       href: "/portal",       icon: Briefcase },
   { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "POSH",         href: "/posh",         icon: ShieldCheck },
   { title: "Calendar",     href: "/calendar",     icon: Calendar },
@@ -48,9 +46,7 @@ const EMPLOYEE_NAV = [
   { title: "My Dashboard",    href: "/",                        icon: LayoutDashboard },
   { title: "Attendance",      href: "/attendance",              icon: Clock },
   { title: "Leave",           href: "/leave",                   icon: CalendarDays },
-  { title: "Personal",        href: "/portal",                  icon: FileText },
   { title: "Documents",       href: "/documents",               icon: FileText },
-  { title: "Reimbursements",  href: "/portal/reimbursements",   icon: Briefcase },
   { title: "Separation",      href: "/separation",              icon: DoorOpen },
   { title: "Calendar",        href: "/calendar",                icon: Calendar },
   { title: "Policy",          href: "/policy",                  icon: BookOpen },
@@ -61,7 +57,6 @@ const COMPANY_ADMIN_NAV = [
   { title: "Employees",    href: "/employees",    icon: Users },
   { title: "Attendance",   href: "/attendance",   icon: Clock },
   { title: "Leave",        href: "/leave",        icon: CalendarDays },
-  { title: "Personal",     href: "/portal",       icon: FileText },
   { title: "Documents",    href: "/documents",    icon: FileText },
   { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "Calendar",     href: "/calendar",     icon: Calendar },
@@ -74,7 +69,7 @@ interface SidebarProps {
   gender?: string | null;
 }
 
-const OTHERS_TITLES = ["Personal", "Documents", "Reimbursements", "Separation"];
+const OTHERS_TITLES = ["Documents", "Separation"];
 
 export function Sidebar({ role, gender }: SidebarProps) {
   const pathname = usePathname();

@@ -72,21 +72,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account, profile }) {
       if (account?.provider === "google" && user.email) {
         const email = user.email.toLowerCase();
-        if (!email.endsWith("@theantbox.com")) {
-          return false; // Strictly restrict to AntBox corporate email IDs
-        }
         
         // Ensure the Google account email is verified
         if (profile && "email_verified" in profile && (profile as any).email_verified === false) {
           return false;
         }
 
-        const existing = await prisma.user.findUnique({
-          where: { email },
+        // Find if user/employee exists in DB with this email (either official or personal)
+        const employee = await prisma.employee.findFirst({
+          where: {
+            OR: [
+              { email },
+              { personalEmail: email }
+            ],
+            status: { notIn: ["INACTIVE", "ALUMNI"] }
+          },
+          include: { user: true }
         });
         
         // Block logins for non-existent or inactive user records
-        if (!existing || !existing.isActive) {
+        if (!employee || !employee.user || !employee.user.isActive) {
           return false;
         }
       }
@@ -94,23 +99,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: (user.email ?? token.email) as string },
+        const email = (user.email ?? token.email) as string;
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: email.toLowerCase() },
+              { employee: { personalEmail: email.toLowerCase() } }
+            ]
+          },
           include: { employee: { select: { managedCompany: true } } },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          token.email = dbUser.email;
           token.managedCompany = dbUser.employee?.managedCompany ?? null;
         }
       } else if (token.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: token.email as string },
+        const email = token.email as string;
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: email.toLowerCase() },
+              { employee: { personalEmail: email.toLowerCase() } }
+            ]
+          },
           include: { employee: { select: { managedCompany: true } } },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          token.email = dbUser.email;
           token.managedCompany = dbUser.employee?.managedCompany ?? null;
         }
       }
@@ -121,6 +140,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as import("@prisma/client").Role;
         session.user.managedCompany = token.managedCompany as string | null;
+        if (token.email) {
+          session.user.email = token.email as string;
+        }
       }
       return session;
     },

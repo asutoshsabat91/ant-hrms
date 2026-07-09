@@ -716,37 +716,6 @@ export function LoginForm() {
           <span>Sign in with Google</span>
         </Button>
       </form>
-
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-zinc-200" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-3 text-zinc-400 font-bold tracking-widest text-[9px]">Or</span>
-        </div>
-      </div>
-
-      {/* New Joinee CTA */}
-      <div className="relative pt-4">
-        {/* Sketched curly arrow pointing down to the CTA */}
-        <div className="absolute -top-6 right-8 text-[#8e43ac] opacity-40 pointer-events-none select-none hidden sm:block">
-          <svg viewBox="0 0 100 60" className="w-12 h-10 transform -rotate-12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M70 10 Q 50 5 35 25 T 30 50" />
-            <path d="M20 40 L30 50 L40 45" />
-          </svg>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setMode("register");
-            setError(null);
-            setSuccessMsg(null);
-          }}
-          className="w-full rounded-xl border border-dashed border-[#8e43ac]/40 bg-[#8e43ac]/5 py-3 text-xs font-bold text-[#8e43ac] hover:border-[#8e43ac] hover:bg-[#8e43ac]/10 transition-all uppercase tracking-wider relative z-10"
-        >
-          New Joinee? Create Account →
-        </button>
-      </div>
     </div>
   );
 }
