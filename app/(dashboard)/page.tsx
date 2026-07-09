@@ -24,6 +24,7 @@ import { UpcomingOffboardingWidget } from "@/components/dashboard/UpcomingOffboa
 import { PendingLeavesWidget } from "@/components/dashboard/PendingLeavesWidget";
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard";
 import { MasterSheetsSyncWidget, type SyncEmployee } from "@/components/dashboard/MasterSheetsSyncWidget";
+import { ExportReportButton } from "@/components/dashboard/ExportReportButton";
 import { LiveWorkspacePulse } from "@/components/dashboard/LiveWorkspacePulse";
 import { getDashboardStats, getRecentActivity, getAttendancePulse } from "@/lib/dashboard";
 import { getDynamicBalances } from "@/lib/leave";
@@ -226,13 +227,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 mt-2 md:mt-0">
-          <a
-            href="/api/reports/export"
-            download="AntBox_Status_Report.csv"
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition-all duration-300 hover:bg-zinc-50 hover:border-zinc-300 hover:-translate-y-0.5 shadow-sm"
-          >
-            Export report
-          </a>
+          <ExportReportButton spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} />
           <Link
             href="/employees?action=new"
             className="flex items-center gap-1.5 rounded-lg bg-zinc-950 px-4 py-2 text-xs font-semibold text-white transition-all duration-300 hover:bg-zinc-800 hover:-translate-y-0.5 hover:shadow-md"
