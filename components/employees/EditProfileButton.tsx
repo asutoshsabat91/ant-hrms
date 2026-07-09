@@ -26,7 +26,7 @@ interface EmployeeData {
   ctc: number | null;
 }
 
-export function EditProfileButton({ employee }: { employee: EmployeeData }) {
+export function EditProfileButton({ employee, isChandrita }: { employee: EmployeeData; isChandrita?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -40,7 +40,7 @@ export function EditProfileButton({ employee }: { employee: EmployeeData }) {
         <span>Edit Profile</span>
       </Button>
 
-      <EditEmployeeModal isOpen={open} onClose={() => setOpen(false)} employee={employee} />
+      <EditEmployeeModal isOpen={open} onClose={() => setOpen(false)} employee={employee} isChandrita={isChandrita} />
     </>
   );
 }

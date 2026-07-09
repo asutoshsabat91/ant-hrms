@@ -67,16 +67,26 @@ const COMPANY_ADMIN_NAV = [
 interface SidebarProps {
   role: Role;
   gender?: string | null;
+  email?: string | null;
 }
 
 const OTHERS_TITLES = ["Documents", "Separation"];
 
-export function Sidebar({ role, gender }: SidebarProps) {
+export function Sidebar({ role, gender, email }: SidebarProps) {
   const pathname = usePathname();
 
   let baseNav = EMPLOYEE_NAV;
   if (role === "ADMIN") {
-    baseNav = ADMIN_NAV;
+    let adminNavFiltered = [...ADMIN_NAV];
+    if (email?.toLowerCase() === "chandrita@theantbox.com") {
+      // HR: Handles Onboarding/Offboarding/Attendance/Leave/Separations/Docs, everything except Payroll / money
+      adminNavFiltered = adminNavFiltered.filter((item) => item.title !== "Payroll");
+    } else if (email?.toLowerCase() === "ritesh@theantbox.com") {
+      // Founder's Office: Attendance & Payroll, but no Onboarding, Offboarding, Leave, Separation, Policy, Documents, POSH
+      const riteshExcludes = ["Onboarding", "Offboarding", "Leave", "Separation", "Policy", "Documents", "POSH"];
+      adminNavFiltered = adminNavFiltered.filter((item) => !riteshExcludes.includes(item.title));
+    }
+    baseNav = adminNavFiltered;
   } else if (role === "COMPANY_ADMIN") {
     baseNav = COMPANY_ADMIN_NAV;
   }

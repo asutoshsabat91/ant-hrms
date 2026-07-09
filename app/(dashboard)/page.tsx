@@ -219,9 +219,9 @@ export default async function DashboardPage() {
         />
       </ScrollReveal>
 
-      {/* Main Grid: Left analytics stack & Right calendar stack */}
+      {/* Main Grid: Left wide analytics stack & Right metrics stack */}
       <div className="grid gap-6 lg:grid-cols-3 items-start">
-        {/* Left Stack (2 columns) */}
+        {/* Left Stack (2 columns): Headcount Trend, Google Sheets Sync, Onboarding Hires + Activity */}
         <div className="lg:col-span-2 space-y-6">
           {/* Stat Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -239,28 +239,13 @@ export default async function DashboardPage() {
             </ScrollReveal>
           </div>
 
-          {/* Analytics Row: Dept chart, Leave donut */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ScrollReveal delayClass="reveal-delay-1">
-              <DeptHeadcountChart data={deptData} />
-            </ScrollReveal>
-            <ScrollReveal delayClass="reveal-delay-2">
-              <LeaveStatsChart data={leaveStats} />
-            </ScrollReveal>
-          </div>
-
-          {/* Pending Leaves */}
-          <ScrollReveal delayClass="reveal-delay-3">
-            <PendingLeavesWidget leaves={pendingLeaves} count={pendingLeaveCount} />
-          </ScrollReveal>
-
           {/* Headcount Trend Chart */}
-          <ScrollReveal delayClass="reveal-delay-4">
+          <ScrollReveal delayClass="reveal-delay-1">
             <HeadcountTrendChart activeCount={displayActiveCount} />
           </ScrollReveal>
 
           {/* Master Employee Database (Google Sheets) */}
-          <ScrollReveal delayClass="reveal-delay-5">
+          <ScrollReveal delayClass="reveal-delay-2">
             <MasterSheetsSyncWidget 
               spreadsheetId={process.env.GOOGLE_SPREADSHEET_ID} 
               employees={allEmployeesList}
@@ -269,27 +254,40 @@ export default async function DashboardPage() {
 
           {/* Onboarding + Activity */}
           <div className="grid gap-6 sm:grid-cols-2">
-            <ScrollReveal delayClass="reveal-delay-6">
+            <ScrollReveal delayClass="reveal-delay-3">
               <JoiningSoonWidget hires={onboardingHires} />
             </ScrollReveal>
-            <ScrollReveal delayClass="reveal-delay-7">
+            <ScrollReveal delayClass="reveal-delay-4">
               <ActivityFeed items={activity} />
             </ScrollReveal>
           </div>
 
           {/* Quick Actions */}
-          <ScrollReveal delayClass="reveal-delay-8" className="pt-2">
+          <ScrollReveal delayClass="reveal-delay-5" className="pt-2">
             <QuickActions isAdmin={isAdmin} />
           </ScrollReveal>
         </div>
 
-        {/* Right Stack (1 column): Calendar and Holidays */}
-        <div className="space-y-4">
-          <ScrollReveal delayClass="reveal-delay-2">
+        {/* Right Stack (1 column): Calendar, Holidays, Department Chart, Leave Stats, Pending Leaves */}
+        <div className="space-y-6">
+          <ScrollReveal delayClass="reveal-delay-1">
             <CompanyCalendarWidget holidays={holidays} leaves={calendarLeaves} leaveTypes={leaveTypes} />
           </ScrollReveal>
-          <ScrollReveal delayClass="reveal-delay-3">
+          
+          <ScrollReveal delayClass="reveal-delay-2">
             <UpcomingHolidaysWidget holidays={holidays} />
+          </ScrollReveal>
+
+          <ScrollReveal delayClass="reveal-delay-3">
+            <DeptHeadcountChart data={deptData} />
+          </ScrollReveal>
+
+          <ScrollReveal delayClass="reveal-delay-4">
+            <LeaveStatsChart data={leaveStats} />
+          </ScrollReveal>
+
+          <ScrollReveal delayClass="reveal-delay-5">
+            <PendingLeavesWidget leaves={pendingLeaves} count={pendingLeaveCount} />
           </ScrollReveal>
         </div>
       </div>

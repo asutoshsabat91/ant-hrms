@@ -23,9 +23,10 @@ interface OnboardingEmployee {
 interface BulkOnboardingModalProps {
   departments: Department[];
   employees: OnboardingEmployee[];
+  isChandrita?: boolean;
 }
 
-export function BulkOnboardingModal({ departments, employees }: BulkOnboardingModalProps) {
+export function BulkOnboardingModal({ departments, employees, isChandrita }: BulkOnboardingModalProps) {
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"invite" | "banking">("invite");
@@ -83,9 +84,9 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
       "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
       "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
       "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Department",
-      "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
-      "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
-      "IFSC Code", "PAN", "UAN"
+      "Employment Type", "Status", "Joining Date",
+      ...(isChandrita ? [] : ["CTC", "Basic Salary", "HRA", "Special Allowance", "PF", "Professional Tax"]),
+      "Bank Name", "Bank Account Number", "IFSC Code", "PAN", "UAN"
     ];
     
     const sampleRows = [
@@ -93,15 +94,17 @@ export function BulkOnboardingModal({ departments, employees }: BulkOnboardingMo
         "—", "Riya", "Sharma", "riya@antbox.com", "riya.personal@gmail.com", "9876543210",
         "2002-05-15", "Female", "O+", "Patia, Bhubaneswar", "Bhubaneswar", "Odisha", "751024",
         "Ramesh Sharma", "9876543211", "Developer Intern", departments[0]?.name || "Data Analytics",
-        "INTERN", "ACTIVE", new Date().toISOString().slice(0, 10), "360000", "15000", "6000",
-        "4000", "1800", "200", "HDFC Bank", "501002345678", "HDFC0000123", "ABCDE1234F", "100234567890"
+        "INTERN", "ACTIVE", new Date().toISOString().slice(0, 10),
+        ...(isChandrita ? [] : ["360000", "15000", "6000", "4000", "1800", "200"]),
+        "HDFC Bank", "501002345678", "HDFC0000123", "ABCDE1234F", "100234567890"
       ],
       [
         "—", "Adarsh", "Mohanty", "adarsh@antbox.com", "—", "—",
         "—", "—", "—", "—", "—", "Odisha", "—",
         "—", "—", "Software Engineer", departments[0]?.name || "Data Analytics",
-        "FULL_TIME", "ACTIVE", new Date().toISOString().slice(0, 10), "0", "0", "0",
-        "0", "0", "200", "—", "—", "—", "—", "—"
+        "FULL_TIME", "ACTIVE", new Date().toISOString().slice(0, 10),
+        ...(isChandrita ? [] : ["0", "0", "0", "0", "0", "200"]),
+        "—", "—", "—", "—", "—"
       ]
     ];
     

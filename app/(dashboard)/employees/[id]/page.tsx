@@ -20,6 +20,7 @@ export default async function EmployeeProfilePage({
   if (session.user.role === "COMPANY_ADMIN") {
     redirect("/employees");
   }
+  const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
 
   const { id } = await params;
 
@@ -71,7 +72,7 @@ export default async function EmployeeProfilePage({
               Back to directory
             </Link>
             {session.user.role === "ADMIN" && (
-              <EditProfileButton employee={employee} />
+              <EditProfileButton employee={employee} isChandrita={isChandrita} />
             )}
             {isOnboarding && (
               <Link
@@ -235,7 +236,7 @@ export default async function EmployeeProfilePage({
             </dl>
           </section>
 
-          {(employee.ctc || employee.basicSalary) && (
+          {!isChandrita && (employee.ctc || employee.basicSalary) && (
             <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
               <h3 className="mb-4 font-semibold text-zinc-900">Compensation</h3>
               <dl className="grid gap-4 sm:grid-cols-3">

@@ -4,8 +4,14 @@ import { OnboardingHub } from "@/components/onboarding/OnboardingHub";
 import { NewHireWizard } from "@/components/onboarding/NewHireWizard";
 import { BulkOnboardingModal } from "@/components/onboarding/BulkOnboardingModal";
 import { PendingOnboardings } from "@/components/onboarding/PendingOnboardings";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function OnboardingPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
+
   const [employees, departments, managers, templates, pendingRequests] = await Promise.all([
     prisma.employee.findMany({
       where: { status: { in: ["ONBOARDING", "ACTIVE"] } },
@@ -41,6 +47,7 @@ export default async function OnboardingPage() {
         action={
           <BulkOnboardingModal
             departments={departments}
+            isChandrita={isChandrita}
             employees={employees.map((employee) => ({
               id: employee.id,
               firstName: employee.firstName,
@@ -74,6 +81,7 @@ export default async function OnboardingPage() {
         departments={departments}
         managers={managers}
         templates={templates}
+        isChandrita={isChandrita}
       />
 
       <OnboardingHub
@@ -108,7 +116,7 @@ export default async function OnboardingPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <div>
-          <NewHireWizard departments={departments} managers={managers} templates={templates} />
+          <NewHireWizard departments={departments} managers={managers} templates={templates} isChandrita={isChandrita} />
         </div>
         <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6 shadow-[var(--card-shadow)]">
           <h2 className="text-sm font-semibold text-[var(--brand-secondary)]">Hiring checklist</h2>

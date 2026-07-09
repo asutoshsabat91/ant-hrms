@@ -31,9 +31,10 @@ interface EditEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee: EmployeeData;
+  isChandrita?: boolean;
 }
 
-export function EditEmployeeModal({ isOpen, onClose, employee }: EditEmployeeModalProps) {
+export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: EditEmployeeModalProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -87,7 +88,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee }: EditEmployeeMod
       ifscCode: ifscCode.trim() || null,
       pan: pan.trim() || null,
       uan: uan.trim() || null,
-      ctc: ctc ? parseFloat(ctc) : null,
+      ...(isChandrita ? {} : { ctc: ctc ? parseFloat(ctc) : null }),
     };
 
     try {
@@ -243,13 +244,15 @@ export function EditEmployeeModal({ isOpen, onClose, employee }: EditEmployeeMod
           </div>
 
           {/* Section: CTC */}
-          <div className="space-y-3 pt-2 border-t border-zinc-100">
-            <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">4. Compensation</h4>
-            <div>
-              <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Annual CTC (INR)</label>
-              <Input type="number" value={ctc} onChange={(e) => setCtc(e.target.value)} placeholder="e.g. 480000" className="mt-1" />
+          {!isChandrita && (
+            <div className="space-y-3 pt-2 border-t border-zinc-100">
+              <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">4. Compensation</h4>
+              <div>
+                <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Annual CTC (INR)</label>
+                <Input type="number" value={ctc} onChange={(e) => setCtc(e.target.value)} placeholder="e.g. 480000" className="mt-1" />
+              </div>
             </div>
-          </div>
+          )}
 
           {errorMsg && (
             <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold">

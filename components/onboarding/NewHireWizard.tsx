@@ -49,15 +49,9 @@ interface NewHireWizardProps {
   departments: DepartmentOption[];
   managers: ManagerOption[];
   templates: TemplateOption[];
+  isChandrita?: boolean;
 }
 
-const STEPS = [
-  { num: 1, label: "Personal" },
-  { num: 2, label: "Job Role" },
-  { num: 3, label: "Salary" },
-  { num: 4, label: "Workflow" },
-  { num: 5, label: "Review" },
-];
 
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -68,7 +62,7 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-export function NewHireWizard({ departments, managers, templates }: NewHireWizardProps) {
+export function NewHireWizard({ departments, managers, templates, isChandrita }: NewHireWizardProps) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<{ name: string; id: string; hireId: string } | null>(null);
@@ -76,6 +70,31 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [sameAddress, setSameAddress] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredSteps = useMemo(() => {
+    if (isChandrita) {
+      return [
+        { num: 1, label: "Personal" },
+        { num: 2, label: "Job Role" },
+        { num: 4, label: "Workflow" },
+        { num: 5, label: "Review" },
+      ];
+    }
+    return [
+      { num: 1, label: "Personal" },
+      { num: 2, label: "Job Role" },
+      { num: 3, label: "Salary" },
+      { num: 4, label: "Workflow" },
+      { num: 5, label: "Review" },
+    ];
+  }, [isChandrita]);
+
+  const getDisplayStep = (currentStep: number) => {
+    if (!isChandrita) return currentStep;
+    if (currentStep <= 2) return currentStep;
+    if (currentStep === 4) return 3;
+    return 4; // currentStep === 5
+  };
 
   // Mode States
   const [onboardingMode, setOnboardingMode] = useState<"direct" | "invite" | "resume">("direct");
@@ -212,7 +231,13 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
       4: [],
     };
     const isValid = await trigger(fieldsMap[step] ?? []);
-    if (isValid) setStep((s) => Math.min(5, s + 1));
+    if (isValid) {
+      if (isChandrita && step === 2) {
+        setStep(4);
+      } else {
+        setStep((s) => Math.min(5, s + 1));
+      }
+    }
   };
 
   // Submit handler
@@ -359,18 +384,18 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
               <p className="text-xs text-zinc-400 mt-0.5">Add a new teammate and configure their workspace.</p>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-50 border border-zinc-100 px-3 py-1.5 rounded-full">
-              Step {step} of 5
+              Step {getDisplayStep(step)} of {isChandrita ? 4 : 5}
             </span>
           </div>
           <div className="relative mt-8 flex justify-between items-center px-2">
             <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-100 -translate-y-1/2 z-0" />
-            <div className="absolute top-1/2 left-0 h-0.5 bg-zinc-950 -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `${((step - 1) / 4) * 100}%` }} />
-            {STEPS.map((s) => {
+            <div className="absolute top-1/2 left-0 h-0.5 bg-zinc-950 -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `${((getDisplayStep(step) - 1) / (isChandrita ? 3 : 4)) * 100}%` }} />
+            {filteredSteps.map((s, idx) => {
               const done = step > s.num; const active = step === s.num;
               return (
                 <div key={s.num} className="relative z-10 flex flex-col items-center">
                   <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${done ? "bg-zinc-950 text-white" : active ? "bg-white border-2 border-zinc-950 text-zinc-950 scale-110 shadow-sm" : "bg-zinc-50 border border-zinc-200 text-zinc-400"}`}>
-                    {done ? "✓" : s.num}
+                    {done ? "✓" : (idx + 1)}
                   </div>
                   <span className={`absolute top-8 text-[10px] font-bold whitespace-nowrap uppercase ${active ? "text-zinc-900" : "text-zinc-400"}`}>{s.label}</span>
                 </div>
@@ -648,9 +673,11 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
             <FieldGroup label="Joining Date *">
               <Input type="date" className={inputCls} {...register("joiningDate")} />
             </FieldGroup>
-            <FieldGroup label={isIntern ? "Monthly Stipend (₹)" : "Annual CTC (₹)"}>
-              <Input type="number" step="1000" className={inputCls} {...register("ctc")} placeholder={isIntern ? "15000" : "500000"} />
-            </FieldGroup>
+            {!isChandrita && (
+              <FieldGroup label={isIntern ? "Monthly Stipend (₹)" : "Annual CTC (₹)"}>
+                <Input type="number" step="1000" className={inputCls} {...register("ctc")} placeholder={isIntern ? "15000" : "500000"} />
+              </FieldGroup>
+            )}
           </div>
         )}
 
@@ -777,7 +804,7 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
                 {[
                   ["Company Email", watch("email")],
                   ["Joining Date", watch("joiningDate")],
-                  ["Monthly Pay", `₹${(compensation?.monthly ?? 0).toLocaleString("en-IN")}`],
+                  ...(!isChandrita ? [["Monthly Pay", `₹${(compensation?.monthly ?? 0).toLocaleString("en-IN")}`]] : []),
                   ["Photo", photoPreview ? "✓ Uploaded" : "⚠ Not uploaded (required for compliance)"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between">
@@ -815,7 +842,18 @@ export function NewHireWizard({ departments, managers, templates }: NewHireWizar
           <div className="mt-8 flex items-center justify-between border-t border-zinc-100 pt-6">
             <div>
               {step > 1 && !successData && (
-                <Button type="button" variant="outline" className="text-xs font-bold" onClick={() => setStep((s) => Math.max(1, s - 1))}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="text-xs font-bold" 
+                  onClick={() => {
+                    if (isChandrita && step === 4) {
+                      setStep(2);
+                    } else {
+                      setStep((s) => Math.max(1, s - 1));
+                    }
+                  }}
+                >
                   Back
                 </Button>
               )}

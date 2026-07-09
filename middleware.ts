@@ -48,6 +48,31 @@ export async function middleware(req: NextRequest) {
   }
 
   const role = token.role as Role | undefined;
+  const email = token.email ? (token.email as string).toLowerCase() : "";
+
+  // 1. Checks for Chandrita (HR): No Payroll / money
+  if (email === "chandrita@theantbox.com") {
+    if (pathname.startsWith("/payroll") || pathname.startsWith("/api/payroll")) {
+      const redirectRes = NextResponse.redirect(new URL("/", req.url));
+      redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      return redirectRes;
+    }
+  }
+
+  // 2. Checks for Ritesh (Founder's Office): No Onboarding, Offboarding, Leave, Separations, Policy, POSH, Documents, or Approval APIs
+  if (email === "ritesh@theantbox.com") {
+    const isRestrictedForRitesh = [
+      "/onboarding", "/offboarding", "/leave", "/separation", "/policy", "/documents", "/posh",
+      "/api/onboarding", "/api/offboarding", "/api/leave", "/api/separation", "/api/posh", "/api/documents",
+      "/api/attendance/regularize"
+    ].some((route) => pathname.startsWith(route));
+
+    if (isRestrictedForRitesh) {
+      const redirectRes = NextResponse.redirect(new URL("/", req.url));
+      redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      return redirectRes;
+    }
+  }
 
   const isSuperAdminOnly = superAdminOnlyRoutes.some((r) => pathname.startsWith(r));
   const isAdminOrCompanyAdmin = adminOrCompanyAdminRoutes.some((r) => pathname.startsWith(r));

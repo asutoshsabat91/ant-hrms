@@ -37,9 +37,10 @@ interface PendingOnboardingsProps {
   departments: Department[];
   managers: Manager[];
   templates: Template[];
+  isChandrita?: boolean;
 }
 
-export function PendingOnboardings({ requests, departments, managers, templates }: PendingOnboardingsProps) {
+export function PendingOnboardings({ requests, departments, managers, templates, isChandrita }: PendingOnboardingsProps) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function PendingOnboardings({ requests, departments, managers, templates 
             employmentType,
             joiningDate: new Date(joiningDate).toISOString(),
             templateId: templateId || null,
-            ctc: ctc ? parseFloat(ctc) : null
+            ...(isChandrita ? {} : { ctc: ctc ? parseFloat(ctc) : null }),
           }
         : { requestId, action };
 
@@ -316,16 +317,18 @@ export function PendingOnboardings({ requests, departments, managers, templates 
                       </select>
                     </div>
 
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Annual CTC (INR)</label>
-                      <input
-                        type="number"
-                        value={ctc}
-                        onChange={(e) => setCtc(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
-                        placeholder="e.g. 600000"
-                      />
-                    </div>
+                    {!isChandrita && (
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Annual CTC (INR)</label>
+                        <input
+                          type="number"
+                          value={ctc}
+                          onChange={(e) => setCtc(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
+                          placeholder="e.g. 600000"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">

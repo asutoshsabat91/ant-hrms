@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
   const body = await req.json();
   let employeesToProcess = [];
 
@@ -44,6 +45,18 @@ export async function POST(req: Request) {
 
   if (!Array.isArray(employeesToProcess) || !employeesToProcess.length) {
     return NextResponse.json({ error: "No employees provided" }, { status: 400 });
+  }
+
+  if (isChandrita) {
+    employeesToProcess = employeesToProcess.map((emp) => {
+      const cleaned = { ...(emp as Record<string, unknown>) };
+      delete cleaned.ctc;
+      delete cleaned.basicSalary;
+      delete cleaned.hra;
+      delete cleaned.specialAllowance;
+      delete cleaned.pf;
+      return cleaned;
+    });
   }
 
   try {

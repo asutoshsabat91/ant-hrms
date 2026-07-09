@@ -34,11 +34,23 @@ export async function GET() {
       whereClause = { deployedCompany: managedCompany };
     }
 
-    const employees = await prisma.employee.findMany({
+    let employees = await prisma.employee.findMany({
       where: whereClause,
       include: { department: true },
       orderBy: { createdAt: "desc" },
     });
+
+    if (session.user.email?.toLowerCase() === "chandrita@theantbox.com") {
+      employees = employees.map((emp) => {
+        const cleaned = { ...emp } as Record<string, unknown>;
+        delete cleaned.ctc;
+        delete cleaned.basicSalary;
+        delete cleaned.hra;
+        delete cleaned.specialAllowance;
+        delete cleaned.pf;
+        return cleaned;
+      }) as typeof employees;
+    }
 
     return NextResponse.json(employees);
   } catch (e) {
@@ -58,7 +70,12 @@ export async function POST(req: Request) {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+    const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
     const data = parsed.data;
+    if (isChandrita) {
+      delete data.ctc;
+    }
+
     const count = await prisma.employee.count();
     const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
     const joiningDate = new Date(data.joiningDate);
@@ -137,7 +154,12 @@ export async function PUT(req: Request) {
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+    const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
     const { id, ...data } = parsed.data;
+
+    if (isChandrita) {
+      delete data.ctc;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatePayload: any = { ...data };

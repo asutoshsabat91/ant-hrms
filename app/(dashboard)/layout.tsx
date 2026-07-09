@@ -37,7 +37,7 @@ export default async function DashboardLayout({
     <>
       <SecurityHandler />
       <ResizableLayout
-        sidebar={<Sidebar role={session.user.role} gender={employee?.gender} />}
+        sidebar={<Sidebar role={session.user.role} gender={employee?.gender} email={session.user.email} />}
         topbar={<Topbar user={session.user} employee={safeEmployee} />}
       >
         {children}

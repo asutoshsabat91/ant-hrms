@@ -88,6 +88,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
   const body = await req.json();
   const parsed = onboardingSchema.safeParse(body);
   if (!parsed.success) {
@@ -95,6 +96,10 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
+  if (isChandrita) {
+    delete data.ctc;
+    delete data.variablePay;
+  }
   const count = await prisma.employee.count();
   const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
   const joiningDate = new Date(data.joiningDate);

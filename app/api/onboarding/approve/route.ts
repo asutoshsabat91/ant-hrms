@@ -39,7 +39,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const isChandrita = session.user.email?.toLowerCase() === "chandrita@theantbox.com";
+
   try {
+    const body = await req.json();
     const {
       requestId,
       action, // "APPROVE" or "REJECT"
@@ -49,8 +52,12 @@ export async function POST(req: Request) {
       employmentType = "INTERN",
       joiningDate = new Date().toISOString(),
       templateId,
-      ctc
-    } = await req.json();
+    } = body;
+    let ctc = body.ctc;
+
+    if (isChandrita) {
+      ctc = undefined;
+    }
 
     if (!requestId) {
       return NextResponse.json({ error: "requestId is required" }, { status: 400 });
