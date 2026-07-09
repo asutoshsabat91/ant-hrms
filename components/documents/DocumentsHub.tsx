@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import {
   FileText, Upload, CheckCircle2, AlertCircle, Download,
@@ -179,6 +180,11 @@ function UploadModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -216,102 +222,107 @@ function UploadModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-zinc-950">
-          <div className="flex items-center gap-2">
-            <Upload className="h-4 w-4 text-white/70" />
-            <p className="text-sm font-bold text-white">Upload Document</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {isAdmin && (
-            <div>
-              <label className="text-[10px] font-bold uppercase text-zinc-400">Employee</label>
-              <select
-                value={empId}
-                onChange={(e) => setEmpId(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+    <>
+      {mounted && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-zinc-950">
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-white/70" />
+                <p className="text-sm font-bold text-white">Upload Document</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg p-1.5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
               >
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeId})</option>
-                ))}
-              </select>
+                <X className="h-4 w-4" />
+              </button>
             </div>
-          )}
 
-          <div>
-            <label className="text-[10px] font-bold uppercase text-zinc-400">Document Title <span className="text-rose-500">*</span></label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" placeholder="e.g. Aadhaar Card" />
-          </div>
+            <div className="p-6 space-y-4">
+              {isAdmin && (
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-zinc-400">Employee</label>
+                  <select
+                    value={empId}
+                    onChange={(e) => setEmpId(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+                  >
+                    {employees.map((e) => (
+                      <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeId})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          <div>
-            <label className="text-[10px] font-bold uppercase text-zinc-400">Document Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as DocType)}
-              className="mt-1 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-zinc-900"
-            >
-              {ADDITIONAL_DOC_TYPES.map((t) => (
-                <option key={t.type} value={t.type}>{t.label}</option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-zinc-400">Document Title <span className="text-rose-500">*</span></label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" placeholder="e.g. Aadhaar Card" />
+              </div>
 
-          <div>
-            <label className="text-[10px] font-bold uppercase text-zinc-400">Issue Date</label>
-            <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} className="mt-1" />
-          </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-zinc-400">Document Type</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value as DocType)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+                >
+                  {ADDITIONAL_DOC_TYPES.map((t) => (
+                    <option key={t.type} value={t.type}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
 
-          {/* File upload */}
-          <label
-            className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed py-6 gap-2 transition-all ${fileData ? "border-emerald-300 bg-emerald-50" : "border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:bg-zinc-100"}`}
-          >
-            <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFile} />
-            {fileData ? (
-              <>
-                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                <p className="text-xs font-semibold text-emerald-700">{fileName}</p>
-                <p className="text-[10px] text-emerald-500">Click to change</p>
-              </>
-            ) : (
-              <>
-                <Upload className="h-6 w-6 text-zinc-400" />
-                <p className="text-xs font-semibold text-zinc-600">Click to upload PDF or image</p>
-                <p className="text-[10px] text-zinc-400">Max 5MB · PDF, JPG, PNG</p>
-              </>
-            )}
-          </label>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-zinc-400">Issue Date</label>
+                <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} className="mt-1" />
+              </div>
 
-          <div>
-            <label className="text-[10px] font-bold uppercase text-zinc-400">Notes (optional)</label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" placeholder="Additional notes…" />
-          </div>
+              {/* File upload */}
+              <label
+                className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed py-6 gap-2 transition-all ${fileData ? "border-emerald-300 bg-emerald-50" : "border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:bg-zinc-100"}`}
+              >
+                <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFile} />
+                {fileData ? (
+                  <>
+                    <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                    <p className="text-xs font-semibold text-emerald-700">{fileName}</p>
+                    <p className="text-[10px] text-emerald-500">Click to change</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-6 w-6 text-zinc-400" />
+                    <p className="text-xs font-semibold text-zinc-600">Click to upload PDF or image</p>
+                    <p className="text-[10px] text-zinc-400">Max 5MB · PDF, JPG, PNG</p>
+                  </>
+                )}
+              </label>
 
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />{error}
+              <div>
+                <label className="text-[10px] font-bold uppercase text-zinc-400">Notes (optional)</label>
+                <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" placeholder="Additional notes…" />
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />{error}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>Cancel</Button>
+                <Button size="sm" className="flex-1 gap-1 bg-zinc-950 hover:bg-zinc-800" disabled={loading} onClick={submit}>
+                  <Upload className="h-3.5 w-3.5" />{loading ? "Uploading…" : "Upload Document"}
+                </Button>
+              </div>
             </div>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>Cancel</Button>
-            <Button size="sm" className="flex-1 gap-1 bg-zinc-950 hover:bg-zinc-800" disabled={loading} onClick={submit}>
-              <Upload className="h-3.5 w-3.5" />{loading ? "Uploading…" : "Upload Document"}
-            </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 

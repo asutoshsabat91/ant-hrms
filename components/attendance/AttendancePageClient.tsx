@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { Clock, Loader2, Calendar, Check, X } from "lucide-react";
 import { AttendanceCard } from "@/components/dashboard/AttendanceCard";
@@ -53,6 +54,7 @@ type HistoryRequest = {
 
 export function AttendancePageClient() {
   const [payload, setPayload] = useState<AttendancePayload | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Regularization states
   const [isRegularizeOpen, setIsRegularizeOpen] = useState(false);
@@ -92,6 +94,7 @@ export function AttendancePageClient() {
   }
 
   useEffect(() => {
+    setMounted(true);
     loadData();
     loadHistory();
   }, []);
@@ -432,7 +435,7 @@ export function AttendancePageClient() {
       </div>
 
       {/* Regularization Apply Modal */}
-      {isRegularizeOpen && (
+      {isRegularizeOpen && mounted && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-lg rounded-3xl border border-[var(--border)] bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
@@ -574,7 +577,8 @@ export function AttendancePageClient() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
