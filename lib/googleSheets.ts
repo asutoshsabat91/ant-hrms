@@ -2,7 +2,6 @@ import { google, sheets_v4 } from "googleapis";
 import type { EmployeeStatus, EmploymentType, PunchType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import crypto from "crypto";
 import bcrypt from "bcryptjs";
 
 function getSheetsClient() {
@@ -456,7 +455,7 @@ export async function syncGoogleSheetsWithDb() {
             finalEmpId = `ANT-${String(empTotal + 100).padStart(3, "0")}`;
           }
 
-          const tempPassword = sheetPassword || crypto.randomBytes(6).toString("hex") + "!";
+          const tempPassword = sheetPassword || "AntBox@2025";
           const passwordHash = newPasswordHash || await bcrypt.hash(tempPassword, 12);
 
           await prisma.user.create({

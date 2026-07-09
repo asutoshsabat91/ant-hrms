@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { sendOnboardingEmail } from "@/lib/mail";
 import { appendEmployeeToSheet } from "@/lib/googleSheets";
 import { createOfferLetterFromTemplate } from "@/lib/googleDocs";
@@ -106,7 +105,7 @@ export async function POST(req: Request) {
 
       const loginEmail = request.personalEmail.toLowerCase().trim();
 
-      const tempPassword = crypto.randomBytes(6).toString("hex") + "!";
+      const tempPassword = "AntBox@2025";
       const passwordHash = await bcrypt.hash(tempPassword, 12);
 
       // Generate unique employee ID safely in case of concurrent approvals
