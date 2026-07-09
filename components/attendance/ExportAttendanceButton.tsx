@@ -8,6 +8,10 @@ export function ExportAttendanceButton({ spreadsheetId }: { spreadsheetId?: stri
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
+    if (!spreadsheetId) {
+      alert("Google Sheets integration is not configured. Please set GOOGLE_SPREADSHEET_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY in your environment variables.");
+      return;
+    }
     setLoading(true);
     try {
       await fetch("/api/attendance/export/sheets", { method: "POST" });
@@ -16,8 +20,7 @@ export function ExportAttendanceButton({ spreadsheetId }: { spreadsheetId?: stri
     } finally {
       setLoading(false);
       // Redirect to the "Attendance Logs" worksheet range
-      const sheetId = spreadsheetId || "1_tXgE1Hn9i6igZ_lUkMaH3YnX7UM8lHN8AuA";
-      window.open(`https://docs.google.com/spreadsheets/d/${sheetId}/edit#gid=AttendanceLogs`, "_blank");
+      window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=AttendanceLogs`, "_blank");
     }
   };
 
