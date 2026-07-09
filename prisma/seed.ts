@@ -109,8 +109,9 @@ async function main() {
       count++;
       const isSuperAdmin = emp.officialEmail === "asutosh.sabat@theantbox.com";
       const isHrAdmin = emp.client === "Admin";
+      const isSpecialAdmin = ["chandrita@theantbox.com", "ritesh@theantbox.com"].includes(emp.officialEmail.toLowerCase());
       
-      const role = isSuperAdmin || isHrAdmin ? "ADMIN" : "EMPLOYEE";
+      const role = isSuperAdmin || isHrAdmin || isSpecialAdmin ? "ADMIN" : "EMPLOYEE";
             
       const deptId = isHrAdmin ? ops.id : eng.id;
       const empStatus = emp.client === "Out of System" ? "INACTIVE" : "ACTIVE";

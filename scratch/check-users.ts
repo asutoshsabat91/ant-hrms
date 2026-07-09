@@ -1,23 +1,19 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: "postgresql://neondb_owner:npg_yPYF5RxUlp9d@ep-muddy-haze-athkvly7-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true"
-    }
-  }
-});
+const prisma = new PrismaClient();
 
 async function main() {
-  const users = await prisma.user.findMany({
-    select: {
-      email: true,
-      role: true,
-      isActive: true,
-      passwordHash: true,
+  await prisma.user.updateMany({
+    where: {
+      email: {
+        in: ["chandrita@theantbox.com", "ritesh@theantbox.com"]
+      }
+    },
+    data: {
+      role: "ADMIN"
     }
   });
-  console.log("Users in Neon:", JSON.stringify(users, null, 2));
+  console.log("Successfully updated chandrita@theantbox.com and ritesh@theantbox.com to ADMIN role in database.");
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
