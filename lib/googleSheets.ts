@@ -500,13 +500,11 @@ export async function syncGoogleSheetsWithDb() {
       })
     ]);
 
-    // Ensure all target worksheets exist
-    await Promise.all([
-      ensureWorksheetExists(sheets, spreadsheetId, "Employees"),
-      ensureWorksheetExists(sheets, spreadsheetId, "Leave Requests"),
-      ensureWorksheetExists(sheets, spreadsheetId, "Reimbursements"),
-      ensureWorksheetExists(sheets, spreadsheetId, "Separations"),
-    ]);
+    // Ensure all target worksheets exist sequentially to prevent concurrent write collisions
+    await ensureWorksheetExists(sheets, spreadsheetId, "Employees");
+    await ensureWorksheetExists(sheets, spreadsheetId, "Leave Requests");
+    await ensureWorksheetExists(sheets, spreadsheetId, "Reimbursements");
+    await ensureWorksheetExists(sheets, spreadsheetId, "Separations");
 
     // 1. Employees Tab Data
     const employeeRows: unknown[][] = [
@@ -641,45 +639,42 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // Execute clear and update for all worksheets
-    await Promise.all([
-      // Employees
-      sheets.spreadsheets.values.clear({ spreadsheetId, range: "Employees!A:Z" }).then(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: "Employees!A1",
-          valueInputOption: "RAW",
-          requestBody: { values: employeeRows }
-        })
-      ),
-      // Leave Requests
-      sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Leave Requests'!A:Z" }).then(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: "'Leave Requests'!A1",
-          valueInputOption: "RAW",
-          requestBody: { values: leaveRows }
-        })
-      ),
-      // Reimbursements
-      sheets.spreadsheets.values.clear({ spreadsheetId, range: "Reimbursements!A:Z" }).then(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: "Reimbursements!A1",
-          valueInputOption: "RAW",
-          requestBody: { values: reimbursementRows }
-        })
-      ),
-      // Separations
-      sheets.spreadsheets.values.clear({ spreadsheetId, range: "Separations!A:Z" }).then(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: "Separations!A1",
-          valueInputOption: "RAW",
-          requestBody: { values: separationRows }
-        })
-      ),
-    ]);
+    // Execute clear and update sequentially to prevent write conflicts
+    // Employees
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Employees!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Employees!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: employeeRows }
+    });
+
+    // Leave Requests
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Leave Requests'!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "'Leave Requests'!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: leaveRows }
+    });
+
+    // Reimbursements
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Reimbursements!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Reimbursements!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: reimbursementRows }
+    });
+
+    // Separations
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Separations!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Separations!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: separationRows }
+    });
 
     console.log(`[Google Sheets] Bi-directional sync completed successfully. Updated: ${updatedCount}, Created: ${createdCount}`);
 
