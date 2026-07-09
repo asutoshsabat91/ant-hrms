@@ -17,6 +17,7 @@ interface SeparationRecord {
   approvedAt: string | null;
   lastWorkingDate: string | null;
   employee?: {
+    status?: string;
     firstName: string;
     lastName: string;
     employeeId: string;
@@ -425,14 +426,20 @@ export function SeparationPortal({
           )}
 
           {sep.status === "APPROVED" && sep.lastWorkingDate && isPast(new Date(sep.lastWorkingDate)) && (
-            <Button
-              size="sm"
-              className="h-7 text-xs gap-1 bg-violet-600 hover:bg-violet-700"
-              disabled={actionLoading === sep.id + "complete_offboarding"}
-              onClick={() => adminAction(sep.id, "complete_offboarding")}
-            >
-              <PlayCircle className="h-3 w-3" /> Initiate Offboarding
-            </Button>
+            sep.employee?.status === "OFFBOARDING" ? (
+              <span className="inline-flex items-center gap-1 rounded bg-violet-100 px-2.5 py-1 text-[10px] font-bold text-violet-700 border border-violet-200">
+                ✓ Offboarding Initiated
+              </span>
+            ) : (
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1 bg-violet-600 hover:bg-violet-700 cursor-pointer"
+                disabled={actionLoading === sep.id + "complete_offboarding"}
+                onClick={() => adminAction(sep.id, "complete_offboarding")}
+              >
+                <PlayCircle className="h-3 w-3" /> Initiate Offboarding
+              </Button>
+            )
           )}
         </div>
       ))}

@@ -122,37 +122,68 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       const emp = separation.employee;
 
+      // Check if offboarding has already been initiated to prevent duplicates
+      if (emp.status === "OFFBOARDING") {
+        const updatedSeparation = await prisma.separation.findUnique({
+          where: { id },
+          include: {
+            employee: {
+              select: {
+                status: true,
+                firstName: true,
+                lastName: true,
+                employeeId: true,
+                designation: true,
+                department: { select: { name: true } },
+              },
+            },
+          },
+        });
+        return NextResponse.json({ separation: updatedSeparation });
+      }
+
       // Set employee status to OFFBOARDING
       await prisma.employee.update({
         where: { id: emp.id },
         data: { status: "OFFBOARDING", lastWorkingDate: separation.lastWorkingDate },
       });
 
-      // Create offboarding tasks
-      await prisma.offboardingTask.createMany({
-        data: OFFBOARDING_TASKS.map((t) => ({
-          employeeId: emp.id,
-          title: t.title,
-          category: t.category,
-          order: t.order,
-          status: "PENDING" as const,
-          dueDate: t.title === "Settle FNF" ? addDays(separation.lastWorkingDate ?? new Date(), 45) : null,
-        })),
-        skipDuplicates: true,
-      });
+      // Create offboarding tasks (only if not already created)
+      const existingTasksCount = await prisma.offboardingTask.count({ where: { employeeId: emp.id } });
+      if (existingTasksCount === 0) {
+        await prisma.offboardingTask.createMany({
+          data: OFFBOARDING_TASKS.map((t) => ({
+            employeeId: emp.id,
+            title: t.title,
+            category: t.category,
+            order: t.order,
+            status: "PENDING" as const,
+            dueDate: t.title === "Settle FNF" ? addDays(separation.lastWorkingDate ?? new Date(), 45) : null,
+          })),
+          skipDuplicates: true,
+        });
+      }
 
-      // Create document stubs
-      await prisma.hRDocument.createMany({
-        data: OFFBOARDING_DOCUMENTS.map((d) => ({
+      // Create document stubs (only if not already created)
+      const existingDocsCount = await prisma.hRDocument.count({
+        where: {
           employeeId: emp.id,
-          type: d.type,
-          title: d.title,
-          fileUrl: "",
-          issuedDate: separation.lastWorkingDate ?? new Date(),
-          issuedBy: session.user!.name ?? "HR Admin",
-        })),
-        skipDuplicates: true,
+          type: { in: OFFBOARDING_DOCUMENTS.map((d) => d.type) },
+        },
       });
+      if (existingDocsCount === 0) {
+        await prisma.hRDocument.createMany({
+          data: OFFBOARDING_DOCUMENTS.map((d) => ({
+            employeeId: emp.id,
+            type: d.type,
+            title: d.title,
+            fileUrl: "",
+            issuedDate: separation.lastWorkingDate ?? new Date(),
+            issuedBy: session.user!.name ?? "HR Admin",
+          })),
+          skipDuplicates: true,
+        });
+      }
 
       // Notify employee
       await prisma.notification.create({
@@ -165,7 +196,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         },
       });
 
-      return NextResponse.json({ message: "Offboarding initiated" });
+      // Fetch the updated separation with employee's status for state sync
+      const updatedSeparation = await prisma.separation.findUnique({
+        where: { id },
+        include: {
+          employee: {
+            select: {
+              status: true,
+              firstName: true,
+              lastName: true,
+              employeeId: true,
+              designation: true,
+              department: { select: { name: true } },
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({ separation: updatedSeparation });
     }
 
     default:

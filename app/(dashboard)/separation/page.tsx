@@ -23,6 +23,7 @@ export default async function SeparationPage() {
         include: {
           employee: {
             select: {
+              status: true,
               firstName: true,
               lastName: true,
               employeeId: true,
@@ -41,6 +42,7 @@ export default async function SeparationPage() {
         include: {
           employee: {
             select: {
+              status: true,
               firstName: true,
               lastName: true,
               employeeId: true,
