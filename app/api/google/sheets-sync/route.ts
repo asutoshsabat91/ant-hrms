@@ -12,7 +12,18 @@ export async function POST() {
     const result = await syncGoogleSheetsWithDb();
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error || "Failed to perform sync" }, { status: 500 });
+      const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || "";
+      const diagnostics = {
+        length: rawKey.length,
+        startsWith: rawKey.slice(0, 30),
+        endsWith: rawKey.slice(-30),
+        hasNewlines: rawKey.includes("\n"),
+        hasEscapedNewlines: rawKey.includes("\\n"),
+      };
+      return NextResponse.json({ 
+        error: result.error || "Failed to perform sync",
+        diagnostics
+      }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -23,7 +34,18 @@ export async function POST() {
       message: result.message || "Sync completed successfully."
     });
   } catch (error) {
+    const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || "";
+    const diagnostics = {
+      length: rawKey.length,
+      startsWith: rawKey.slice(0, 30),
+      endsWith: rawKey.slice(-30),
+      hasNewlines: rawKey.includes("\n"),
+      hasEscapedNewlines: rawKey.includes("\\n"),
+    };
     console.error("[SHEETS SYNC POST]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : String(error), 
+      diagnostics 
+    }, { status: 500 });
   }
 }

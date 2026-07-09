@@ -61,21 +61,22 @@ export function MasterSheetsSyncWidget({
           message: data.message,
         });
       } else {
+        const diagnosticsStr = data.diagnostics ? ` | Diagnostics: ${JSON.stringify(data.diagnostics)}` : "";
         setSyncResult({
           success: false,
           simulated: false,
           updatedCount: 0,
           createdCount: 0,
-          error: data.error || "Sync failed.",
+          error: (data.error || "Sync failed.") + diagnosticsStr,
         });
       }
-    } catch {
+    } catch (err) {
       setSyncResult({
         success: false,
         simulated: false,
         updatedCount: 0,
         createdCount: 0,
-        error: "Failed to connect to synchronization service.",
+        error: `Failed to connect to synchronization service. ${err instanceof Error ? err.message : String(err)}`,
       });
     } finally {
       setSyncing(false);
