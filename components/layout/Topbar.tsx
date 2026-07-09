@@ -2,7 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, LogOut, User } from "lucide-react";
+import { Search, LogOut, User, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -239,13 +239,22 @@ export function Topbar({ user, employee }: TopbarProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               {employee && (
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => setDrawerOpen(true)}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  My Profile
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => setDrawerOpen(true)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    My Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => router.push("/portal")}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Employee Portal
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuItem
                 className="text-[var(--danger)] cursor-pointer"

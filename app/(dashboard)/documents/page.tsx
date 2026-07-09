@@ -4,7 +4,9 @@ import { DocumentsHub } from "@/components/documents/DocumentsHub";
 
 export default async function DocumentsPage() {
   const session = await auth();
-  const isSuperAdmin = session?.user?.role === "ADMIN";
+  const email = session?.user?.email?.toLowerCase() || "";
+  const isRitesh = email === "ritesh@theantbox.com";
+  const isSuperAdmin = (session?.user?.role === "ADMIN") && !isRitesh;
   const isCompanyAdmin = session?.user?.role === "COMPANY_ADMIN";
   const managedCompany = session?.user?.managedCompany;
 

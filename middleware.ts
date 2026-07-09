@@ -59,12 +59,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Checks for Ritesh (Founder's Office): No Onboarding, Offboarding, Leave, Separations, Policy, POSH, Documents, or Approval APIs
+  // 2. Checks for Ritesh (Founder's Office): No Onboarding, Offboarding, or POSH (but allow Leave, Separation, Policy, Documents, Calendar, and Reimbursements)
   if (email === "ritesh@theantbox.com") {
     const isRestrictedForRitesh = [
-      "/onboarding", "/offboarding", "/leave", "/separation", "/policy", "/documents", "/posh",
-      "/api/onboarding", "/api/offboarding", "/api/leave", "/api/separation", "/api/posh", "/api/documents",
-      "/api/attendance/regularize"
+      "/onboarding", "/offboarding", "/posh",
+      "/api/onboarding", "/api/offboarding", "/api/posh"
     ].some((route) => pathname.startsWith(route));
 
     if (isRestrictedForRitesh) {

@@ -8,7 +8,9 @@ export default async function SeparationPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const isAdmin = session.user.role === "ADMIN";
+  const email = session.user.email?.toLowerCase() || "";
+  const isRitesh = email === "ritesh@theantbox.com";
+  const isAdmin = (session.user.role === "ADMIN") && !isRitesh;
   const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
   const managedCompany = session.user.managedCompany;
 

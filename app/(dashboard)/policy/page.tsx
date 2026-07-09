@@ -5,7 +5,9 @@ import { PolicyPageClient } from "@/components/policy/PolicyPageClient";
 
 export default async function PolicyPage() {
   const session = await auth();
-  const isSuperAdmin = session?.user?.role === "ADMIN";
+  const email = session?.user?.email?.toLowerCase() || "";
+  const isRitesh = email === "ritesh@theantbox.com";
+  const isSuperAdmin = (session?.user?.role === "ADMIN") && !isRitesh;
 
   // Fetch all leave types ordered by name
   const leaveTypes = await prisma.leaveType.findMany({

@@ -7,7 +7,9 @@ import type { LeaveType } from "@prisma/client";
 
 export default async function LeavePage() {
   const session = await auth();
-  const userRole = session?.user?.role || "EMPLOYEE";
+  const email = session?.user?.email?.toLowerCase() || "";
+  const isRitesh = email === "ritesh@theantbox.com";
+  const userRole = isRitesh ? "EMPLOYEE" : (session?.user?.role || "EMPLOYEE");
   const userId = session?.user?.id || "";
 
   let rawData;

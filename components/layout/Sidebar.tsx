@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Layers,
   BookOpen,
+  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -34,6 +35,7 @@ const ADMIN_NAV = [
   { title: "Attendance",   href: "/attendance",   icon: Clock },
   { title: "Leave",        href: "/leave",        icon: CalendarDays },
   { title: "Payroll",      href: "/payroll",      icon: Wallet },
+  { title: "Portal",       href: "/portal",       icon: Briefcase },
   { title: "Documents",    href: "/documents",    icon: FileText },
   { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "POSH",         href: "/posh",         icon: ShieldCheck },
@@ -46,6 +48,7 @@ const EMPLOYEE_NAV = [
   { title: "My Dashboard",    href: "/",                        icon: LayoutDashboard },
   { title: "Attendance",      href: "/attendance",              icon: Clock },
   { title: "Leave",           href: "/leave",                   icon: CalendarDays },
+  { title: "Portal",          href: "/portal",                  icon: Briefcase },
   { title: "Documents",       href: "/documents",               icon: FileText },
   { title: "Separation",      href: "/separation",              icon: DoorOpen },
   { title: "Calendar",        href: "/calendar",                icon: Calendar },
@@ -57,6 +60,7 @@ const COMPANY_ADMIN_NAV = [
   { title: "Employees",    href: "/employees",    icon: Users },
   { title: "Attendance",   href: "/attendance",   icon: Clock },
   { title: "Leave",        href: "/leave",        icon: CalendarDays },
+  { title: "Portal",       href: "/portal",       icon: Briefcase },
   { title: "Documents",    href: "/documents",    icon: FileText },
   { title: "Separation",   href: "/separation",   icon: DoorOpen },
   { title: "Calendar",     href: "/calendar",     icon: Calendar },
@@ -82,8 +86,8 @@ export function Sidebar({ role, gender, email }: SidebarProps) {
       // HR: Handles Onboarding/Offboarding/Attendance/Leave/Separations/Docs, everything except Payroll / money
       adminNavFiltered = adminNavFiltered.filter((item) => item.title !== "Payroll");
     } else if (email?.toLowerCase() === "ritesh@theantbox.com") {
-      // Founder's Office: Attendance & Payroll, but no Onboarding, Offboarding, Leave, Separation, Policy, Documents, POSH
-      const riteshExcludes = ["Onboarding", "Offboarding", "Leave", "Separation", "Policy", "Documents", "POSH"];
+      // Founder's Office: Attendance, Payroll, Leave, Separation, Policy, Documents, Calendar, and Portal, but no Onboarding, Offboarding, or POSH (Admin view)
+      const riteshExcludes = ["Onboarding", "Offboarding", "POSH"];
       adminNavFiltered = adminNavFiltered.filter((item) => !riteshExcludes.includes(item.title));
     }
     baseNav = adminNavFiltered;
