@@ -1,32 +1,28 @@
 // Trigger build run after revert
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { HeadcountTrendChart } from "@/components/dashboard/HeadcountTrendChart";
-import { AttendancePulseChart } from "@/components/dashboard/AttendancePulseChart";
 import { JoiningSoonWidget } from "@/components/dashboard/JoiningSoonWidget";
 import { DashboardAttendanceLogs } from "@/components/dashboard/DashboardAttendanceLogs";
 import { LeaveBalancesCard } from "@/components/dashboard/LeaveBalancesCard";
 import { CompanyCalendarWidget } from "@/components/dashboard/CompanyCalendarWidget";
 import { UpcomingHolidaysWidget } from "@/components/dashboard/UpcomingHolidaysWidget";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
-import { TribeRadarWidget } from "@/components/dashboard/TribeRadarWidget";
 import { ScrollIndicator } from "@/components/dashboard/ScrollIndicator";
 import { DeptHeadcountChart } from "@/components/dashboard/DeptHeadcountChart";
 import { LeaveStatsChart } from "@/components/dashboard/LeaveStatsChart";
-import { PayrollSummaryCard } from "@/components/dashboard/PayrollSummaryCard";
-import { UpcomingOffboardingWidget } from "@/components/dashboard/UpcomingOffboardingWidget";
 import { PendingLeavesWidget } from "@/components/dashboard/PendingLeavesWidget";
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard";
 import { MasterSheetsSyncWidget, type SyncEmployee } from "@/components/dashboard/MasterSheetsSyncWidget";
 import { ExportReportButton } from "@/components/dashboard/ExportReportButton";
 import { LiveWorkspacePulse } from "@/components/dashboard/LiveWorkspacePulse";
-import { getDashboardStats, getRecentActivity, getAttendancePulse } from "@/lib/dashboard";
+import { getDashboardStats, getRecentActivity } from "@/lib/dashboard";
 import { getDynamicBalances } from "@/lib/leave";
 import type { Employee } from "@prisma/client";
 import type { ActivityItem } from "@/components/dashboard/ActivityFeed";
@@ -134,55 +130,29 @@ export default async function DashboardPage() {
   let onboardingHires: Employee[] = [];
   let deptData: { name: string; headcount: number }[] = [];
   let leaveStats: { status: string; count: number }[] = [];
-  let latestPayrollRun: { status: string; month: number; year: number; totalNet?: number | null } | null = null;
-  let upcomingOffboarding: { id: string; firstName: string; lastName: string; lastWorkingDate: Date | null; designation: string }[] = [];
   let pendingLeaves: { id: string; employee: { firstName: string; lastName: string; employeeId: string }; leaveType: { name: string }; days: number }[] = [];
   let pendingLeaveCount = 0;
-  let radarMetrics = { activeCandidates: 14, avgReadiness: 87.4, sprintsLive: 6, pposClaimed: 8 };
-  let attendancePulseData: { name: string; attendance: number }[] = [];
 
   let allEmployeesList: SyncEmployee[] = [];
 
   try {
-    const [statsResult, activityResult, onboardingHiresResult, pulseData, onboardingTasks, totalHiresCount, activeDepts, activeInternsCount] = await Promise.all([
+    const [
+      statsResult,
+      activityResult,
+      onboardingHiresResult,
+      depts,
+      leaveGrouped,
+      pendingLvReqs,
+      pendingLvCount,
+      dbEmployees
+    ] = await Promise.all([
       getDashboardStats(),
       getRecentActivity(),
       prisma.employee.findMany({ where: { status: "ONBOARDING" }, orderBy: { createdAt: "desc" }, take: 4 }) as Promise<Employee[]>,
-      getAttendancePulse(),
-      prisma.onboardingTask.findMany({ select: { status: true } }),
-      prisma.employee.count({ where: { status: "ONBOARDING" } }),
-      prisma.department.count(),
-      prisma.employee.count({ where: { employmentType: "INTERN", status: { in: ["ACTIVE", "ONBOARDING"] } } }),
-    ]);
-
-    stats = statsResult;
-    activity = activityResult;
-    onboardingHires = onboardingHiresResult;
-    attendancePulseData = pulseData;
-
-    const totalOnboardingTasks = onboardingTasks.length;
-    const completedOnboardingTasks = onboardingTasks.filter((t) => t.status === "COMPLETED").length;
-    const avgReadiness = totalOnboardingTasks > 0 ? (completedOnboardingTasks / totalOnboardingTasks) * 100 : 87.4;
-
-    radarMetrics = {
-      activeCandidates: totalHiresCount || 14,
-      avgReadiness,
-      sprintsLive: activeDepts || 6,
-      pposClaimed: activeInternsCount || 8,
-    };
-
-    const [depts, leaveGrouped, payrollRun, offboarding, pendingLvReqs, pendingLvCount, dbEmployees] = await Promise.all([
       prisma.department.findMany({
         include: { employees: { where: { status: { in: ["ACTIVE", "ONBOARDING"] } }, select: { id: true } } },
       }),
       prisma.leaveRequest.groupBy({ by: ["status"], _count: { id: true } }),
-      prisma.payrollRun.findFirst({ orderBy: { createdAt: "desc" } }),
-      prisma.employee.findMany({
-        where: { status: "OFFBOARDING", lastWorkingDate: { gte: new Date(), lte: addDays(new Date(), 30) } },
-        select: { id: true, firstName: true, lastName: true, lastWorkingDate: true, designation: true },
-        orderBy: { lastWorkingDate: "asc" },
-        take: 5,
-      }),
       prisma.leaveRequest.findMany({
         where: { status: "PENDING" },
         take: 4,
@@ -199,14 +169,17 @@ export default async function DashboardPage() {
       }),
     ]);
 
+    stats = statsResult;
+    activity = activityResult;
+    onboardingHires = onboardingHiresResult;
     deptData = depts.map((d) => ({ name: d.code, headcount: d.employees.length })).filter((d) => d.headcount > 0);
     leaveStats = leaveGrouped.map((g) => ({ status: g.status, count: g._count.id }));
-    latestPayrollRun = payrollRun ? { status: payrollRun.status, month: payrollRun.month, year: payrollRun.year } : null;
-    upcomingOffboarding = offboarding;
     pendingLeaves = pendingLvReqs;
     pendingLeaveCount = pendingLvCount;
     allEmployeesList = dbEmployees;
-  } catch { /* fallback */ }
+  } catch (error) {
+    console.error("[ADMIN_DASHBOARD_LOAD]", error);
+  }
 
   const displayActiveCount = stats.activeCount || 0;
   const displayPresentToday = stats.presentToday || 0;
@@ -281,7 +254,7 @@ export default async function DashboardPage() {
         </ScrollReveal>
       </div>
 
-      {/* Analytics Row 1: Dept chart, Leave donut, Payroll */}
+      {/* Analytics Row: Dept chart, Leave donut, Pending leaves */}
       <div className="grid gap-4 lg:grid-cols-3">
         <ScrollReveal delayClass="reveal-delay-1">
           <DeptHeadcountChart data={deptData} />
@@ -290,35 +263,14 @@ export default async function DashboardPage() {
           <LeaveStatsChart data={leaveStats} />
         </ScrollReveal>
         <ScrollReveal delayClass="reveal-delay-3">
-          <PayrollSummaryCard run={latestPayrollRun} />
-        </ScrollReveal>
-      </div>
-
-      {/* Analytics Row 2: Upcoming exits, Pending leaves, Reimbursements */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <ScrollReveal delayClass="reveal-delay-1">
-          <UpcomingOffboardingWidget employees={upcomingOffboarding} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
           <PendingLeavesWidget leaves={pendingLeaves} count={pendingLeaveCount} />
         </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-3">
-          <AttendancePulseChart data={attendancePulseData} />
-        </ScrollReveal>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <ScrollReveal delayClass="reveal-delay-1" className="lg:col-span-2">
+      {/* Charts Grid: Headcount Trend spanning full width */}
+      <div className="w-full">
+        <ScrollReveal delayClass="reveal-delay-1">
           <HeadcountTrendChart activeCount={displayActiveCount} />
-        </ScrollReveal>
-        <ScrollReveal delayClass="reveal-delay-2">
-          <TribeRadarWidget
-            activeCandidates={radarMetrics.activeCandidates}
-            avgReadiness={radarMetrics.avgReadiness}
-            sprintsLive={radarMetrics.sprintsLive}
-            pposClaimed={radarMetrics.pposClaimed}
-          />
         </ScrollReveal>
       </div>
 
