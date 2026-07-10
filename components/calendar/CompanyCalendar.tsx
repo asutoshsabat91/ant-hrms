@@ -40,6 +40,7 @@ const categoryStyles: Record<string, { background: string; border: string }> = {
   LEAVE: { background: "#FBCFE8", border: "#EC4899" },
   BIRTHDAY: { background: "#E0E7FF", border: "#6366F1" },
   GOOGLE_EVENT: { background: "#DDD6FE", border: "#8B5CF6" },
+  PERSONAL_EVENT: { background: "#CCFBF1", border: "#0D9488" },
 };
 
 export function CompanyCalendar({ canManage, isSuperAdmin }: { canManage?: boolean; isSuperAdmin?: boolean }) {

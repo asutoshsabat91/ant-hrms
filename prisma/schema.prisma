@@ -245,9 +245,10 @@ model Employee {
   okToRehire       Boolean?
   rehireComment    String?
   regularizationRequests RegularizationRequest[]
-  deployedCompany  String?
-  managedCompany   String?
-  createdAt        DateTime       @default(now())
+  deployedCompany       String?
+  managedCompany        String?
+  googleRefreshToken    String?
+  createdAt             DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 }
 

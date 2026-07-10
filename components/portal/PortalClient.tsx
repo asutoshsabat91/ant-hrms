@@ -11,6 +11,8 @@ import {
   X,
   Upload,
   Camera,
+  CalendarCheck,
+  CalendarX,
 } from "lucide-react";
 import type { Employee, Department } from "@prisma/client";
 import { FloatingAIChatbot } from "./FloatingAIChatbot";
@@ -20,9 +22,11 @@ type EmployeeWithDept = Employee & { department: Department };
 interface PortalClientProps {
   employee: EmployeeWithDept;
   isAdmin?: boolean;
+  googleCalendarConnected?: boolean;
+  gcalStatus?: string;
 }
 
-export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
+export function PortalClient({ employee, isAdmin = false, googleCalendarConnected = false, gcalStatus }: PortalClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -1718,6 +1722,53 @@ export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
           </div>
         </div>
       )}
+
+      {/* Google Calendar Integration Card */}
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-sm px-4 pointer-events-none">
+        {gcalStatus === "connected" && (
+          <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-teal-50 border border-teal-200 px-4 py-2.5 shadow-lg text-teal-800 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4">
+            <CalendarCheck className="h-4 w-4 text-teal-600 shrink-0" />
+            Google Calendar connected! Your personal events now appear on your calendar.
+          </div>
+        )}
+        {gcalStatus === "error" && (
+          <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 shadow-lg text-red-800 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4">
+            <CalendarX className="h-4 w-4 text-red-500 shrink-0" />
+            Google Calendar connection failed. Please try again.
+          </div>
+        )}
+      </div>
+
+      {/* Google Calendar Quick-Connect Widget */}
+      <div className="mt-6 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`rounded-xl p-2.5 ${googleCalendarConnected ? "bg-teal-50" : "bg-zinc-50"}`}>
+            {googleCalendarConnected
+              ? <CalendarCheck className="h-5 w-5 text-teal-600" />
+              : <CalendarX className="h-5 w-5 text-zinc-400" />
+            }
+          </div>
+          <div>
+            <p className="text-sm font-bold text-zinc-900">Google Calendar</p>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              {googleCalendarConnected
+                ? "Connected — your personal events appear only to you on the calendar."
+                : "Connect to show your personal Google Calendar events on your calendar view."}
+            </p>
+          </div>
+        </div>
+        <a
+          href="/api/auth/google-calendar/connect"
+          className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+            googleCalendarConnected
+              ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              : "bg-[var(--brand-secondary,#8e43ac)] text-white hover:opacity-90"
+          }`}
+        >
+          <CalendarCheck className="h-3.5 w-3.5" />
+          {googleCalendarConnected ? "Reconnect" : "Connect Calendar"}
+        </a>
+      </div>
 
       {/* Floating HR AI Chatbot widget */}
       <FloatingAIChatbot />

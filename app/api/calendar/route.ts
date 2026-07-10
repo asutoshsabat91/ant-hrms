@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { addDays, endOfDay, startOfDay } from "date-fns";
-import { createGoogleCalendarEvent, fetchGoogleCalendarEvents } from "@/lib/googleCalendar";
+import { createGoogleCalendarEvent, fetchGoogleCalendarEvents, fetchPersonalCalendarEvents } from "@/lib/googleCalendar";
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -13,6 +13,14 @@ const createEventSchema = z.object({
   endDate: z.string().min(1),
   allDay: z.boolean().optional(),
 });
+
+// Emails that can see ALL team leaves
+const ALL_LEAVES_EMAILS = [
+  "asutosh.sabat@theantbox.com",
+  "priyanshu.shekhar@theantbox.com",
+  "admin@theantbox.com",
+  "chandrita@theantbox.com",
+];
 
 export async function GET(req: Request) {
   try {
@@ -31,11 +39,44 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Invalid date range." }, { status: 400 });
     }
 
+    const userEmail = session.user.email?.toLowerCase() ?? "";
+    const userRole = session.user.role;
+
+    // Determine leave visibility scope
+    const canSeeAllLeaves = userRole === "ADMIN" && ALL_LEAVES_EMAILS.includes(userEmail);
+    const isQapitaAdmin = userEmail === "sukhman@theantbox.com" && userRole === "COMPANY_ADMIN";
+
+    // Fetch the current user's employee record to get their own employee ID
+    const currentEmployee = await prisma.employee.findFirst({
+      where: { user: { email: userEmail } },
+      select: { id: true },
+    });
+
+    // Build leave query based on role
+    let leaveWhere: Record<string, unknown> = {
+      status: "APPROVED",
+      startDate: { lte: end },
+      endDate: { gte: start },
+    };
+
+    if (!canSeeAllLeaves) {
+      if (isQapitaAdmin) {
+        // Sukhman sees only Qapita employees' leaves
+        leaveWhere = { ...leaveWhere, employee: { deployedCompany: "Qapita" } };
+      } else if (currentEmployee) {
+        // All others see only their own approved leaves
+        leaveWhere = { ...leaveWhere, employeeId: currentEmployee.id };
+      } else {
+        // No employee record → no leaves
+        leaveWhere = { ...leaveWhere, id: "NONE" };
+      }
+    }
+
     const [holidays, companyEvents, approvedLeaves, employees, googleCalendarEvents] = await Promise.all([
       prisma.holiday.findMany({ where: { date: { gte: start, lte: end } } }),
       prisma.companyEvent.findMany({ where: { startDate: { lte: end }, endDate: { gte: start } } }),
       prisma.leaveRequest.findMany({
-        where: { status: "APPROVED", startDate: { lte: end }, endDate: { gte: start } },
+        where: leaveWhere,
         include: { employee: true, leaveType: true },
       }),
       prisma.employee.findMany({
@@ -44,6 +85,22 @@ export async function GET(req: Request) {
       }),
       fetchGoogleCalendarEvents(start, end),
     ]);
+
+    // Personal Google Calendar events for the current user (if they've connected)
+    let personalCalendarEvents: Awaited<ReturnType<typeof fetchPersonalCalendarEvents>> = [];
+    if (currentEmployee) {
+      const empWithToken = await prisma.employee.findUnique({
+        where: { id: currentEmployee.id },
+        select: { googleRefreshToken: true },
+      });
+      if (empWithToken?.googleRefreshToken) {
+        personalCalendarEvents = await fetchPersonalCalendarEvents(
+          empWithToken.googleRefreshToken,
+          start,
+          end
+        );
+      }
+    }
 
     const birthdayEvents = employees.flatMap((employee) => {
       if (!employee.dateOfBirth) return [];
@@ -68,7 +125,9 @@ export async function GET(req: Request) {
       ...companyEvents.map((e) => ({ id: e.id, title: e.title, start: e.startDate, end: e.endDate, allDay: e.allDay, category: e.category })),
       ...approvedLeaves.map((l) => ({
         id: l.id,
-        title: `${l.employee.firstName} ${l.employee.lastName} — ${l.leaveType.name}`,
+        title: canSeeAllLeaves || isQapitaAdmin
+          ? `${l.employee.firstName} ${l.employee.lastName} — ${l.leaveType.name}`
+          : l.leaveType.name, // For own leaves, just show leave type name
         start: l.startDate,
         end: l.endDate,
         allDay: true,
@@ -76,6 +135,7 @@ export async function GET(req: Request) {
       })),
       ...birthdayEvents,
       ...googleCalendarEvents,
+      ...personalCalendarEvents,
     ];
 
     return NextResponse.json({ events });
@@ -84,6 +144,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Failed to fetch calendar events" }, { status: 500 });
   }
 }
+
 
 export async function POST(req: Request) {
   try {

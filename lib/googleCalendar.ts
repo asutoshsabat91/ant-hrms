@@ -118,3 +118,53 @@ export async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date) 
     return [];
   }
 }
+
+/**
+ * Fetch personal Google Calendar events for a specific employee using their stored OAuth refresh token.
+ * These events are shown ONLY to the logged-in employee.
+ */
+export async function fetchPersonalCalendarEvents(refreshToken: string, startDate: Date, endDate: Date) {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.warn("[Google Calendar] Missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET. Personal calendar sync skipped.");
+      return [];
+    }
+
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const response = await calendar.events.list({
+      calendarId: "primary",
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 100,
+    });
+
+    const personalEvents = (response.data.items || []).map((item) => {
+      const isAllDay = !item.start?.dateTime;
+      const start = isAllDay ? new Date(item.start?.date || "") : new Date(item.start?.dateTime || "");
+      const end = isAllDay ? new Date(item.end?.date || "") : new Date(item.end?.dateTime || "");
+
+      return {
+        id: `personal-${item.id || Math.random()}`,
+        title: item.summary || "Personal Event",
+        start,
+        end,
+        allDay: isAllDay,
+        category: "PERSONAL_EVENT" as const,
+      };
+    });
+
+    return personalEvents;
+  } catch (error) {
+    console.error("[Google Calendar] Failed to fetch personal calendar events:", error);
+    return [];
+  }
+}

@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { redirect } from "next/navigation";
 
-export default async function PortalPage() {
+export default async function PortalPage({ searchParams }: { searchParams?: { gcal?: string } }) {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
   const isAdmin = session.user.role === "ADMIN";
+  const gcalStatus = searchParams?.gcal;
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -34,6 +35,11 @@ export default async function PortalPage() {
   }
 
   return (
-    <PortalClient employee={user.employee} isAdmin={isAdmin} />
+    <PortalClient
+      employee={user.employee}
+      isAdmin={isAdmin}
+      googleCalendarConnected={!!user.employee.googleRefreshToken}
+      gcalStatus={gcalStatus}
+    />
   );
 }
