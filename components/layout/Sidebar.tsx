@@ -83,8 +83,8 @@ export function Sidebar({ role, gender, email }: SidebarProps) {
   if (role === "ADMIN") {
     let adminNavFiltered = [...ADMIN_NAV];
     if (email?.toLowerCase() === "chandrita@theantbox.com") {
-      // HR: Handles Onboarding/Offboarding/Attendance/Leave/Separations/Docs, everything except Payroll / money
-      adminNavFiltered = adminNavFiltered.filter((item) => item.title !== "Payroll");
+      // HR: Handles Onboarding/Offboarding/Attendance/Leave/Separations/Docs, no Payroll or Portal
+      adminNavFiltered = adminNavFiltered.filter((item) => !["Payroll", "Portal"].includes(item.title));
     } else if (email?.toLowerCase() === "ritesh@theantbox.com") {
       // Founder's Office: Attendance, Payroll, Leave, Separation, Policy, Documents, Calendar, and Portal, but no Onboarding, Offboarding, or POSH (Admin view)
       const riteshExcludes = ["Onboarding", "Offboarding", "POSH"];
