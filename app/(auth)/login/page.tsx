@@ -59,12 +59,12 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 bg-[radial-gradient(#e4e4e7_1.5px,transparent_1.5px)] [background-size:24px_24px] bg-zinc-50/70 border-l border-zinc-100 flex-col justify-center items-center p-6 xl:p-10 relative overflow-hidden select-none">
         
         {/* Peeking Ants in the bottom right corner */}
-        <div className="absolute bottom-0 right-0 w-44 h-80 pointer-events-none select-none z-20 transition-transform duration-500 hover:translate-x-1 hover:translate-y-1">
+        <div className="absolute bottom-0 right-0 w-72 h-[460px] pointer-events-none select-none z-20 transition-transform duration-500 hover:translate-x-1 hover:translate-y-1">
           <Image 
             src="/ants/peeking-ants.png" 
             alt="Peeking Ants Mascot" 
-            width={176}
-            height={320}
+            width={320}
+            height={460}
             className="object-contain object-bottom object-right"
             priority
           />
