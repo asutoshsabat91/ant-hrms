@@ -27,6 +27,7 @@ type AttendancePayload = {
   totalHours: number;
   isIncomplete: boolean;
   hoursThisSession?: number | null;
+  isWFH?: boolean;
 };
 
 type ApiEnvelope = {
@@ -246,6 +247,7 @@ export function AttendancePageClient() {
           <AttendanceCard 
             initialPunches={payload?.punches || []} 
             onPunchSuccess={loadData} 
+            isWFH={payload?.isWFH || false}
           />
         </div>
 

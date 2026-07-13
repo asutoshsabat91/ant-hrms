@@ -102,7 +102,33 @@ export async function GET() {
   }
 
   const record = await getTodayRecord(user.employee.id);
-  return apiResponse(true, serialize(record), "Attendance loaded");
+  
+  const today = todayStart();
+  
+  // Check for approved WFH leave for today
+  const wfhLeave = await prisma.leaveRequest.findFirst({
+    where: {
+      employeeId: user.employee.id,
+      status: "APPROVED",
+      leaveType: { code: "WFH" },
+      startDate: { lte: today },
+      endDate: { gte: today }
+    }
+  });
+  
+  // Check for approved remote regularization for today
+  const remoteReg = await prisma.regularizationRequest.findFirst({
+    where: {
+      employeeId: user.employee.id,
+      status: "APPROVED",
+      type: "REMOTE",
+      date: today
+    }
+  });
+
+  const isWFH = !!wfhLeave || !!remoteReg;
+
+  return apiResponse(true, { ...serialize(record), isWFH }, "Attendance loaded");
 }
 
 export async function POST(req: Request) {

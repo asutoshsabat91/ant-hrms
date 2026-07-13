@@ -30,9 +30,10 @@ interface OfficeConfig {
 interface Props {
   initialPunches: Punch[];
   onPunchSuccess?: () => void;
+  isWFH?: boolean;
 }
 
-export function AttendanceCard({ initialPunches, onPunchSuccess }: Props) {
+export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH }: Props) {
   const [time, setTime] = useState(new Date());
   const [punches, setPunches] = useState<Punch[]>(initialPunches);
   const [loading, setLoading] = useState(false);
@@ -62,23 +63,30 @@ export function AttendanceCard({ initialPunches, onPunchSuccess }: Props) {
     setLoading(true);
 
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 15000,
-          enableHighAccuracy: true,
-          maximumAge: 0,
-        })
-      );
-      const { latitude, longitude, accuracy } = position.coords;
-      const dist = haversineDistance(latitude, longitude, officeConfig.lat, officeConfig.lon);
-      const effectiveRadius = officeConfig.radiusM + (accuracy ?? 0);
+      let latitude: number | null = null;
+      let longitude: number | null = null;
 
-      if (dist > effectiveRadius) {
-        setError(
-          `You must be within ${officeConfig.radiusM}m of the office to clock ${nextType.toLowerCase()}. (You are ~${Math.round(dist)}m away — GPS accuracy ±${Math.round(accuracy ?? 0)}m)`
+      if (!isWFH) {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 15000,
+            enableHighAccuracy: true,
+            maximumAge: 0,
+          })
         );
-        setLoading(false);
-        return;
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        const dist = haversineDistance(latitude, longitude, officeConfig.lat, officeConfig.lon);
+        const effectiveRadius = officeConfig.radiusM + (accuracy ?? 0);
+
+        if (dist > effectiveRadius) {
+          setError(
+            `You must be within ${officeConfig.radiusM}m of the office to clock ${nextType.toLowerCase()}. (You are ~${Math.round(dist)}m away — GPS accuracy ±${Math.round(accuracy ?? 0)}m)`
+          );
+          setLoading(false);
+          return;
+        }
       }
 
       const res = await fetch("/api/attendance/punch", {
@@ -109,7 +117,7 @@ export function AttendanceCard({ initialPunches, onPunchSuccess }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [nextType, officeConfig, onPunchSuccess]);
+  }, [nextType, officeConfig, onPunchSuccess, isWFH]);
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4 h-full w-full">
@@ -139,10 +147,17 @@ export function AttendanceCard({ initialPunches, onPunchSuccess }: Props) {
       </button>
 
       {/* Location note */}
-      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-        <MapPin className="h-3 w-3 shrink-0 text-[var(--purple)]" />
-        <span>Requires GPS · within {officeConfig.radiusM}m of AntBox Bhubaneswar office</span>
-      </div>
+      {isWFH ? (
+        <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+          <CheckCircle2 className="h-3 w-3 shrink-0" />
+          <span>Work From Home Active: Geolocation bypassed</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+          <MapPin className="h-3 w-3 shrink-0 text-[var(--purple)]" />
+          <span>Requires GPS · within {officeConfig.radiusM}m of AntBox Bhubaneswar office</span>
+        </div>
+      )}
 
       {/* Feedback */}
       {error && (
