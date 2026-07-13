@@ -58,7 +58,7 @@ export function ResizableLayout({
   return (
     <div className="relative min-h-screen bg-[var(--background)] overflow-x-hidden">
       {/* Interactive Mesh Gradients */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none print:hidden">
         <div className="absolute -top-1/4 -right-1/4 w-[1000px] h-[1000px] rounded-full bg-gradient-to-bl from-[var(--purple-mid)] via-[var(--purple-light)] to-transparent blur-3xl opacity-60 animate-slow-spin mix-blend-multiply" />
         <div className="absolute -bottom-1/4 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-tr from-[var(--brand-accent)] via-[var(--purple-light)] to-transparent blur-3xl opacity-40 animate-slow-spin-reverse mix-blend-multiply" />
         {/* Cyber Grid Pattern */}
@@ -67,7 +67,7 @@ export function ResizableLayout({
 
       {/* Sidebar container with dynamic width */}
       <div 
-        className="fixed left-0 top-0 z-40 h-screen border-r border-[var(--border)] bg-[var(--sidebar-bg)] select-none"
+        className="fixed left-0 top-0 z-40 h-screen border-r border-[var(--border)] bg-[var(--sidebar-bg)] select-none print:hidden"
         style={{ width: `${width}px` }}
       >
         {sidebar}
@@ -85,16 +85,16 @@ export function ResizableLayout({
 
       {/* Main Content & Topbar container */}
       <div 
-        className="flex flex-col min-h-screen"
+        className="flex flex-col min-h-screen print:!ml-0"
         style={{ marginLeft: `${width}px` }}
       >
         <div 
-          className="fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-white/80 backdrop-blur-md px-6"
+          className="fixed right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-[var(--border)] bg-white/80 backdrop-blur-md px-6 print:hidden"
           style={{ left: `${width}px` }}
         >
           {topbar}
         </div>
-        <main className="mt-16 min-h-[calc(100vh-4rem)] p-8 relative z-10">{children}</main>
+        <main className="mt-16 min-h-[calc(100vh-4rem)] p-8 relative z-10 print:!mt-0 print:!p-0 print:!min-h-0">{children}</main>
       </div>
     </div>
   );
