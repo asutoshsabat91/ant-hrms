@@ -10,7 +10,6 @@ export default async function PortalPage({ searchParams }: { searchParams?: { gc
   }
 
   const isAdmin = session.user.role === "ADMIN";
-  const gcalStatus = searchParams?.gcal;
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
