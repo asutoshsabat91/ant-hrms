@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { redirect } from "next/navigation";
 
-export default async function PortalPage({ searchParams }: { searchParams?: { gcal?: string } }) {
+export default async function PortalPage() {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
