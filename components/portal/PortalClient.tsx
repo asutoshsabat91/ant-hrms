@@ -36,24 +36,22 @@ export function PortalClient({ employee, isAdmin = false, googleCalendarConnecte
   >(isAdmin ? "overview" : "personal");
 
   useEffect(() => {
-    if (!isAdmin) {
-      setActiveTab("personal");
-      return;
-    }
     if (
       tabParam === "payslips" ||
       tabParam === "personal" ||
       tabParam === "tax-declaration" ||
       tabParam === "hra" ||
       tabParam === "epf" ||
-      tabParam === "overview"
+      (isAdmin && tabParam === "overview")
     ) {
       setActiveTab(tabParam as "overview" | "personal" | "tax-declaration" | "hra" | "payslips" | "epf");
+    } else if (!isAdmin && (!tabParam || tabParam === "overview")) {
+      setActiveTab("personal");
     }
   }, [tabParam, isAdmin]);
 
   const handleTabChange = (tab: typeof activeTab) => {
-    if (!isAdmin) return;
+    if (!isAdmin && tab === "overview") return;
     setActiveTab(tab);
     router.push(`/portal?tab=${tab}`);
   };
