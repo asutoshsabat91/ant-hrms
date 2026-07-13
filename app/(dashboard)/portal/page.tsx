@@ -38,8 +38,6 @@ export default async function PortalPage({ searchParams }: { searchParams?: { gc
     <PortalClient
       employee={user.employee}
       isAdmin={isAdmin}
-      googleCalendarConnected={!!user.employee.googleRefreshToken}
-      gcalStatus={gcalStatus}
     />
   );
 }

@@ -21,11 +21,9 @@ type EmployeeWithDept = Employee & { department: Department };
 interface PortalClientProps {
   employee: EmployeeWithDept;
   isAdmin?: boolean;
-  googleCalendarConnected?: boolean;
-  gcalStatus?: string;
 }
 
-export function PortalClient({ employee, isAdmin = false, googleCalendarConnected = false, gcalStatus }: PortalClientProps) {
+export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
