@@ -1717,22 +1717,6 @@ export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
           </div>
         </div>
       )}
-
-      {/* Google Calendar Integration Card */}
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-sm px-4 pointer-events-none">
-        {gcalStatus === "connected" && (
-          <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-teal-50 border border-teal-200 px-4 py-2.5 shadow-lg text-teal-800 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4">
-            <CalendarCheck className="h-4 w-4 text-teal-600 shrink-0" />
-            Google Calendar connected! Your personal events now appear on your calendar.
-          </div>
-        )}
-        {gcalStatus === "error" && (
-          <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 shadow-lg text-red-800 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4">
-            <CalendarX className="h-4 w-4 text-red-500 shrink-0" />
-            Google Calendar connection failed. Please try again.
-          </div>
-        )}
-      </div>
     </div>
   );
 }
