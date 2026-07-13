@@ -11,8 +11,7 @@ import {
   X,
   Upload,
   Camera,
-  CalendarCheck,
-  CalendarX,
+  ExternalLink,
 } from "lucide-react";
 import type { Employee, Department } from "@prisma/client";
 
