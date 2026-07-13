@@ -11,7 +11,6 @@ import {
   X,
   Upload,
   Camera,
-  ExternalLink,
 } from "lucide-react";
 import type { Employee, Department } from "@prisma/client";
 
