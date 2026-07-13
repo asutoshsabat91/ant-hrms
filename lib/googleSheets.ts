@@ -389,7 +389,7 @@ export async function syncGoogleSheetsWithDb() {
           firstName,
           lastName,
           designation,
-          deployedCompany: deployedCompany || null,
+          deployedCompany: deployedCompany || undefined,
           personalEmail: personalEmail || null,
           phone: phone || null,
           gender: gender || null,
