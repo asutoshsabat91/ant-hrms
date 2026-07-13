@@ -11,7 +11,7 @@ const adminActions = [
 const employeeActions = [
   { label: "My Leaves", desc: "Apply & view requests", href: "/leave" },
   { label: "Attendance", desc: "Clock in / out", href: "/attendance" },
-  { label: "Separation", desc: "Manage resignation", href: "/separation" },
+  { label: "Company Policy", desc: "View company rules", href: "/policy" },
   { label: "Procurement", desc: "Request & track", href: "/portal/reimbursements" },
 ];
 
