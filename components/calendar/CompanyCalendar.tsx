@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react";
 
 const locales = {
   "en-US": enUS,
@@ -43,7 +43,7 @@ const categoryStyles: Record<string, { background: string; border: string }> = {
   PERSONAL_EVENT: { background: "#CCFBF1", border: "#0D9488" },
 };
 
-export function CompanyCalendar({ canManage, isSuperAdmin }: { canManage?: boolean; isSuperAdmin?: boolean }) {
+export function CompanyCalendar({ canManage, isSuperAdmin, googleCalendarConnected }: { canManage?: boolean; isSuperAdmin?: boolean; googleCalendarConnected?: boolean }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -301,6 +301,17 @@ export function CompanyCalendar({ canManage, isSuperAdmin }: { canManage?: boole
             <CardDescription>Month view of holidays, leave, and key events.</CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="/api/auth/google-calendar/connect"
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-all duration-300 shadow-sm ${
+                googleCalendarConnected
+                  ? "bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
+                  : "bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 hover:-translate-y-0.5"
+              }`}
+            >
+              <CalendarCheck className="h-3.5 w-3.5" />
+              {googleCalendarConnected ? "GCal Connected" : "Connect GCal"}
+            </a>
             {isSuperAdmin && (
               <label className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 transition-all duration-300 hover:bg-zinc-50 hover:border-zinc-300 hover:-translate-y-0.5 shadow-sm cursor-pointer select-none">
                 <span>Import Holidays CSV</span>

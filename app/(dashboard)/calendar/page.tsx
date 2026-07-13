@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { getCalendarOverview } from "@/lib/calendar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CompanyCalendar } from "@/components/calendar/CompanyCalendar";
@@ -10,6 +11,16 @@ export default async function CalendarPage() {
   const session = await auth();
   const canManage = !!session?.user && ["ADMIN"].includes(session.user.role);
   const isSuperAdmin = session?.user?.role === "ADMIN";
+  
+  let googleCalendarConnected = false;
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { employee: { select: { googleRefreshToken: true } } },
+    });
+    googleCalendarConnected = !!user?.employee?.googleRefreshToken;
+  }
+
   const { upcomingHolidays, upcomingLeaves, upcomingBirthdays, horizon } = await getCalendarOverview();
 
   return (
@@ -99,8 +110,13 @@ export default async function CalendarPage() {
         </Card>
       </div>
 
-      <CompanyCalendar canManage={canManage} isSuperAdmin={isSuperAdmin} />
+      <div className="lg:col-span-2">
+        <CompanyCalendar 
+          canManage={canManage} 
+          isSuperAdmin={isSuperAdmin} 
+          googleCalendarConnected={googleCalendarConnected} 
+        />
+      </div>
     </div>
   );
 }
-

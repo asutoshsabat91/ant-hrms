@@ -15,7 +15,6 @@ import {
   CalendarX,
 } from "lucide-react";
 import type { Employee, Department } from "@prisma/client";
-import { FloatingAIChatbot } from "./FloatingAIChatbot";
 
 type EmployeeWithDept = Employee & { department: Department };
 
@@ -1736,40 +1735,6 @@ export function PortalClient({ employee, isAdmin = false, googleCalendarConnecte
           </div>
         )}
       </div>
-
-      {/* Google Calendar Quick-Connect Widget */}
-      <div className="mt-6 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`rounded-xl p-2.5 ${googleCalendarConnected ? "bg-teal-50" : "bg-zinc-50"}`}>
-            {googleCalendarConnected
-              ? <CalendarCheck className="h-5 w-5 text-teal-600" />
-              : <CalendarX className="h-5 w-5 text-zinc-400" />
-            }
-          </div>
-          <div>
-            <p className="text-sm font-bold text-zinc-900">Google Calendar</p>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              {googleCalendarConnected
-                ? "Connected — your personal events appear only to you on the calendar."
-                : "Connect to show your personal Google Calendar events on your calendar view."}
-            </p>
-          </div>
-        </div>
-        <a
-          href="/api/auth/google-calendar/connect"
-          className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-            googleCalendarConnected
-              ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              : "bg-[var(--brand-secondary,#8e43ac)] text-white hover:opacity-90"
-          }`}
-        >
-          <CalendarCheck className="h-3.5 w-3.5" />
-          {googleCalendarConnected ? "Reconnect" : "Connect Calendar"}
-        </a>
-      </div>
-
-      {/* Floating HR AI Chatbot widget */}
-      <FloatingAIChatbot />
     </div>
   );
 }

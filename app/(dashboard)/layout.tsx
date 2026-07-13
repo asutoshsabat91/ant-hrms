@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { ResizableLayout } from "@/components/layout/ResizableLayout";
 import { SecurityHandler } from "@/components/layout/SecurityHandler";
+import { FloatingAIChatbot } from "@/components/portal/FloatingAIChatbot";
 
 export default async function DashboardLayout({
   children,
@@ -42,6 +43,7 @@ export default async function DashboardLayout({
       >
         {children}
       </ResizableLayout>
+      <FloatingAIChatbot />
     </>
   );
 }
