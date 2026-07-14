@@ -404,64 +404,64 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   return (
     <div className="w-full h-full flex relative select-none bg-zinc-50/50">
       
-      {/* Sidebar for Unassigned Employees */}
-      <div className="w-80 flex-none border-r border-zinc-200 bg-white flex flex-col h-full z-10 shadow-sm">
-        <div className="p-4 border-b border-zinc-100">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-extrabold text-zinc-950 uppercase tracking-widest">
-              Unassigned List
-            </h4>
-            <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
-              {unassigned.length} Employees
-            </span>
-          </div>
-          <p className="text-[10px] text-zinc-400 font-medium mb-3 leading-snug">
-            These employees report to no one. Assign them to Rohit or other managers to add them to the Org Chart.
-          </p>
-          <div className="relative flex items-center rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 focus-within:border-zinc-300 transition-colors">
-            <SearchIcon className="h-3.5 w-3.5 text-zinc-400 mr-2 shrink-0" />
-            <input
-              type="text"
-              placeholder="Search unassigned..."
-              value={sidebarSearch}
-              onChange={(e) => setSidebarSearch(e.target.value)}
-              className="w-full bg-transparent text-xs text-zinc-800 placeholder:text-zinc-400 outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Scrollable List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {filteredUnassigned.length === 0 ? (
-            <div className="text-center text-xs text-zinc-400 py-8">
-              {sidebarSearch ? "No matches found." : "All employees assigned! 🎉"}
+      {/* Sidebar for Unassigned Employees — Admin only */}
+      {isAdmin && (
+        <div className="w-80 flex-none border-r border-zinc-200 bg-white flex flex-col h-full z-10 shadow-sm">
+          <div className="p-4 border-b border-zinc-100">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-extrabold text-zinc-950 uppercase tracking-widest">
+                Unassigned List
+              </h4>
+              <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
+                {unassigned.length} Employees
+              </span>
             </div>
-          ) : (
-            filteredUnassigned.map(emp => {
-              const initials = `${emp.firstName[0] || ""}${emp.lastName[0] || ""}`.toUpperCase();
-              return (
-                <div 
-                  key={emp.id} 
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl border border-zinc-100 hover:border-zinc-200 bg-zinc-50/30 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Avatar className="h-8 w-8 border border-zinc-100 shrink-0">
-                      <AvatarFallback className="bg-zinc-900 text-white text-[10px] font-bold">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <h5 className="text-[11px] font-bold text-zinc-950 truncate leading-tight">
-                        {emp.firstName} {emp.lastName}
-                      </h5>
-                      <p className="text-[9px] font-semibold text-zinc-400 truncate leading-none mt-0.5">
-                        {emp.designation}
-                      </p>
-                    </div>
-                  </div>
+            <p className="text-[10px] text-zinc-400 font-medium mb-3 leading-snug">
+              These employees report to no one. Assign them to Rohit or other managers to add them to the Org Chart.
+            </p>
+            <div className="relative flex items-center rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 focus-within:border-zinc-300 transition-colors">
+              <SearchIcon className="h-3.5 w-3.5 text-zinc-400 mr-2 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search unassigned..."
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="w-full bg-transparent text-xs text-zinc-800 placeholder:text-zinc-400 outline-none"
+              />
+            </div>
+          </div>
 
-                  {/* Quick Assignment Dropdown */}
-                  {isAdmin ? (
+          {/* Scrollable List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {filteredUnassigned.length === 0 ? (
+              <div className="text-center text-xs text-zinc-400 py-8">
+                {sidebarSearch ? "No matches found." : "All employees assigned! 🎉"}
+              </div>
+            ) : (
+              filteredUnassigned.map(emp => {
+                const initials = `${emp.firstName[0] || ""}${emp.lastName[0] || ""}`.toUpperCase();
+                return (
+                  <div 
+                    key={emp.id} 
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-zinc-100 hover:border-zinc-200 bg-zinc-50/30 transition-all group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar className="h-8 w-8 border border-zinc-100 shrink-0">
+                        <AvatarFallback className="bg-zinc-900 text-white text-[10px] font-bold">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <h5 className="text-[11px] font-bold text-zinc-950 truncate leading-tight">
+                          {emp.firstName} {emp.lastName}
+                        </h5>
+                        <p className="text-[9px] font-semibold text-zinc-400 truncate leading-none mt-0.5">
+                          {emp.designation}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Assignment Dropdown — admin only */}
                     <div className="relative shrink-0 select-none">
                       <select
                         disabled={updatingId === emp.id}
@@ -480,17 +480,13 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
                         <ChevronDown className="h-2.5 w-2.5" />
                       </div>
                     </div>
-                  ) : (
-                    <span className="text-[8px] font-extrabold uppercase text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-md">
-                      Read Only
-                    </span>
-                  )}
-                </div>
-              );
-            })
-          )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Canvas Area */}
       <div className="flex-1 h-full flex flex-col relative overflow-hidden">
