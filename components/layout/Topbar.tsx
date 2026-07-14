@@ -93,21 +93,21 @@ export function Topbar({ user, employee }: TopbarProps) {
     fetchEmployeesIfNeeded();
 
     const pages = [
-      { name: "Dashboard 📊", href: "/" },
-      { name: "Employees 👥", href: "/employees" },
-      { name: "Onboarding 🚀", href: "/onboarding" },
-      { name: "Separation 🚪", href: "/separation" },
-      { name: "Offboarding 🧹", href: "/offboarding" },
-      { name: "Attendance ⏰", href: "/attendance" },
-      { name: "Leave 🌴", href: "/leave" },
-      { name: "Payroll 💰", href: "/payroll" },
-      { name: "Documents 📂", href: "/documents" },
-      { name: "Portal 💼", href: "/portal" },
-      { name: "POSH 🛡️", href: "/posh" },
-      { name: "Calendar 📅", href: "/calendar" },
-      { name: "Reports 📈", href: "/reports" },
-      { name: "Policy 📖", href: "/policy" },
-      { name: "Settings ⚙️", href: "/settings" },
+      { name: "Dashboard", href: "/" },
+      { name: "Employees", href: "/employees" },
+      { name: "Onboarding", href: "/onboarding" },
+      { name: "Separation", href: "/separation" },
+      { name: "Offboarding", href: "/offboarding" },
+      { name: "Attendance", href: "/attendance" },
+      { name: "Leave", href: "/leave" },
+      { name: "Payroll", href: "/payroll" },
+      { name: "Documents", href: "/documents" },
+      { name: "Portal", href: "/portal" },
+      { name: "POSH", href: "/posh" },
+      { name: "Calendar", href: "/calendar" },
+      { name: "Reports", href: "/reports" },
+      { name: "Policy", href: "/policy" },
+      { name: "Settings", href: "/settings" },
     ];
 
     const matchedPages = pages
