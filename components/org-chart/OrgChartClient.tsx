@@ -9,8 +9,7 @@ import {
   ChevronUp, 
   Building,
   Edit2,
-  Search as SearchIcon,
-  UserPlus
+  Search as SearchIcon
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
