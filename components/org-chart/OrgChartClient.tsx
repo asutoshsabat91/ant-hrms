@@ -230,40 +230,36 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
     const isCollapsed = !!collapsedNodes[employee.id];
     const initials = `${employee.firstName[0] || ""}${employee.lastName[0] || ""}`.toUpperCase();
 
-    // Check if it's the absolute root (Rohit Singh)
     const isRoot = employee.email.toLowerCase() === "rohit@theantbox.com";
-    
-    // Check if node is part of active hovered path
     const isHighlighted = activePathIds.has(employee.id);
-
-    // Determine bottom connector highlight status
     const isBottomHighlighted = isHighlighted && hoveredNodeId !== employee.id;
 
-    // Style borders and backgrounds uniquely to denote hierarchy level and hovered state
     const cardBorderColor = isHighlighted
       ? "border-violet-500 shadow-lg shadow-violet-100 ring-2 ring-violet-200/50 scale-[1.02] z-20"
-      : isRoot 
-      ? "border-violet-300 shadow-violet-50/50 bg-gradient-to-br from-white to-violet-50/30" 
-      : children.length > 0 
-      ? "border-indigo-100 hover:border-indigo-200 bg-gradient-to-br from-white to-indigo-50/10" 
+      : isRoot
+      ? "border-violet-300 bg-gradient-to-br from-white to-violet-50/30"
+      : children.length > 0
+      ? "border-indigo-100 hover:border-indigo-200 bg-gradient-to-br from-white to-indigo-50/10"
       : "border-zinc-200 hover:border-zinc-300 bg-white";
 
+    const lineColor = isHighlighted ? "bg-violet-500" : "bg-zinc-300";
+    const stemColor = isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300";
     const visibleChildren = !isCollapsed ? children : [];
 
     return (
       <div className="flex flex-col items-center" key={employee.id}>
-        {/* Vertical line coming in from parent (not for root) */}
+
+        {/* Vertical drop from parent to this card */}
         {!isRoot && (
-          <div className={`w-0.5 h-8 transition-colors duration-200 ${isHighlighted ? "bg-violet-500" : "bg-zinc-300"}`} />
+          <div className={`w-px h-8 transition-colors duration-200 ${lineColor}`} />
         )}
 
-        {/* Card Component */}
-        <div 
+        {/* Card */}
+        <div
           onMouseEnter={() => setHoveredNodeId(employee.id)}
           onMouseLeave={() => setHoveredNodeId(null)}
-          className={`nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border p-4 w-56 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
+          className={`nocanvasdrag relative z-10 bg-white rounded-2xl border p-4 w-52 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
         >
-          {/* Main Card Data */}
           <div className="flex items-start gap-3 w-full">
             <Avatar className="h-10 w-10 border border-zinc-100 shrink-0">
               <AvatarFallback className="bg-zinc-950 text-white text-xs font-bold">
@@ -271,7 +267,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h5 className="text-xs font-bold text-zinc-950 truncate leading-tight flex items-center gap-1.5">
+              <h5 className="text-xs font-bold text-zinc-950 leading-tight flex flex-wrap items-center gap-1">
                 {employee.firstName} {employee.lastName}
                 {isRoot && (
                   <span className="text-[8px] font-extrabold uppercase tracking-widest text-violet-600 bg-violet-50 px-1 rounded border border-violet-100">
@@ -282,16 +278,16 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
               <p className="text-[10px] font-semibold text-zinc-400 truncate leading-none mt-1">
                 {employee.designation}
               </p>
-              <div className="flex items-center gap-1.5 mt-2.5 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/50 border border-violet-100/50 px-1.5 py-0.5 rounded-md w-fit">
+              <div className="flex items-center gap-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/50 border border-violet-100/50 px-1.5 py-0.5 rounded-md w-fit">
                 <Building className="h-2.5 w-2.5 shrink-0" />
                 {employee.department.name}
               </div>
             </div>
           </div>
 
-          {/* Edit Button overlay for admin */}
+          {/* Admin edit button */}
           {isAdmin && (
-            <button 
+            <button
               onClick={() => setEditingNodeId(editingNodeId === employee.id ? null : employee.id)}
               className="absolute top-2 right-2 p-1 rounded-md bg-zinc-50 border border-zinc-200/50 opacity-0 group-hover:opacity-100 hover:bg-zinc-100 transition-all shadow-sm"
               title="Edit Reporting Manager"
@@ -300,7 +296,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
             </button>
           )}
 
-          {/* Editing State (Manager Selection Dropdown) */}
+          {/* Manager selector */}
           {editingNodeId === employee.id && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-zinc-200 shadow-xl p-2.5 z-20 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
               <label className="block text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Reports To Manager</label>
@@ -322,7 +318,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
                   <ChevronDown className="h-3 w-3" />
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setEditingNodeId(null)}
                 className="w-full text-[9px] font-extrabold uppercase tracking-wider py-1 text-center text-zinc-500 hover:text-zinc-800 transition-colors"
               >
@@ -331,17 +327,14 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
             </div>
           )}
 
-          {/* Reportees Collapse Button */}
+          {/* Collapse toggle button */}
           {children.length > 0 && (
             <button
               onClick={(e) => toggleCollapse(employee.id, e)}
-              className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full border border-zinc-200 bg-white text-[9px] font-bold text-zinc-500 shadow-sm hover:bg-zinc-50 hover:text-zinc-800 transition-all shrink-0 z-10"
+              className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 px-2 py-0.5 rounded-full border border-zinc-200 bg-white text-[9px] font-bold text-zinc-500 shadow-sm hover:bg-zinc-50 hover:text-zinc-800 transition-all z-10"
             >
               {isCollapsed ? (
-                <>
-                  <Plus className="h-2.5 w-2.5 text-zinc-400" />
-                  {children.length}
-                </>
+                <><Plus className="h-2.5 w-2.5 text-zinc-400" />{children.length}</>
               ) : (
                 <ChevronUp className="h-2.5 w-2.5 text-zinc-400" />
               )}
@@ -349,32 +342,45 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           )}
         </div>
 
-        {/* Children Branches */}
+        {/* Children subtree */}
         {visibleChildren.length > 0 && (
           <div className="flex flex-col items-center">
-            {/* Vertical stem going down from parent */}
-            <div className={`w-0.5 h-8 transition-colors duration-200 ${isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300"}`} />
+            {/* Vertical stem from card bottom to the horizontal bar */}
+            <div className={`w-px h-8 transition-colors duration-200 ${stemColor}`} />
 
             {visibleChildren.length === 1 ? (
-              /* Single child — just pass through vertically */
               renderNode(visibleChildren[0])
             ) : (
-              /* Multiple children — draw horizontal bar spanning them */
-              <div className="flex flex-col items-center w-full">
-                {/* Horizontal spanning bar */}
-                <div className="flex items-start w-full">
-                  {visibleChildren.map((child, idx) => (
-                    <div key={child.employee.id} className="flex flex-col items-center flex-1">
-                      {/* Left/right half segments of horizontal bar */}
-                      <div className="flex w-full h-0.5">
-                        <div className={`flex-1 ${idx === 0 ? "invisible" : (isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300")}`} />
-                        <div className={`flex-1 ${idx === visibleChildren.length - 1 ? "invisible" : (isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300")}`} />
+              /*
+                Each child column:
+                  ┌─────────────── full column width ───────────────┐
+                  │  [left half bar] │ [right half bar]             │
+                  │           [vertical drop]                       │
+                  │               [card]                            │
+                  └─────────────────────────────────────────────────┘
+                  - first child: left half is transparent (nothing to left)
+                  - last child: right half is transparent (nothing to right)
+                  - middle children: both halves visible → continuous bar
+                  All vertical drops start at the same row as the bar, creating the T-junction.
+              */
+              <div className="flex">
+                {visibleChildren.map((child, idx) => {
+                  const isFirst = idx === 0;
+                  const isLast = idx === visibleChildren.length - 1;
+                  return (
+                    <div key={child.employee.id} className="flex flex-col items-center px-4">
+                      {/* Horizontal bar halves: meet at child center to form continuous line */}
+                      <div className="flex w-full h-px">
+                        <div className={`flex-1 h-px transition-colors duration-200 ${isFirst ? "bg-transparent" : stemColor}`} />
+                        <div className={`flex-1 h-px transition-colors duration-200 ${isLast ? "bg-transparent" : stemColor}`} />
                       </div>
-                      {/* Child subtree */}
+                      {/* Vertical drop from bar to child card */}
+                      <div className={`w-px h-8 transition-colors duration-200 ${stemColor}`} />
+                      {/* Recurse */}
                       {renderNode(child)}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
           </div>
