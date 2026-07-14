@@ -37,10 +37,17 @@ export async function POST(req: Request) {
       systemInstruction,
     });
 
-    const geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
+    let geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
       role: msg.role === "user" ? "user" : "model",
       parts: [{ text: msg.content }],
     }));
+
+    const firstUserIdx = geminiHistory.findIndex(msg => msg.role === "user");
+    if (firstUserIdx !== -1) {
+      geminiHistory = geminiHistory.slice(firstUserIdx);
+    } else {
+      geminiHistory = [];
+    }
 
     const lastMessage = messages[messages.length - 1]?.content || "";
 
