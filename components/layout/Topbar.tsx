@@ -2,7 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, LogOut, User, Briefcase } from "lucide-react";
+import { Search, LogOut, User, Briefcase, Network } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -218,6 +218,14 @@ export function Topbar({ user, employee }: TopbarProps) {
               </div>
             )}
           </div>
+
+          <button
+            onClick={() => router.push("/org-chart")}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 transition-all shadow-sm"
+            title="Organization Chart"
+          >
+            <Network className="h-4 w-4" />
+          </button>
 
           <NotificationBell />
 
