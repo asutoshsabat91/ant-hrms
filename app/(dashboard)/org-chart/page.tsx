@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OrgChartClient } from "@/components/org-chart/OrgChartClient";
 import { redirect } from "next/navigation";
