@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       `- Active Deployed Employees: ${employeeCount}\n` +
       `- Core Departments: ${deptListStr}\n` +
       `- Office Location: Patia, Bhubaneswar, Odisha\n` +
-      `- Working Hours: 10:00 AM to 7:00 PM, Monday to Friday.\n\n` +
+      `- Working Hours: 2:00 PM to 10:00 PM, Monday to Friday.\n\n` +
       `Always maintain a helpful attitude. Avoid speculating on private database values that you do not have.`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
