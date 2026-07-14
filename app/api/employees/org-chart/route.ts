@@ -48,10 +48,12 @@ export async function PUT(req: Request) {
 
     const email = session.user.email?.toLowerCase() || "";
     const isRitesh = email === "ritesh@theantbox.com";
-    const isAdmin = session.user.role === "ADMIN" || isRitesh;
+    const isChandrita = email === "chandrita@theantbox.com";
+    const isSuperAdmin = (session.user.role === "ADMIN") && !isRitesh;
+    const canEdit = isSuperAdmin || isChandrita;
 
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 });
+    if (!canEdit) {
+      return NextResponse.json({ error: "Forbidden: Super Admin or HR Admin access only" }, { status: 403 });
     }
 
     const { employeeId, managerId } = await req.json();

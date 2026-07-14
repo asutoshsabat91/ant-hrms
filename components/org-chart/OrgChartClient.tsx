@@ -225,7 +225,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   };
 
   // Render a Node Card inside the tree
-  const renderNode = (node: TreeNode, isLast: boolean, isFirst: boolean, isSingle: boolean) => {
+  const renderNode = (node: TreeNode) => {
     const { employee, children } = node;
     const isCollapsed = !!collapsedNodes[employee.id];
     const initials = `${employee.firstName[0] || ""}${employee.lastName[0] || ""}`.toUpperCase();
@@ -248,26 +248,20 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
       ? "border-indigo-100 hover:border-indigo-200 bg-gradient-to-br from-white to-indigo-50/10" 
       : "border-zinc-200 hover:border-zinc-300 bg-white";
 
+    const visibleChildren = !isCollapsed ? children : [];
+
     return (
-      <div className="flex flex-col items-center relative" key={employee.id}>
-        {/* Top Connector Line */}
+      <div className="flex flex-col items-center" key={employee.id}>
+        {/* Vertical line coming in from parent (not for root) */}
         {!isRoot && (
-          <div className={`w-0.5 h-6 bg-zinc-300 relative transition-colors duration-200 ${isHighlighted ? "bg-violet-500" : "bg-zinc-200"}`}>
-            {!isSingle && (
-              <div 
-                className={`absolute top-0 h-0.5 bg-zinc-200 transition-colors duration-200 ${
-                  isFirst ? "left-1/2 w-1/2" : isLast ? "right-1/2 w-1/2" : "left-0 w-full"
-                } ${isHighlighted ? "bg-violet-500" : "bg-zinc-200"}`}
-              />
-            )}
-          </div>
+          <div className={`w-0.5 h-8 transition-colors duration-200 ${isHighlighted ? "bg-violet-500" : "bg-zinc-300"}`} />
         )}
 
         {/* Card Component */}
         <div 
           onMouseEnter={() => setHoveredNodeId(employee.id)}
           onMouseLeave={() => setHoveredNodeId(null)}
-          className={`nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border p-4 w-60 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
+          className={`nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border p-4 w-56 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
         >
           {/* Main Card Data */}
           <div className="flex items-start gap-3 w-full">
@@ -341,7 +335,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           {children.length > 0 && (
             <button
               onClick={(e) => toggleCollapse(employee.id, e)}
-              className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full border border-zinc-200 bg-white text-[9px] font-bold text-zinc-500 shadow-sm hover:bg-zinc-50 hover:text-zinc-800 transition-all shrink-0"
+              className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full border border-zinc-200 bg-white text-[9px] font-bold text-zinc-500 shadow-sm hover:bg-zinc-50 hover:text-zinc-800 transition-all shrink-0 z-10"
             >
               {isCollapsed ? (
                 <>
@@ -355,21 +349,35 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           )}
         </div>
 
-        {/* Children Branches Render */}
-        {children.length > 0 && !isCollapsed && (
-          <>
-            <div className={`w-0.5 h-6 bg-zinc-200 transition-colors duration-200 ${isBottomHighlighted ? "bg-violet-500" : "bg-zinc-200"}`} />
-            <div className="flex gap-10 justify-center items-start">
-              {children.map((child, idx) => 
-                renderNode(
-                  child, 
-                  idx === children.length - 1, 
-                  idx === 0, 
-                  children.length === 1
-                )
-              )}
-            </div>
-          </>
+        {/* Children Branches */}
+        {visibleChildren.length > 0 && (
+          <div className="flex flex-col items-center">
+            {/* Vertical stem going down from parent */}
+            <div className={`w-0.5 h-8 transition-colors duration-200 ${isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300"}`} />
+
+            {visibleChildren.length === 1 ? (
+              /* Single child — just pass through vertically */
+              renderNode(visibleChildren[0])
+            ) : (
+              /* Multiple children — draw horizontal bar spanning them */
+              <div className="flex flex-col items-center w-full">
+                {/* Horizontal spanning bar */}
+                <div className="flex items-start w-full">
+                  {visibleChildren.map((child, idx) => (
+                    <div key={child.employee.id} className="flex flex-col items-center flex-1">
+                      {/* Left/right half segments of horizontal bar */}
+                      <div className="flex w-full h-0.5">
+                        <div className={`flex-1 ${idx === 0 ? "invisible" : (isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300")}`} />
+                        <div className={`flex-1 ${idx === visibleChildren.length - 1 ? "invisible" : (isBottomHighlighted ? "bg-violet-500" : "bg-zinc-300")}`} />
+                      </div>
+                      {/* Child subtree */}
+                      {renderNode(child)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     );
@@ -514,7 +522,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
               }}
               className="flex gap-12 p-24"
             >
-              {tree.map((root) => renderNode(root, true, true, true))}
+              {tree.map((root) => renderNode(root))}
             </div>
           )}
         </div>

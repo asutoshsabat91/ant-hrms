@@ -11,7 +11,9 @@ export default async function OrgChartPage() {
 
   const email = session.user.email?.toLowerCase() || "";
   const isRitesh = email === "ritesh@theantbox.com";
-  const isAdmin = session.user.role === "ADMIN" || isRitesh;
+  const isChandrita = email === "chandrita@theantbox.com";
+  const isSuperAdmin = (session.user.role === "ADMIN") && !isRitesh;
+  const canEdit = isSuperAdmin || isChandrita;
 
   return (
     <div className="space-y-6 h-[calc(100vh-140px)] flex flex-col">
@@ -24,7 +26,7 @@ export default async function OrgChartPage() {
 
       <div className="flex-1 min-h-0 bg-zinc-50/50 rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm">
         <OrgChartClient
-          isAdmin={isAdmin}
+          isAdmin={canEdit}
         />
       </div>
     </div>
