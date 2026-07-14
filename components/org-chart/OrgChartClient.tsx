@@ -7,11 +7,7 @@ import {
   Maximize2, 
   ChevronDown, 
   ChevronUp, 
-  User, 
-  Check, 
-  ChevronsUpDown,
   Building,
-  Mail,
   Edit2
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,7 +28,6 @@ interface Employee {
 
 interface OrgChartClientProps {
   isAdmin: boolean;
-  departments: { id: string; name: string }[];
 }
 
 interface TreeNode {
@@ -40,7 +35,7 @@ interface TreeNode {
   children: TreeNode[];
 }
 
-export function OrgChartClient({ isAdmin, departments }: OrgChartClientProps) {
+export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedNodes, setCollapsedNodes] = useState<Record<string, boolean>>({});
@@ -207,7 +202,7 @@ export function OrgChartClient({ isAdmin, departments }: OrgChartClientProps) {
       ? "border-violet-500 shadow-violet-100/50" 
       : children.length > 0 
       ? "border-zinc-200 hover:border-zinc-300" 
-      : "border-zinc-100 hover:border-zinc-200";
+      : "border-zinc-200 hover:border-zinc-200";
 
     return (
       <div className="flex flex-col items-center relative" key={employee.id}>
@@ -226,7 +221,7 @@ export function OrgChartClient({ isAdmin, departments }: OrgChartClientProps) {
         )}
 
         {/* Card Component */}
-        <div className="nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border border-zinc-200/80 p-4 w-60 shadow-sm hover:shadow-md transition-all duration-300 select-none group">
+        <div className={`nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border p-4 w-60 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}>
           
           {/* Main Card Data */}
           <div className="flex items-start gap-3 w-full">
@@ -361,7 +356,7 @@ export function OrgChartClient({ isAdmin, departments }: OrgChartClientProps) {
             }}
             className="flex gap-12 p-24"
           >
-            {tree.map((root, idx) => renderNode(root, true, true, true))}
+            {tree.map((root) => renderNode(root, true, true, true))}
           </div>
         )}
       </div>

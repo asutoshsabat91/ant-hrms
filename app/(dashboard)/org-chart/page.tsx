@@ -14,11 +14,6 @@ export default async function OrgChartPage() {
   const isRitesh = email === "ritesh@theantbox.com";
   const isAdmin = session.user.role === "ADMIN" || isRitesh;
 
-  // Fetch departments to display on cards
-  const departments = await prisma.department.findMany({
-    select: { id: true, name: true },
-  });
-
   return (
     <div className="space-y-6 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex-none">
@@ -31,7 +26,6 @@ export default async function OrgChartPage() {
       <div className="flex-1 min-h-0 bg-zinc-50/50 rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm">
         <OrgChartClient
           isAdmin={isAdmin}
-          departments={departments}
         />
       </div>
     </div>
