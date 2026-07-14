@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { differenceInCalendarDays } from "date-fns";
 import { X } from "lucide-react";
 
 interface LeaveTypeItem {
@@ -65,7 +64,18 @@ export function ApplyLeaveDialog({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [holidays, setHolidays] = useState<Array<{ date: string }>>([]);
   const firstInputRef = useRef<HTMLSelectElement>(null);
+
+  // Fetch holidays on mount
+  useEffect(() => {
+    fetch("/api/holidays")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setHolidays(data);
+      })
+      .catch(err => console.error("Failed to fetch holidays", err));
+  }, []);
 
   // Focus first field and set default selected type when opening
   useEffect(() => {
@@ -104,15 +114,30 @@ export function ApplyLeaveDialog({
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Compute duration — pure calculation, no hooks needed
-  let durationDays = 0;
-  if (startDate && endDate) {
+  // Compute duration — excluding weekends and holidays
+  const durationDays = useMemo(() => {
+    if (!startDate || !endDate) return 0;
     const s = new Date(startDate);
     const e = new Date(endDate);
-    if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
-      durationDays = differenceInCalendarDays(e, s) + 1;
+    if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return 0;
+
+    const holidayStrings = new Set(holidays.map(h => new Date(h.date).toISOString().split("T")[0]));
+
+    let count = 0;
+    const curr = new Date(s);
+    while (curr <= e) {
+      const dayOfWeek = curr.getDay(); // 0 is Sunday, 6 is Saturday
+      const dateStr = curr.toISOString().split("T")[0];
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isHoliday = holidayStrings.has(dateStr);
+      
+      if (!isWeekend && !isHoliday) {
+        count++;
+      }
+      curr.setDate(curr.getDate() + 1);
     }
-  }
+    return count;
+  }, [startDate, endDate, holidays]);
 
   const resetForm = useCallback(() => {
     setStartDate("");

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { differenceInCalendarDays, format } from "date-fns";
+import { format } from "date-fns";
 import { getDynamicBalances } from "@/lib/leave";
 import { sendLeaveRequestEmail } from "@/lib/mail";
 
@@ -133,10 +133,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "End date must be after start date." }, { status: 400 });
   }
 
-  const days = differenceInCalendarDays(end, start) + 1;
-  if (days <= 0) {
-    return NextResponse.json({ error: "Leave must be at least one day." }, { status: 400 });
+  // Fetch holidays to exclude them from the calculation
+  const holidays = await prisma.holiday.findMany();
+  const holidayStrings = new Set(holidays.map(h => h.date.toISOString().split("T")[0]));
+
+  let computedDays = 0;
+  const curr = new Date(start);
+  while (curr <= end) {
+    const dayOfWeek = curr.getDay(); // 0 is Sunday, 6 is Saturday
+    const dateStr = curr.toISOString().split("T")[0];
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isHoliday = holidayStrings.has(dateStr);
+    
+    if (!isWeekend && !isHoliday) {
+      computedDays++;
+    }
+    curr.setDate(curr.getDate() + 1);
   }
+
+  if (computedDays <= 0) {
+    return NextResponse.json({ error: "Leave duration is 0 days after excluding weekends and holidays." }, { status: 400 });
+  }
+
+  const days = computedDays;
   const year = start.getFullYear();
 
   const result = await prisma.$transaction(async (tx) => {
@@ -145,17 +164,7 @@ export async function POST(req: Request) {
 
     const isUnpaidIntern = employee.employmentType === "INTERN" && (!employee.ctc || employee.ctc === 0);
 
-    // 2. Holiday Overlap Check
-    if (leaveType.code !== "WFH") {
-      const holidayOverlap = await tx.holiday.findFirst({
-        where: {
-          date: { gte: start, lte: end },
-        },
-      });
-      if (holidayOverlap) {
-        throw new Error(`Cannot apply for leave on a holiday: ${holidayOverlap.name} (${format(holidayOverlap.date, "dd MMM yyyy")}).`);
-      }
-    }
+    // 2. Holiday Overlap Check - Removed as holidays are automatically excluded from days calculation
 
     // 3. Notice Period check
     if (!isUnpaidIntern && leaveType.priorNoticeHours > 0) {

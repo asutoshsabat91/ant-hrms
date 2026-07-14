@@ -160,8 +160,22 @@ export async function getLeaveOverview(userId?: string, userRole?: string) {
       leaveType: true,
     },
     orderBy: { updatedAt: "desc" },
-    take: 8,
+    take: 12,
   });
+
+  const recentRequestsWithBalances = await Promise.all(
+    recentRequests.map(async (r) => {
+      const balances = await getDynamicBalances(r.employeeId, r.employee.employmentType, currentYear);
+      const paidLeavesLeft = balances
+        .filter((b) => b.leaveType.code !== "LOP" && b.leaveType.code !== "WFH")
+        .reduce((sum, b) => sum + Math.max(0, b.allocated - b.used - b.pending), 0);
+
+      return {
+        ...r,
+        paidLeavesLeft,
+      };
+    })
+  );
 
   const counts = {
     PENDING: 0,
@@ -176,7 +190,7 @@ export async function getLeaveOverview(userId?: string, userRole?: string) {
   return {
     year: currentYear,
     leaveBalances,
-    recentRequests,
+    recentRequests: recentRequestsWithBalances,
     counts,
   };
 }

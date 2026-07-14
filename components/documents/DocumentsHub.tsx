@@ -161,6 +161,7 @@ function UploadModal({
   currentEmployeeId,
   onClose,
   onSuccess,
+  documentRequestId,
 }: {
   defaultTitle?: string;
   defaultType?: DocType;
@@ -169,6 +170,7 @@ function UploadModal({
   currentEmployeeId: string | null;
   onClose: () => void;
   onSuccess: (doc: DocumentRecord) => void;
+  documentRequestId?: string;
 }) {
   const [title, setTitle] = useState(defaultTitle ?? "");
   const [type, setType] = useState<DocType>(defaultType ?? "OTHER");
@@ -211,6 +213,7 @@ function UploadModal({
           issuedDate,
           description: notes,
           fileData: fileData ?? undefined,
+          documentRequestId,
         }),
       });
       const data = await res.json();
@@ -528,15 +531,118 @@ function matchesAdminCategory(doc: DocumentRecord, cat: typeof ADMIN_CATEGORIES[
   return (cat.types as string[]).includes(doc.type);
 }
 
-// ─── Main Hub ───────────────────────────────────────────────────────────────
+interface DocumentRequestItem {
+  id: string;
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeId: string;
+  };
+  documentType: string;
+  title: string;
+  reason: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDocs, employees }: Props) {
   const [docs, setDocs] = useState<DocumentRecord[]>(initialDocs);
-  const [uploadModal, setUploadModal] = useState<{ title?: string; type?: DocType } | null>(null);
+  const [uploadModal, setUploadModal] = useState<{ title?: string; type?: DocType; documentRequestId?: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<string>("");
   const [activeAdminTab, setActiveAdminTab] = useState("all");
 
-  const addDoc = (doc: DocumentRecord) => setDocs((prev) => [doc, ...prev]);
+  // Document Requests states
+  const [docRequests, setDocRequests] = useState<DocumentRequestItem[]>([]);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [reqDocType, setReqDocType] = useState<string>("OFFER_LETTER");
+  const [reqTitle, setReqTitle] = useState("");
+  const [reqReason, setReqReason] = useState("");
+  const [reqError, setReqError] = useState<string | null>(null);
+  const [reqLoading, setReqLoading] = useState(false);
+
+  const addDoc = (doc: DocumentRecord) => {
+    setDocs((prev) => [doc, ...prev]);
+    fetchRequests(); // Refresh requests list
+  };
+
+  const fetchRequests = async () => {
+    try {
+      const res = await fetch("/api/documents/requests");
+      if (res.ok) {
+        const data = await res.json();
+        setDocRequests(data.requests || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch document requests", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const submitRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reqTitle.trim() || !reqReason.trim()) {
+      setReqError("Please fill out all fields.");
+      return;
+    }
+    setReqLoading(true);
+    setReqError(null);
+    try {
+      const res = await fetch("/api/documents/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentType: reqDocType,
+          title: reqTitle.trim(),
+          reason: reqReason.trim(),
+        }),
+      });
+      if (res.ok) {
+        setIsRequestModalOpen(false);
+        setReqTitle("");
+        setReqReason("");
+        fetchRequests();
+      } else {
+        const data = await res.json();
+        setReqError(data.error || "Failed to submit request.");
+      }
+    } catch {
+      setReqError("Something went wrong.");
+    } finally {
+      setReqLoading(false);
+    }
+  };
+
+  const handleDeclineRequest = async (id: string) => {
+    const notes = window.prompt("Please enter a reason for declining this request (required):");
+    if (notes === null) return;
+    if (!notes.trim()) {
+      alert("Rejection reason is required.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/documents/requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "REJECT", rejectionReason: notes.trim() }),
+      });
+      if (res.ok) {
+        fetchRequests();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to reject request");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    }
+  };
 
   // ── Employee view: compute compliance status ────────────────────────────
   const myDocs = docs.filter((d) =>
@@ -580,13 +686,22 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
             <h2 className="text-2xl font-extrabold text-zinc-950">My Documents</h2>
             <p className="text-xs text-zinc-400 mt-0.5">Upload and manage your ID, certificates, and HR documents.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setUploadModal({})}
-            className="flex items-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-zinc-800 hover:-translate-y-0.5 transition-all shadow-sm"
-          >
-            <Plus className="h-3.5 w-3.5" /> Upload Document
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsRequestModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm"
+            >
+              Request Document from HR
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadModal({})}
+              className="flex items-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-zinc-800 hover:-translate-y-0.5 transition-all shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" /> Upload Document
+            </button>
+          </div>
         </div>
 
         {/* Onboarding Task 1 Banner */}
@@ -692,7 +807,7 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
           )}
         </div>
 
-        {/* Uploaded required docs list */}
+        {/* Compliance Uploaded required docs list */}
         {myDocs.filter((d) => REQUIRED_DOCS.some((req) => docMatchesRequired(d, req))).length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-zinc-900 mb-3">Compliance Documents Uploaded</h3>
@@ -706,6 +821,52 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
           </div>
         )}
 
+        {/* Document Requests Section */}
+        <div>
+          <h3 className="text-sm font-bold text-zinc-900 mb-3">Requested Documents Status</h3>
+          {docRequests.length > 0 ? (
+            <div className="border border-zinc-100 rounded-2xl bg-white overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    <th className="px-4 py-3">Document Title</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Reason</th>
+                    <th className="px-4 py-3">Requested Date</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 text-xs font-medium text-zinc-700">
+                  {docRequests.map((r) => (
+                    <tr key={r.id} className="hover:bg-zinc-50/30">
+                      <td className="px-4 py-3 font-semibold text-zinc-900">{r.title}</td>
+                      <td className="px-4 py-3">{DOC_TYPE_LABELS[r.documentType as DocType] || r.documentType}</td>
+                      <td className="px-4 py-3 text-zinc-500">{r.reason}</td>
+                      <td className="px-4 py-3 text-zinc-400">{format(new Date(r.createdAt), "dd MMM yyyy")}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          r.status === "APPROVED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                          r.status === "REJECTED" ? "bg-rose-50 text-rose-700 border border-rose-200" :
+                          "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}>
+                          {r.status}
+                        </span>
+                        {r.rejectionReason && (
+                          <p className="text-[9px] text-red-500 mt-1 font-semibold">Note: {r.rejectionReason}</p>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-white py-8 text-center">
+              <p className="text-xs font-semibold text-zinc-400">No document requests submitted yet.</p>
+            </div>
+          )}
+        </div>
+
         {/* Upload Modal */}
         {uploadModal && (
           <UploadModal
@@ -717,6 +878,91 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
             onClose={() => setUploadModal(null)}
             onSuccess={addDoc}
           />
+        )}
+
+        {/* Request Document Modal */}
+        {isRequestModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden border border-zinc-200">
+              <div className="flex items-center justify-between px-6 py-4 bg-zinc-950 text-white">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-white/70" />
+                  <p className="text-sm font-bold">Request Document from HR</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRequestModalOpen(false)}
+                  className="rounded-lg p-1.5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={submitRequest} className="p-6 space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-zinc-400">Document Type</label>
+                  <select
+                    value={reqDocType}
+                    onChange={(e) => setReqDocType(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+                  >
+                    {ADDITIONAL_DOC_TYPES.map((t) => (
+                      <option key={t.type} value={t.type}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-zinc-400">Document Title</label>
+                  <Input
+                    type="text"
+                    required
+                    placeholder="e.g. Internship Certificate Request"
+                    value={reqTitle}
+                    onChange={(e) => setReqTitle(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-zinc-400">Reason for Request</label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="Provide details on why you need this document..."
+                    value={reqReason}
+                    onChange={(e) => setReqReason(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-900"
+                  />
+                </div>
+
+                {reqError && (
+                  <div className="flex gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-semibold">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                    <span>{reqError}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsRequestModalOpen(false)}
+                    className="rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={reqLoading}
+                    className="bg-zinc-950 text-white hover:bg-zinc-800 rounded-xl"
+                  >
+                    {reqLoading ? "Submitting..." : "Submit Request"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -751,7 +997,7 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
       </div>
 
       {/* Admin Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
         <button
           type="button"
           onClick={() => setActiveAdminTab("all")}
@@ -777,6 +1023,18 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
             </button>
           );
         })}
+        {/* Pending Requests Stat Card */}
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab("requests")}
+          className={`flex flex-col rounded-2xl border p-4 text-left transition-all hover:shadow-sm ${activeAdminTab === "requests" ? "border-violet-900 bg-zinc-950 text-white" : "border-zinc-100 bg-white hover:bg-zinc-50"}`}
+        >
+          <FileText className={`h-5 w-5 mb-2 ${activeAdminTab === "requests" ? "text-white/70" : "text-zinc-400"}`} />
+          <p className={`text-xl font-extrabold leading-none ${activeAdminTab === "requests" ? "text-white" : "text-zinc-900"}`}>
+            {docRequests.filter(r => r.status === "PENDING").length}
+          </p>
+          <p className={`text-[10px] font-semibold mt-1 ${activeAdminTab === "requests" ? "text-white/60" : "text-zinc-400"}`}>Pending Requests</p>
+        </button>
       </div>
 
       {/* Admin Compliance Alert */}
@@ -820,7 +1078,62 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
       )}
 
       {/* Document Grid — Admin */}
-      {activeAdminTab === "all" ? (
+      {activeAdminTab === "requests" ? (
+        <div className="rounded-2xl border border-zinc-100 bg-white overflow-hidden shadow-sm">
+          <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-zinc-900">Pending Document Requests</h3>
+              <p className="text-[10px] text-zinc-400 mt-0.5">Fulfill employee requested document issuances manually by uploading files</p>
+            </div>
+          </div>
+          {docRequests.filter(r => r.status === "PENDING").length > 0 ? (
+            <div className="divide-y divide-zinc-100">
+              {docRequests.filter(r => r.status === "PENDING").map((r) => (
+                <div key={r.id} className="p-4 flex items-center justify-between gap-4 flex-wrap hover:bg-zinc-50/30 transition-colors">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100 uppercase tracking-wider">
+                        {DOC_TYPE_LABELS[r.documentType as DocType] || r.documentType}
+                      </span>
+                      <h4 className="text-xs font-bold text-zinc-900 truncate">&ldquo;{r.title}&rdquo;</h4>
+                    </div>
+                    <p className="text-xs font-semibold text-zinc-700">
+                      Requested by: <span className="text-zinc-900 font-bold">{r.employee.firstName} {r.employee.lastName} ({r.employee.employeeId})</span>
+                    </p>
+                    <p className="text-[11px] text-zinc-500 italic">&ldquo;Reason: {r.reason}&rdquo;</p>
+                    <p className="text-[9px] text-zinc-400 font-bold">Request Date: {format(new Date(r.createdAt), "dd MMM yyyy hh:mm a")}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleDeclineRequest(r.id)}
+                      className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUploadModal({
+                        title: r.title,
+                        type: r.documentType as DocType,
+                        documentRequestId: r.id,
+                      })}
+                      className="rounded-xl bg-zinc-950 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      Approve & Upload
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center text-zinc-400">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-2" />
+              <p className="text-xs font-semibold">No pending requests! All clear. 🎉</p>
+            </div>
+          )}
+        </div>
+      ) : activeAdminTab === "all" ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {adminCategories.map(({ cat, catDocs }) => {
             const Icon = cat.icon;
@@ -917,7 +1230,8 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
           defaultType={uploadModal.type}
           employees={employees}
           isAdmin={true}
-          currentEmployeeId={currentEmployeeId}
+          currentEmployeeId={selectedEmployee || currentEmployeeId}
+          documentRequestId={uploadModal.documentRequestId}
           onClose={() => setUploadModal(null)}
           onSuccess={addDoc}
         />

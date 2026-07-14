@@ -147,6 +147,46 @@ export function PolicyPageClient({ isSuperAdmin, initialLeaveTypes }: PolicyPage
     }
   };
 
+  const [guestModalOpen, setGuestModalOpen] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [relation, setRelation] = useState("");
+  const [visitDate, setVisitDate] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState<string | null>(null);
+
+  const handleInviteGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim() || !relation.trim() || !visitDate || !purpose.trim()) {
+      setGuestError("Please fill out all fields.");
+      return;
+    }
+    setGuestLoading(true);
+    setGuestError(null);
+    try {
+      const res = await fetch("/api/guest-invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestName, relation, visitDate, purpose }),
+      });
+      if (res.ok) {
+        setGuestModalOpen(false);
+        setGuestName("");
+        setRelation("");
+        setVisitDate("");
+        setPurpose("");
+        alert("Guest invitation request submitted successfully. You will be notified once approved.");
+      } else {
+        const data = await res.json();
+        setGuestError(data.error || "Failed to submit request.");
+      }
+    } catch {
+      setGuestError("Something went wrong.");
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4 bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm">
       <div className="flex items-center justify-between">
@@ -158,14 +198,22 @@ export function PolicyPageClient({ isSuperAdmin, initialLeaveTypes }: PolicyPage
               : "View active leave limits, accruals, and application rules."}
           </p>
         </div>
-        {isSuperAdmin && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+            onClick={() => setGuestModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 border border-zinc-200 hover:bg-zinc-50 bg-white text-zinc-700 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
           >
-            <Plus size={14} /> Add Leave Type
+            Invite a Guest
           </button>
-        )}
+          {isSuperAdmin && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+            >
+              <Plus size={14} /> Add Leave Type
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Special Exemption Alert */}
@@ -306,6 +354,98 @@ export function PolicyPageClient({ isSuperAdmin, initialLeaveTypes }: PolicyPage
           saveLoading={saveLoading}
           errorMsg={errorMsg}
         />,
+        document.body
+      )}
+
+      {/* Invite Guest Modal */}
+      {guestModalOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden border border-zinc-200">
+            <div className="flex items-center justify-between px-6 py-4 bg-zinc-950 text-white">
+              <p className="text-sm font-bold">Invite a Guest</p>
+              <button
+                type="button"
+                onClick={() => setGuestModalOpen(false)}
+                className="rounded-lg p-1.5 hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+              >
+                <Plus className="h-4 w-4 rotate-45" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInviteGuest} className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Guest Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Relation</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Family Member, Client, Friend"
+                  value={relation}
+                  onChange={(e) => setRelation(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Visit Date</label>
+                <input
+                  type="date"
+                  required
+                  value={visitDate}
+                  onChange={(e) => setVisitDate(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Purpose of Visit</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="e.g. Personal visit during lunch break"
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-lg p-2 text-sm font-semibold focus:border-zinc-950 focus:outline-none text-zinc-900 bg-white"
+                />
+              </div>
+
+              {guestError && (
+                <div className="flex gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-semibold">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <span>{guestError}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-100">
+                <button
+                  type="button"
+                  onClick={() => setGuestModalOpen(false)}
+                  className="px-4 py-2 border border-zinc-200 text-zinc-700 font-bold text-xs rounded-lg hover:bg-zinc-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={guestLoading}
+                  className="px-4 py-2 bg-zinc-900 text-white font-bold text-xs rounded-lg hover:bg-zinc-800 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {guestLoading ? "Submitting..." : "Submit Invitation"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
         document.body
       )}
     </div>

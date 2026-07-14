@@ -65,6 +65,10 @@ export function LeaveApprovalPanel() {
   }, []);
 
   async function handleDecision(id: string, action: "APPROVE" | "REJECT") {
+    if (action === "REJECT" && (!rejectionNotes[id] || !rejectionNotes[id].trim())) {
+      alert("Please provide a reason for declining the leave request.");
+      return;
+    }
     setSubmittingId(id);
     setError(null);
     try {

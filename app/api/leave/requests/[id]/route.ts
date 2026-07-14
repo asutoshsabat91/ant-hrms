@@ -73,6 +73,9 @@ export async function PATCH(
   }
 
   const { action, rejectionReason } = parsed.data;
+  if (action === "REJECT" && (!rejectionReason || !rejectionReason.trim())) {
+    return NextResponse.json({ error: "Rejection reason is required." }, { status: 400 });
+  }
   const year = request.startDate.getFullYear();
   const requestDays = request.days;
 

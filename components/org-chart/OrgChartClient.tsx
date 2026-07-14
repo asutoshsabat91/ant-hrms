@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { 
   Plus, 
   Minus, 
@@ -43,6 +43,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   // Zoom & Pan state
   const [zoom, setZoom] = useState(0.85);
@@ -124,6 +125,19 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
       unassigned,
     };
   };
+
+  // Memoize path from hovered node up to Rohit Singh
+  const activePathIds = useMemo(() => {
+    const path = new Set<string>();
+    if (!hoveredNodeId) return path;
+    let currentId: string | null = hoveredNodeId;
+    while (currentId) {
+      path.add(currentId);
+      const emp = employees.find(e => e.id === currentId);
+      currentId = emp ? emp.managerId : null;
+    }
+    return path;
+  }, [hoveredNodeId, employees]);
 
   // Toggle node collapse state
   const toggleCollapse = (id: string, e: React.MouseEvent) => {
@@ -218,32 +232,43 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
 
     // Check if it's the absolute root (Rohit Singh)
     const isRoot = employee.email.toLowerCase() === "rohit@theantbox.com";
+    
+    // Check if node is part of active hovered path
+    const isHighlighted = activePathIds.has(employee.id);
 
-    // Style borders uniquely to denote key nodes
-    const cardBorderColor = isRoot 
-      ? "border-violet-500 shadow-violet-100/50" 
+    // Determine bottom connector highlight status
+    const isBottomHighlighted = isHighlighted && hoveredNodeId !== employee.id;
+
+    // Style borders and backgrounds uniquely to denote hierarchy level and hovered state
+    const cardBorderColor = isHighlighted
+      ? "border-violet-500 shadow-lg shadow-violet-100 ring-2 ring-violet-200/50 scale-[1.02] z-20"
+      : isRoot 
+      ? "border-violet-300 shadow-violet-50/50 bg-gradient-to-br from-white to-violet-50/30" 
       : children.length > 0 
-      ? "border-zinc-200 hover:border-zinc-300" 
-      : "border-zinc-200 hover:border-zinc-200";
+      ? "border-indigo-100 hover:border-indigo-200 bg-gradient-to-br from-white to-indigo-50/10" 
+      : "border-zinc-200 hover:border-zinc-300 bg-white";
 
     return (
       <div className="flex flex-col items-center relative" key={employee.id}>
         {/* Top Connector Line */}
         {!isRoot && (
-          <div className="w-px h-6 bg-zinc-300 relative">
+          <div className={`w-0.5 h-6 bg-zinc-300 relative transition-colors duration-200 ${isHighlighted ? "bg-violet-500" : "bg-zinc-200"}`}>
             {!isSingle && (
               <div 
-                className={`absolute top-0 h-px bg-zinc-300 ${
+                className={`absolute top-0 h-0.5 bg-zinc-200 transition-colors duration-200 ${
                   isFirst ? "left-1/2 w-1/2" : isLast ? "right-1/2 w-1/2" : "left-0 w-full"
-                }`}
+                } ${isHighlighted ? "bg-violet-500" : "bg-zinc-200"}`}
               />
             )}
           </div>
         )}
 
         {/* Card Component */}
-        <div className={`nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border p-4 w-60 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}>
-          
+        <div 
+          onMouseEnter={() => setHoveredNodeId(employee.id)}
+          onMouseLeave={() => setHoveredNodeId(null)}
+          className={`nocanvasdrag relative z-10 flex flex-col items-center bg-white rounded-2xl border p-4 w-60 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
+        >
           {/* Main Card Data */}
           <div className="flex items-start gap-3 w-full">
             <Avatar className="h-10 w-10 border border-zinc-100 shrink-0">
@@ -252,13 +277,18 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h5 className="text-xs font-bold text-zinc-950 truncate leading-tight">
+              <h5 className="text-xs font-bold text-zinc-950 truncate leading-tight flex items-center gap-1.5">
                 {employee.firstName} {employee.lastName}
+                {isRoot && (
+                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-violet-600 bg-violet-50 px-1 rounded border border-violet-100">
+                    Head
+                  </span>
+                )}
               </h5>
-              <p className="text-[10px] font-semibold text-zinc-400 truncate leading-none mt-0.5">
+              <p className="text-[10px] font-semibold text-zinc-400 truncate leading-none mt-1">
                 {employee.designation}
               </p>
-              <div className="flex items-center gap-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50 border border-violet-100 px-1.5 py-0.5 rounded-md w-fit">
+              <div className="flex items-center gap-1.5 mt-2.5 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/50 border border-violet-100/50 px-1.5 py-0.5 rounded-md w-fit">
                 <Building className="h-2.5 w-2.5 shrink-0" />
                 {employee.department.name}
               </div>
@@ -328,7 +358,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
         {/* Children Branches Render */}
         {children.length > 0 && !isCollapsed && (
           <>
-            <div className="w-px h-6 bg-zinc-300" />
+            <div className={`w-0.5 h-6 bg-zinc-200 transition-colors duration-200 ${isBottomHighlighted ? "bg-violet-500" : "bg-zinc-200"}`} />
             <div className="flex gap-10 justify-center items-start">
               {children.map((child, idx) => 
                 renderNode(

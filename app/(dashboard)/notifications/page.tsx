@@ -25,6 +25,7 @@ type NotificationItem = {
   link?: string | null;
   type: string;
   isRead: boolean;
+  actionableId?: string | null;
   createdAt: string;
 };
 
@@ -46,6 +47,8 @@ function getNotifIcon(type: string) {
       return { icon: Shield, bg: "bg-orange-50 border-orange-200", color: "text-orange-600" };
     case "ATTENDANCE_ALERT":
       return { icon: Clock, bg: "bg-cyan-50 border-cyan-200", color: "text-cyan-600" };
+    case "GUEST_INVITE":
+      return { icon: Shield, bg: "bg-purple-50 border-purple-200", color: "text-purple-600" };
     default:
       return { icon: Bell, bg: "bg-zinc-100 border-zinc-200", color: "text-zinc-600" };
   }
@@ -69,6 +72,8 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [markingRead, setMarkingRead] = useState(false);
+  const [actionedInvitations, setActionedInvitations] = useState<Record<string, "APPROVED" | "REJECTED">>({});
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   async function loadNotifications() {
     setLoading(true);
@@ -123,6 +128,28 @@ export default function NotificationsPage() {
     }
   }
 
+  async function handleGuestInvite(notifId: string, inviteId: string, action: "APPROVE" | "REJECT") {
+    setActioningId(notifId);
+    try {
+      const res = await fetch(`/api/guest-invitations/${inviteId}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      if (res.ok) {
+        setActionedInvitations(prev => ({ ...prev, [notifId]: action === "APPROVE" ? "APPROVED" : "REJECTED" }));
+        await markOneRead(notifId);
+      } else {
+        const payload = await res.json();
+        alert(payload.error || "Failed to process request");
+      }
+    } catch {
+      alert("Failed to process request");
+    } finally {
+      setActioningId(null);
+    }
+  }
+
   useEffect(() => {
     loadNotifications();
   }, []);
@@ -142,7 +169,7 @@ export default function NotificationsPage() {
             Your <span className="italic font-light text-4xl">notifications</span>.
           </h2>
           <p className="text-xs text-zinc-400 font-medium mt-1">
-            Stay on top of leave requests, approvals, and system updates.
+            Stay on top of leave requests, approvals, and guest invitations.
           </p>
         </div>
 
@@ -206,6 +233,8 @@ export default function NotificationsPage() {
               <div className="overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm divide-y divide-zinc-50">
                 {items.map((notification) => {
                   const { icon: Icon, bg, color } = getNotifIcon(notification.type);
+                  const actionedState = actionedInvitations[notification.id];
+
                   return (
                     <div
                       key={notification.id}
@@ -237,7 +266,38 @@ export default function NotificationsPage() {
                         <p className="text-xs text-zinc-500 font-medium mt-0.5 leading-relaxed">
                           {notification.body}
                         </p>
-                        {notification.link && (
+                        
+                        {/* Action buttons for GUEST_INVITE */}
+                        {notification.type === "GUEST_INVITE" && notification.actionableId && (
+                          <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            {actionedState ? (
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
+                                actionedState === "APPROVED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"
+                              }`}>
+                                {actionedState === "APPROVED" ? "APPROVED ✓" : "DECLINED ✗"}
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  disabled={actioningId === notification.id}
+                                  onClick={() => handleGuestInvite(notification.id, notification.actionableId!, "REJECT")}
+                                  className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-50 transition-all shrink-0 shadow-sm"
+                                >
+                                  Decline Invitation
+                                </button>
+                                <button
+                                  disabled={actioningId === notification.id}
+                                  onClick={() => handleGuestInvite(notification.id, notification.actionableId!, "APPROVE")}
+                                  className="rounded-lg bg-zinc-950 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-zinc-800 transition-all shrink-0 shadow-sm"
+                                >
+                                  {actioningId === notification.id ? "Processing..." : "Approve Invitation"}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {notification.link && notification.type !== "GUEST_INVITE" && (
                           <Link
                             href={notification.link}
                             className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-zinc-950 hover:underline uppercase tracking-wider"

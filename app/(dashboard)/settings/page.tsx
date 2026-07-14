@@ -37,11 +37,33 @@ export default async function SettingsPage() {
     // DB not ready or connection failed fallback
   }
 
+  let employeesForAccess: Array<{ id: string; name: string; email: string; employeeId: string; userId: string; isActive: boolean }> = [];
+  if (isSuperAdmin) {
+    try {
+      const emps = await prisma.employee.findMany({
+        include: { user: true },
+        orderBy: { firstName: "asc" },
+      });
+      employeesForAccess = emps
+        .filter((e) => e.userId)
+        .map((e) => ({
+          id: e.id,
+          name: `${e.firstName} ${e.lastName}`,
+          email: e.email,
+          employeeId: e.employeeId,
+          userId: e.userId,
+          isActive: e.user?.isActive ?? false,
+        }));
+    } catch (e) {
+      console.error("Failed to load employees for access settings", e);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Company profile, office location, departments, and audit log"
+        description="Company profile, office location, departments, and user access control"
       />
 
       <SettingsPageClient
@@ -50,6 +72,7 @@ export default async function SettingsPage() {
         officeLat={officeLat}
         officeLon={officeLon}
         officeRadius={officeRadius}
+        employeesForAccess={employeesForAccess}
       />
     </div>
   );

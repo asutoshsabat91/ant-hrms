@@ -117,6 +117,8 @@ enum NotificationType {
   POSH_REPORT
   ATTENDANCE_REGULARIZATION
   SYSTEM
+  GUEST_INVITE
+  DOCUMENT_REQUEST
 }
 
 enum PunchType {
@@ -245,6 +247,8 @@ model Employee {
   okToRehire       Boolean?
   rehireComment    String?
   regularizationRequests RegularizationRequest[]
+  documentRequests       DocumentRequest[]
+  guestInvitations       GuestInvitation[]
   deployedCompany       String?
   managedCompany        String?
   googleRefreshToken    String?
@@ -496,6 +500,7 @@ model Notification {
   link      String?
   isRead    Boolean          @default(false)
   emailSent Boolean          @default(false)
+  actionableId String?
   createdAt DateTime         @default(now())
 }
 
@@ -618,4 +623,36 @@ model OnboardingRequest {
   status        String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model DocumentRequest {
+  id              String        @id @default(cuid())
+  employeeId      String
+  employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documentType    DocumentType
+  title           String
+  reason          String
+  status          RequestStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model GuestInvitation {
+  id          String        @id @default(cuid())
+  employeeId  String
+  employee    Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  guestName   String
+  relation    String
+  visitDate   DateTime      @db.Date
+  purpose     String
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

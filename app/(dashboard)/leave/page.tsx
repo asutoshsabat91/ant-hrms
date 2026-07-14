@@ -27,7 +27,7 @@ export default async function LeavePage() {
     counts: rawData.counts,
     recentRequests: (rawData.recentRequests ?? []).map((r: {
       id: string; days: number; status: string; reason?: string | null;
-      startDate: Date; endDate: Date;
+      startDate: Date; endDate: Date; paidLeavesLeft?: number;
       leaveType?: { name: string }; employee?: { firstName: string; lastName: string; employeeId: string };
     }) => ({
       id: r.id,
@@ -36,6 +36,7 @@ export default async function LeavePage() {
       reason: r.reason ?? undefined,
       startDate: r.startDate instanceof Date ? r.startDate.toISOString() : String(r.startDate),
       endDate: r.endDate instanceof Date ? r.endDate.toISOString() : String(r.endDate),
+      paidLeavesLeft: r.paidLeavesLeft ?? 0,
       leaveType: { name: r.leaveType?.name ?? "" },
       employee: {
         firstName: r.employee?.firstName ?? "",

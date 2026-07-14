@@ -14,6 +14,12 @@ export default async function PolicyPage() {
     orderBy: { name: "asc" },
   });
 
+  // Load current employee profile to find their employmentType
+  const userEmployee = await prisma.employee.findUnique({
+    where: { userId: session?.user?.id ?? "" },
+  });
+  const employmentType = userEmployee?.employmentType ?? "FULL_TIME";
+
   // Map to safe client types
   const safeLeaveTypes = leaveTypes.map((lt) => ({
     id: lt.id,
@@ -26,6 +32,10 @@ export default async function PolicyPage() {
     isPaid: lt.isPaid,
   }));
 
+  const filteredLeaveTypes = isSuperAdmin
+    ? safeLeaveTypes
+    : safeLeaveTypes.filter((lt) => lt.applicableTo && Array.isArray(lt.applicableTo) && lt.applicableTo.includes(employmentType));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -35,7 +45,7 @@ export default async function PolicyPage() {
 
       <PolicyPageClient
         isSuperAdmin={isSuperAdmin}
-        initialLeaveTypes={safeLeaveTypes}
+        initialLeaveTypes={filteredLeaveTypes}
       />
     </div>
   );

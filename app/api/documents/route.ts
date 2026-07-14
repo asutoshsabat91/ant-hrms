@@ -18,6 +18,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   fileUrl: z.string().optional(),
   fileData: z.string().optional(),
+  documentRequestId: z.string().optional(),
 });
 
 export async function GET(req: Request) {
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-    const { employeeId, type, title, issuedDate, description, fileUrl, fileData } = parsed.data;
+    const { employeeId, type, title, issuedDate, description, fileUrl, fileData, documentRequestId } = parsed.data;
 
     const isSuperAdmin = session.user.role === "ADMIN";
     const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
@@ -96,17 +97,39 @@ export async function POST(req: Request) {
     const issued = new Date(issuedDate);
     if (Number.isNaN(issued.getTime())) return NextResponse.json({ error: "Invalid issue date." }, { status: 400 });
 
-    const document = await prisma.hRDocument.create({
-      data: {
-        employeeId,
-        type,
-        title,
-        fileUrl: fileData ?? fileUrl ?? `https://docs.theantbox.com/${Math.random().toString(36).slice(2)}`,
-        issuedDate: issued,
-        issuedBy: session.user.name ?? session.user.id,
-        metadata: description ? { notes: description } : undefined,
-      },
-      include: { employee: { select: { id: true, firstName: true, lastName: true, employeeId: true } } },
+    const document = await prisma.$transaction(async (tx) => {
+      const doc = await tx.hRDocument.create({
+        data: {
+          employeeId,
+          type,
+          title,
+          fileUrl: fileData ?? fileUrl ?? `https://docs.theantbox.com/${Math.random().toString(36).slice(2)}`,
+          issuedDate: issued,
+          issuedBy: session.user.name ?? session.user.id,
+          metadata: description ? { notes: description } : undefined,
+        },
+        include: { employee: { select: { id: true, firstName: true, lastName: true, employeeId: true, userId: true } } },
+      });
+
+      if (documentRequestId) {
+        await tx.documentRequest.update({
+          where: { id: documentRequestId },
+          data: { status: "APPROVED" }
+        });
+
+        // Notify employee
+        await tx.notification.create({
+          data: {
+            userId: doc.employee.userId,
+            type: "DOCUMENT_READY",
+            title: "Document Issued",
+            body: `Your document request for "${title}" has been approved and the file is ready.`,
+            link: "/documents"
+          }
+        });
+      }
+
+      return doc;
     });
 
     const COMPLIANCE_TYPES = ["OTHER", "APPOINTMENT_LETTER", "INTERNSHIP_AGREEMENT"];

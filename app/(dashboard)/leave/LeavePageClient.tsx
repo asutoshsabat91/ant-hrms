@@ -52,6 +52,7 @@ interface LeaveRequestItem {
   days: number;
   status: string;
   reason?: string;
+  paidLeavesLeft?: number;
 }
 
 interface LeaveTypeItem {
@@ -164,11 +165,21 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
         });
         return;
       }
+      let rejectionReason = "";
+      if (action === "REJECT") {
+        const note = window.prompt("Please enter a reason for declining this leave request (required):");
+        if (note === null) return; // Cancelled
+        if (!note.trim()) {
+          alert("Rejection reason is required.");
+          return;
+        }
+        rejectionReason = note.trim();
+      }
       try {
         const response = await fetch(`/api/leave/requests/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action }),
+          body: JSON.stringify({ action, rejectionReason }),
         });
         if (response.ok) {
           setRequests((current) =>
@@ -176,6 +187,9 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
               r.id === id ? { ...r, status: action === "APPROVE" ? "APPROVED" : "REJECTED" } : r
             )
           );
+        } else {
+          const errData = await response.json();
+          alert(errData.error || "Failed to update leave request");
         }
       } catch (err) {
         console.error("Failed to approve/decline leave request", err);
@@ -408,10 +422,13 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                                   <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
                                   <div>
                                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                      Total Leaves Taken
+                                      Leaves Summary
                                     </p>
-                                    <p className="text-sm font-extrabold text-zinc-900">
-                                      {totalLeavesTaken} days
+                                    <p className="text-xs font-semibold text-zinc-700">
+                                      Taken: <span className="font-extrabold text-zinc-900">{totalLeavesTaken} days</span>
+                                    </p>
+                                    <p className="text-xs font-semibold text-zinc-700 mt-0.5">
+                                      Paid Left: <span className="font-extrabold text-violet-600">{req.paidLeavesLeft ?? 0} days</span>
                                     </p>
                                   </div>
                                 </div>
