@@ -227,18 +227,18 @@ export function CompanyCalendarWidget({ holidays, leaves, leaveTypes }: Props) {
             <button
               key={dateKey}
               onClick={() => openDialog(day)}
-              className={`relative flex flex-col items-center justify-center rounded-lg py-1.5 text-xs font-medium transition-all hover:bg-zinc-50 ${
+              className={`relative flex flex-col items-center justify-center rounded-lg py-1.5 text-xs font-medium transition-all ${
                 today
-                  ? "bg-[var(--purple)] text-white hover:bg-[var(--purple)]"
+                  ? "bg-[var(--purple)] text-white" // No hover bg change for today
                   : holiday
-                  ? "bg-amber-50 text-amber-700"
+                  ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
                   : wfh
-                  ? "bg-emerald-50 text-emerald-700"
+                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                   : onLeave
-                  ? "bg-sky-50 text-sky-700"
+                  ? "bg-sky-50 text-sky-700 hover:bg-sky-100"
                   : inMonth
-                  ? "text-zinc-800"
-                  : "text-zinc-300"
+                  ? "text-zinc-800 hover:bg-zinc-50"
+                  : "text-zinc-300 hover:bg-zinc-50"
               }`}
             >
               {format(day, "d")}
