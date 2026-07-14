@@ -81,6 +81,7 @@ export async function middleware(req: NextRequest) {
       pathname === "/api/onboarding/personal" ||
       pathname === "/api/onboarding/banking" ||
       pathname === "/api/onboarding/idform" ||
+      pathname === "/api/employees/org-chart" ||
       /^\/onboarding\/[^\/]+$/.test(pathname)
     ) {
       const response = NextResponse.next();
