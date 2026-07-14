@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Employee {
   id: string;
+  employeeId: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -43,6 +44,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   // Zoom & Pan state
@@ -258,7 +260,8 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
         <div
           onMouseEnter={() => setHoveredNodeId(employee.id)}
           onMouseLeave={() => setHoveredNodeId(null)}
-          className={`nocanvasdrag relative z-10 bg-white rounded-2xl border p-4 w-52 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
+          onClick={(e) => { e.stopPropagation(); setSelectedEmployee(employee); setEditingNodeId(null); }}
+          className={`nocanvasdrag cursor-pointer relative z-10 bg-white rounded-2xl border p-4 w-52 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
         >
           <div className="flex items-start gap-3 w-full">
             <Avatar className="h-10 w-10 border border-zinc-100 shrink-0">
@@ -508,6 +511,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onClick={() => setSelectedEmployee(null)}
           className={`flex-1 min-h-0 cursor-grab relative overflow-hidden flex items-center justify-center ${
             isDragging ? "cursor-grabbing" : ""
           }`}
@@ -532,6 +536,91 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
             </div>
           )}
         </div>
+
+        {/* Employee Profile Popup */}
+        {selectedEmployee && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="nocanvasdrag absolute bottom-20 left-4 z-30 w-72 bg-white rounded-2xl border border-zinc-200 shadow-2xl shadow-zinc-200/60 overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200"
+          >
+            {/* Header gradient band */}
+            <div className="h-14 bg-gradient-to-br from-violet-600 via-violet-500 to-indigo-500 relative">
+              <button
+                onClick={() => setSelectedEmployee(null)}
+                className="absolute top-2.5 right-2.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+              >
+                <span className="text-xs font-bold leading-none">✕</span>
+              </button>
+            </div>
+
+            {/* Avatar overlapping the gradient */}
+            <div className="px-5 pb-4">
+              <div className="-mt-7 mb-3 flex items-end justify-between">
+                <div className="h-14 w-14 rounded-xl border-2 border-white bg-zinc-950 flex items-center justify-center shadow-md">
+                  {selectedEmployee.profilePhoto ? (
+                    <img
+                      src={selectedEmployee.profilePhoto}
+                      alt={selectedEmployee.firstName}
+                      className="h-full w-full rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-base font-extrabold">
+                      {`${selectedEmployee.firstName[0] || ""}${selectedEmployee.lastName[0] || ""}`.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[9px] font-extrabold uppercase tracking-widest text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">
+                  {selectedEmployee.department.name}
+                </span>
+              </div>
+
+              {/* Name & designation */}
+              <h3 className="text-sm font-extrabold text-zinc-950 leading-tight">
+                {selectedEmployee.firstName} {selectedEmployee.lastName}
+              </h3>
+              <p className="text-[11px] font-semibold text-zinc-400 mt-0.5 mb-4">
+                {selectedEmployee.designation}
+              </p>
+
+              {/* Info rows */}
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+                    <svg className="h-3.5 w-3.5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Employee ID</p>
+                    <p className="text-xs font-bold text-zinc-800 truncate">{selectedEmployee.employeeId}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                    <svg className="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Office Email</p>
+                    <p className="text-xs font-bold text-zinc-800 truncate">{selectedEmployee.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Building className="h-3.5 w-3.5 text-emerald-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Department</p>
+                    <p className="text-xs font-bold text-zinc-800 truncate">{selectedEmployee.department.name}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Floating Canvas Action Controls */}
         <div className="nocanvasdrag absolute bottom-6 right-6 flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 backdrop-blur-md p-1.5 shadow-lg z-10">
