@@ -140,6 +140,7 @@ const updateSchema = z.object({
   pan: z.string().nullable().optional(),
   uan: z.string().nullable().optional(),
   ctc: z.number().nullable().optional(),
+  profilePhoto: z.string().nullable().optional(),
 });
 
 export async function PUT(req: Request) {

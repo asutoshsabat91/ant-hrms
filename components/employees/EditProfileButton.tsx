@@ -24,6 +24,7 @@ interface EmployeeData {
   pan: string | null;
   uan: string | null;
   ctc: number | null;
+  profilePhoto: string | null;
 }
 
 export function EditProfileButton({ employee, isChandrita }: { employee: EmployeeData; isChandrita?: boolean }) {

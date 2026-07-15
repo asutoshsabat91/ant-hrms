@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Save, AlertCircle } from "lucide-react";
+import { X, Save, AlertCircle, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -25,6 +25,7 @@ interface EmployeeData {
   pan: string | null;
   uan: string | null;
   ctc: number | null;
+  profilePhoto: string | null;
 }
 
 interface EditEmployeeModalProps {
@@ -57,6 +58,19 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
   const [pan, setPan] = useState(employee.pan ?? "");
   const [uan, setUan] = useState(employee.uan ?? "");
   const [ctc, setCtc] = useState(employee.ctc ? String(employee.ctc) : "");
+  const [profilePhoto, setProfilePhoto] = useState(employee.profilePhoto ?? null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("Please upload a JPG/PNG image."); return; }
+    if (file.size > 2 * 1024 * 1024) { alert("Photo must be under 2MB."); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfilePhoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -88,6 +102,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
       ifscCode: ifscCode.trim() || null,
       pan: pan.trim() || null,
       uan: uan.trim() || null,
+      profilePhoto,
       ...(isChandrita ? {} : { ctc: ctc ? parseFloat(ctc) : null }),
     };
 
@@ -153,6 +168,31 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
         </div>
 
         <form onSubmit={handleSave} className="space-y-5">
+          {/* Section: Profile Photo */}
+          <div className="flex items-center gap-4 border-b border-zinc-100 pb-4">
+            <div className="relative h-16 w-16 rounded-full border border-zinc-200 bg-zinc-50 overflow-hidden flex-shrink-0">
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-zinc-400">
+                  <Camera size={20} />
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-zinc-700 mb-1">Profile Picture</p>
+              <label className="cursor-pointer text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-md transition inline-block">
+                Upload New Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+              </label>
+            </div>
+          </div>
+
           {/* Section: Personal Info */}
           <div className="space-y-3">
             <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">1. Professional & General Info</h4>
