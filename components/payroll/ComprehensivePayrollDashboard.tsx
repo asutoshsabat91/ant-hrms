@@ -698,7 +698,7 @@ export function ComprehensivePayrollDashboard() {
           </button>
 
           {/* Save Changes Button */}
-          {overview && overview.status === "DRAFT" && (
+          {overview && overview.hasRun && overview.status === "DRAFT" && (
             <button
               onClick={saveOverrides}
               disabled={savingEdits || loading}
@@ -710,7 +710,7 @@ export function ComprehensivePayrollDashboard() {
           )}
 
           {/* Approve Payroll Button */}
-          {overview && overview.status === "DRAFT" && (
+          {overview && overview.hasRun && overview.status === "DRAFT" && (
             <button
               onClick={() => updatePayrollStatus("APPROVED")}
               disabled={submitting || loading}
