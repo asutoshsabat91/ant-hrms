@@ -140,11 +140,13 @@ function generateEmailTemplate(title: string, bodyHtml: string) {
 
 export async function sendEmail({
   to,
+  bcc,
   subject,
   html,
   attachments,
 }: {
   to: string;
+  bcc?: string;
   subject: string;
   html: string;
   attachments?: Array<{ filename: string; content: Buffer }>;
@@ -170,6 +172,7 @@ export async function sendEmail({
     const info = await transporter.sendMail({
       from: `"AntBox HR" <${from}>`,
       to,
+      bcc,
       subject,
       html,
       attachments,
@@ -222,6 +225,7 @@ export async function sendOnboardingEmail(
 
   return sendEmail({
     to: personalEmail,
+    bcc: "chandrita@theantbox.com",
     subject,
     html: generateEmailTemplate(subject, bodyHtml),
     attachments: pdfBuffer
@@ -345,7 +349,7 @@ export async function sendSeparationRequestEmail(
   reason: string,
   noticeDays: number,
 ) {
-  const adminEmail = "hive@theantbox.com";
+  const adminEmail = "chandrita@theantbox.com, hive@theantbox.com";
   const escEmployeeName = escapeHtml(employeeName);
   const escEmployeeEmail = escapeHtml(employeeEmail);
   const escReason = escapeHtml(reason);
@@ -470,6 +474,7 @@ export async function sendSeparationApprovalEmail(
 
   return sendEmail({
     to: employeeEmail,
+    bcc: "chandrita@theantbox.com",
     subject,
     html: generateEmailTemplate(subject, bodyHtml),
   });
