@@ -6,7 +6,7 @@ function getTransporter() {
 
   if (!user || !pass) {
     console.warn(
-      "[Mailer] SMTP credentials missing (GMAIL_SMTP_USER, GMAIL_SMTP_PASS). Mail delivery will be logged to console instead of sent."
+      "[Mailer] SMTP credentials missing (GMAIL_SMTP_USER, GMAIL_SMTP_PASS). Mail delivery will be logged to console instead of sent.",
     );
     return null;
   }
@@ -150,7 +150,10 @@ export async function sendEmail({
   attachments?: Array<{ filename: string; content: Buffer }>;
 }) {
   const transporter = getTransporter();
-  const from = process.env.GMAIL_SMTP_FROM || process.env.GMAIL_SMTP_USER || "people@theantbox.com";
+  const from =
+    process.env.GMAIL_SMTP_FROM ||
+    process.env.GMAIL_SMTP_USER ||
+    "people@theantbox.com";
 
   if (!transporter) {
     console.log("=========================================");
@@ -185,7 +188,7 @@ export async function sendOnboardingEmail(
   corpEmail: string,
   tempPassword: string,
   firstName: string,
-  pdfBuffer?: Buffer
+  pdfBuffer?: Buffer,
 ) {
   const escFirstName = escapeHtml(firstName);
   const escCorpEmail = escapeHtml(corpEmail);
@@ -199,7 +202,7 @@ export async function sendOnboardingEmail(
     
     <div class="card">
       <div class="card-row">
-        <span class="card-label">Login Email</span>
+        <span class="card-label">Login Email:</span>&nbsp;
         <span class="card-value">${escCorpEmail}</span>
       </div>
       <div class="card-row">
@@ -213,7 +216,7 @@ export async function sendOnboardingEmail(
     <p>Please log in, complete your security setup, and proceed with uploading your required onboarding documents.</p>
     
     <center>
-      <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login" class="btn">Access HR Portal</a>
+      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login" class="btn">Access HR Portal</a>
     </center>
   `;
 
@@ -221,7 +224,9 @@ export async function sendOnboardingEmail(
     to: personalEmail,
     subject,
     html: generateEmailTemplate(subject, bodyHtml),
-    attachments: pdfBuffer ? [{ filename: "Offer_Letter.pdf", content: pdfBuffer }] : undefined,
+    attachments: pdfBuffer
+      ? [{ filename: "Offer_Letter.pdf", content: pdfBuffer }]
+      : undefined,
   });
 }
 
@@ -233,7 +238,7 @@ export async function sendLeaveRequestEmail(
   days: number,
   startDate: string,
   endDate: string,
-  reason: string
+  reason: string,
 ) {
   const escEmployeeName = escapeHtml(employeeName);
   const escLeaveType = escapeHtml(leaveType);
@@ -246,29 +251,29 @@ export async function sendLeaveRequestEmail(
     
     <div class="card">
       <div class="card-row">
-        <span class="card-label">Employee</span>
+        <span class="card-label">Employee:</span>&nbsp;
         <span class="card-value">${escEmployeeName}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Leave Type</span>
+        <span class="card-label">Leave Type:</span>&nbsp;
         <span class="card-value">${escLeaveType}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Duration</span>
+        <span class="card-label">Duration:</span>&nbsp;
         <span class="card-value">${days} Day(s)</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Dates</span>
+        <span class="card-label">Dates:</span>&nbsp;
         <span class="card-value">${startDate} to ${endDate}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Reason</span>
+        <span class="card-label">Reason:</span>&nbsp;
         <span class="card-value">${escReason}</span>
       </div>
     </div>
 
     <center>
-      <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/leave" class="btn">View & Review Request</a>
+      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/leave" class="btn">View & Review Request</a>
     </center>
   `;
 
@@ -286,7 +291,7 @@ export async function sendLeaveApprovalEmail(
   leaveType: string,
   days: number,
   status: "APPROVED" | "REJECTED",
-  rejectionReason?: string | null
+  rejectionReason?: string | null,
 ) {
   const escEmployeeName = escapeHtml(employeeName);
   const escLeaveType = escapeHtml(leaveType);
@@ -307,18 +312,22 @@ export async function sendLeaveApprovalEmail(
         <span class="card-value" style="color: ${statusColor}; font-weight: 800;">${statusLabel}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Duration</span>
+        <span class="card-label">Duration:</span>&nbsp;
         <span class="card-value">${days} Day(s)</span>
       </div>
-      ${escRejectionReason ? `
+      ${
+        escRejectionReason
+          ? `
       <div class="card-row">
-        <span class="card-label">Reason for Rejection</span>
+        <span class="card-label">Reason for Rejection:</span>&nbsp;
         <span class="card-value">${escRejectionReason}</span>
-      </div>` : ""}
+      </div>`
+          : ""
+      }
     </div>
 
     <center>
-      <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/leave" class="btn">Access Leave Dashboard</a>
+      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/leave" class="btn">Access Leave Dashboard</a>
     </center>
   `;
 
@@ -334,7 +343,7 @@ export async function sendSeparationRequestEmail(
   employeeName: string,
   employeeEmail: string,
   reason: string,
-  noticeDays: number
+  noticeDays: number,
 ) {
   const adminEmail = "hive@theantbox.com";
   const escEmployeeName = escapeHtml(employeeName);
@@ -348,25 +357,25 @@ export async function sendSeparationRequestEmail(
     
     <div class="card">
       <div class="card-row">
-        <span class="card-label">Employee</span>
+        <span class="card-label">Employee:</span>&nbsp;
         <span class="card-value">${escEmployeeName}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Email</span>
+        <span class="card-label">Email:</span>&nbsp;
         <span class="card-value">${escEmployeeEmail}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Notice Period</span>
+        <span class="card-label">Notice Period:</span>&nbsp;
         <span class="card-value">${noticeDays} Days</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Reason</span>
+        <span class="card-label">Reason:</span>&nbsp;
         <span class="card-value">${escReason}</span>
       </div>
     </div>
 
     <center>
-      <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/separation" class="btn">Review Separation Case</a>
+      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/separation" class="btn">Review Separation Case</a>
     </center>
   `;
 
@@ -389,7 +398,7 @@ export async function sendSeparationRequestEmail(
         <span class="card-value" style="color: #f59e0b;">Pending Review</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Notice Period</span>
+        <span class="card-label">Notice Period:</span>&nbsp;
         <span class="card-value">${noticeDays} Days</span>
       </div>
     </div>
@@ -408,7 +417,7 @@ export async function sendSeparationApprovalEmail(
   employeeName: string,
   status: "APPROVED" | "REJECTED",
   lastWorkingDate?: Date | null,
-  rejectionReason?: string | null
+  rejectionReason?: string | null,
 ) {
   const escEmployeeName = escapeHtml(employeeName);
   const escRejectionReason = rejectionReason ? escapeHtml(rejectionReason) : "";
@@ -427,24 +436,36 @@ export async function sendSeparationApprovalEmail(
         <span class="card-label">Decision</span>
         <span class="card-value" style="color: ${statusColor}; font-weight: 800;">${statusLabel}</span>
       </div>
-      ${status === "APPROVED" && lastWorkingDate ? `
+      ${
+        status === "APPROVED" && lastWorkingDate
+          ? `
       <div class="card-row">
-        <span class="card-label">Last Working Day</span>
+        <span class="card-label">Last Working Day:</span>&nbsp;
         <span class="card-value">${new Date(lastWorkingDate).toDateString()}</span>
-      </div>` : ""}
-      ${escRejectionReason ? `
+      </div>`
+          : ""
+      }
+      ${
+        escRejectionReason
+          ? `
       <div class="card-row">
-        <span class="card-label">Remarks</span>
+        <span class="card-label">Remarks:</span>&nbsp;
         <span class="card-value">${escRejectionReason}</span>
-      </div>` : ""}
+      </div>`
+          : ""
+      }
     </div>
 
-    ${status === "APPROVED" ? `
+    ${
+      status === "APPROVED"
+        ? `
     <p>Your offboarding checklist has been generated. Please access the portal to complete the tasks before your last day.</p>
     <center>
-      <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/offboarding" class="btn">Complete Offboarding Checklist</a>
+      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/offboarding" class="btn">Complete Offboarding Checklist</a>
     </center>
-    ` : ""}
+    `
+        : ""
+    }
   `;
 
   return sendEmail({
