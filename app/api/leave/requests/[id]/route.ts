@@ -55,6 +55,11 @@ export async function PATCH(
   }
 
   const currentEmployee = user.employee;
+  
+  if (currentEmployee.id === request.employeeId) {
+    return NextResponse.json({ error: "You cannot approve your own leave request." }, { status: 403 });
+  }
+
   const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
   const isManager = session.user.role === "EMPLOYEE";
   const isHr = ["ADMIN"].includes(session.user.role);

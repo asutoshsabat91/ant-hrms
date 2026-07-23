@@ -40,6 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   switch (action) {
     case "approve": {
       if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (isOwner) return NextResponse.json({ error: "You cannot approve your own resignation." }, { status: 403 });
       // Admin can pass a custom last working date (for full-time employees)
       const customLwd = body.customLastWorkingDate ? new Date(body.customLastWorkingDate) : null;
       const lastWorkingDate = customLwd ?? addDays(new Date(), separation.noticeDays);
@@ -78,6 +79,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     case "reject": {
       if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (isOwner) return NextResponse.json({ error: "You cannot reject your own resignation." }, { status: 403 });
       const updated = await prisma.separation.update({
         where: { id },
         data: { status: "REJECTED", rejectionReason: rejectionReason ?? "Rejected by admin" },
