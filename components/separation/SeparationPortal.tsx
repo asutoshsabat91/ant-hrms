@@ -256,6 +256,22 @@ export function SeparationPortal({
                     <p className="text-xs font-semibold text-emerald-800">
                       Last Working Day: {format(new Date(sep.lastWorkingDate), "dd MMM yyyy")}
                     </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="date"
+                        className="h-6 rounded border border-emerald-200 bg-white px-2 text-[10px] text-zinc-700"
+                        value={customLwd[sep.id] ?? ""}
+                        onChange={(e) => setCustomLwd((p) => ({ ...p, [sep.id]: e.target.value }))}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-6 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                        disabled={actionLoading === sep.id + "update_lwd" || !customLwd[sep.id]}
+                        onClick={() => adminAction(sep.id, "update_lwd", { lastWorkingDate: customLwd[sep.id] })}
+                      >
+                        Change LWD
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -380,6 +396,22 @@ export function SeparationPortal({
               <p className="text-xs font-semibold text-emerald-800">
                 Last Working Day: {format(new Date(sep.lastWorkingDate), "dd MMM yyyy")}
               </p>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="date"
+                  className="h-6 rounded border border-emerald-200 bg-white px-2 text-[10px] text-zinc-700"
+                  value={customLwd[sep.id] ?? ""}
+                  onChange={(e) => setCustomLwd((p) => ({ ...p, [sep.id]: e.target.value }))}
+                />
+                <Button
+                  size="sm"
+                  className="h-6 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={actionLoading === sep.id + "update_lwd" || !customLwd[sep.id]}
+                  onClick={() => adminAction(sep.id, "update_lwd", { lastWorkingDate: customLwd[sep.id] })}
+                >
+                  Change LWD
+                </Button>
+              </div>
             </div>
           )}
 

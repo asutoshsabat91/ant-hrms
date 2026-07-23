@@ -28,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const body = await req.json();
   const { action, rejectionReason } = body;
 
-  const isAdmin = session.user.role === "ADMIN";
+  const isAdmin = session.user.role === "ADMIN" || session.user.role === "COMPANY_ADMIN";
   const separation = await prisma.separation.findUnique({
     where: { id },
     include: { employee: { include: { user: true } } },
@@ -113,6 +113,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const updated = await prisma.separation.update({
         where: { id },
         data: { status: "CANCELLED", lastWorkingDate: null },
+      });
+      return NextResponse.json({ separation: updated });
+    }
+
+    case "update_lwd": {
+      if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (!body.lastWorkingDate) return NextResponse.json({ error: "Missing date" }, { status: 400 });
+      const lastWorkingDate = new Date(body.lastWorkingDate);
+      const updated = await prisma.separation.update({
+        where: { id },
+        data: { lastWorkingDate },
+        include: {
+          employee: {
+            select: {
+              status: true,
+              firstName: true,
+              lastName: true,
+              employeeId: true,
+              designation: true,
+              department: { select: { name: true } },
+            },
+          },
+        },
       });
       return NextResponse.json({ separation: updated });
     }
