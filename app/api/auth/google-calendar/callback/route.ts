@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
   if (error || !code) {
     console.error("[Google Calendar OAuth] Error from Google:", error);
-    return NextResponse.redirect(`${baseUrl}/portal?gcal=error`);
+    return NextResponse.redirect(`${baseUrl}/calendar?gcal=error`);
   }
 
   try {
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      return NextResponse.redirect(`${baseUrl}/portal?gcal=error`);
+      return NextResponse.redirect(`${baseUrl}/calendar?gcal=error`);
     }
 
     const oauth2Client = new google.auth.OAuth2(
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 
     if (!refreshToken) {
       console.error("[Google Calendar OAuth] No refresh token received. User may need to revoke and reconnect.");
-      return NextResponse.redirect(`${baseUrl}/portal?gcal=no_refresh_token`);
+      return NextResponse.redirect(`${baseUrl}/calendar?gcal=no_refresh_token`);
     }
 
     // Save the refresh token to the employee's record
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
     });
 
     if (!employee) {
-      return NextResponse.redirect(`${baseUrl}/portal?gcal=no_employee`);
+      return NextResponse.redirect(`${baseUrl}/calendar?gcal=no_employee`);
     }
 
     await prisma.employee.update({
@@ -57,9 +57,9 @@ export async function GET(req: Request) {
     });
 
     console.log(`[Google Calendar OAuth] Saved refresh token for employee: ${employee.firstName} ${employee.lastName}`);
-    return NextResponse.redirect(`${baseUrl}/portal?gcal=connected`);
+    return NextResponse.redirect(`${baseUrl}/calendar?gcal=connected`);
   } catch (err) {
     console.error("[Google Calendar OAuth] Failed to exchange code for tokens:", err);
-    return NextResponse.redirect(`${baseUrl}/portal?gcal=error`);
+    return NextResponse.redirect(`${baseUrl}/calendar?gcal=error`);
   }
 }
