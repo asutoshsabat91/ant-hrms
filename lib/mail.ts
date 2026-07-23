@@ -336,7 +336,7 @@ export async function sendSeparationRequestEmail(
   reason: string,
   noticeDays: number
 ) {
-  const adminEmail = "admin@theantbox.com";
+  const adminEmail = "hive@theantbox.com";
   const escEmployeeName = escapeHtml(employeeName);
   const escEmployeeEmail = escapeHtml(employeeEmail);
   const escReason = escapeHtml(reason);

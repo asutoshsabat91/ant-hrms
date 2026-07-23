@@ -415,8 +415,8 @@ export async function POST(req: Request) {
   try {
     const employeeName = `${employee.firstName} ${employee.lastName}`;
     
-    // Route email to company admins if they exist, otherwise default to admin@theantbox.com
-    let emailRecipients = ["admin@theantbox.com"];
+    // Route email to company admins if they exist, otherwise default to hive@theantbox.com
+    let emailRecipients = ["hive@theantbox.com"];
     if (employee.deployedCompany) {
       const admins = await prisma.user.findMany({
         where: {

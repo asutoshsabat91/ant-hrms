@@ -18,7 +18,7 @@ const createEventSchema = z.object({
 const ALL_LEAVES_EMAILS = [
   "asutosh.sabat@theantbox.com",
   "priyanshu.shekhar@theantbox.com",
-  "admin@theantbox.com",
+  "hive@theantbox.com",
   "chandrita@theantbox.com",
 ];
 
