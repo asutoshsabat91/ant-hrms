@@ -417,7 +417,7 @@ export async function POST(req: Request) {
     
     // Route email to company admins if they exist, otherwise default to Chandrita and Hive
     let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com"];
-    if (employee.email?.toLowerCase() === "chandrita@theantbox.com" || employee.user?.email.toLowerCase() === "chandrita@theantbox.com") {
+    if (employee.email?.toLowerCase() === "chandrita@theantbox.com") {
       emailRecipients = ["hive@theantbox.com"];
     } else if (employee.deployedCompany) {
       const admins = await prisma.user.findMany({
