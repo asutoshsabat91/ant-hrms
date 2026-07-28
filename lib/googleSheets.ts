@@ -485,8 +485,8 @@ export async function syncGoogleSheetsWithDb() {
           updatedCount++;
         } else {
           // New employee creation
-          const fn = firstName || "New";
-          const ln = lastName || "Employee";
+          const fn = firstName || "New Joinee";
+          const ln = lastName || "";
           const des = designation || "Associate";
           const deptId = departmentId || defaultDept.id;
           const statusVal: EmployeeStatus = ["ACTIVE", "ONBOARDING", "OFFBOARDING", "INACTIVE", "ALUMNI"].includes(statusStr) ? (statusStr as EmployeeStatus) : "ACTIVE";

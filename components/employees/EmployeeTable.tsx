@@ -81,8 +81,9 @@ export function EmployeeTable({
               </tr>
             ) : (
               employees.map((emp) => {
-                const name = `${emp.firstName} ${emp.lastName}`;
-                const initials = `${emp.firstName[0]}${emp.lastName[0]}`;
+                const lastNameClean = (emp.lastName && emp.lastName !== "Employee") ? emp.lastName : "";
+                const name = [emp.firstName, lastNameClean].filter(Boolean).join(" ");
+                const initials = (emp.firstName[0] + (lastNameClean ? lastNameClean[0] : (emp.firstName[1] || ""))).toUpperCase();
                 const joinedDate = emp.joiningDate
                   ? format(new Date(emp.joiningDate), "MMM yyyy")
                   : "N/A";
