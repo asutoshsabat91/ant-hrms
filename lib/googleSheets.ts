@@ -408,8 +408,13 @@ export async function syncGoogleSheetsWithDb() {
 
           if (firstName && firstName !== "—") updatePayload.firstName = firstName;
           if (lastName && lastName !== "—") updatePayload.lastName = lastName;
-          if (designation && designation !== "—") updatePayload.designation = designation;
-          if (jobRole && jobRole !== "—") updatePayload.jobRole = jobRole;
+          if (jobRole && jobRole !== "—") {
+            updatePayload.jobRole = jobRole;
+            updatePayload.designation = jobRole;
+          } else if (designation && designation !== "—") {
+            updatePayload.jobRole = designation;
+            updatePayload.designation = designation;
+          }
           if (deployedCompany && deployedCompany !== "—") updatePayload.deployedCompany = deployedCompany;
           if (personalEmail && personalEmail !== "—") updatePayload.personalEmail = personalEmail;
           if (phone && phone !== "—") updatePayload.phone = phone;
