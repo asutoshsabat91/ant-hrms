@@ -296,10 +296,24 @@ export async function syncGoogleSheetsWithDb() {
     }
 
     if (employeeDataRows.length > 0 && headers.length > 0) {
+      const cleanNumber = (val: string): number | undefined => {
+        if (!val || val === "—") return undefined;
+        const cleaned = val.replace(/[^0-9.-]/g, "");
+        if (!cleaned) return undefined;
+        const num = parseFloat(cleaned);
+        return Number.isNaN(num) ? undefined : num;
+      };
+
+      const parseSheetDate = (val: string): Date | undefined => {
+        if (!val || val === "—") return undefined;
+        const parsed = new Date(val);
+        return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+      };
+
       const getColVal = (row: string[], possibleHeaders: string[]) => {
         for (const ph of possibleHeaders) {
           const idx = headers.indexOf(ph.toLowerCase());
-          if (idx !== -1 && row[idx] !== undefined) return row[idx].trim();
+          if (idx !== -1 && row[idx] !== undefined) return String(row[idx]).trim();
         }
         return "";
       };
@@ -326,9 +340,9 @@ export async function syncGoogleSheetsWithDb() {
           include: { user: true }
         }) : null;
 
-        const firstName = getColVal(row, ["First Name", "firstname", "name"]) || "New";
-        const lastName = getColVal(row, ["Last Name", "lastname"]) || "Employee";
-        const designation = getColVal(row, ["Designation"]) || "Associate";
+        const firstName = getColVal(row, ["First Name", "firstname", "name"]);
+        const lastName = getColVal(row, ["Last Name", "lastname"]);
+        const designation = getColVal(row, ["Designation"]);
         const deployedCompany = getColVal(row, ["Deployed Company", "deployedcompany", "company"]);
         const personalEmail = getColVal(row, ["Personal Email", "personalemail"]);
         const phone = getColVal(row, ["Phone", "phone number", "mobile"]);
@@ -344,58 +358,32 @@ export async function syncGoogleSheetsWithDb() {
         const uan = getColVal(row, ["UAN", "uan number", "uannumber"]);
 
         const ctcVal = getColVal(row, ["CTC", "ctc"]);
-        const ctc = ctcVal ? parseFloat(ctcVal) : 0;
-
         const basicVal = getColVal(row, ["Basic Salary", "basicsalary", "basic"]);
-        const basicSalary = basicVal ? parseFloat(basicVal) : 0;
-
         const hraVal = getColVal(row, ["HRA", "hra"]);
-        const hra = hraVal ? parseFloat(hraVal) : 0;
-
         const specialVal = getColVal(row, ["Special Allowance", "specialallowance", "special"]);
-        const specialAllowance = specialVal ? parseFloat(specialVal) : 0;
-
         const pfVal = getColVal(row, ["PF", "pf"]);
-        const pf = pfVal ? parseFloat(pfVal) : 0;
-
         const ptVal = getColVal(row, ["Professional Tax", "professionaltax", "pt"]);
-        const professionalTax = ptVal ? parseFloat(ptVal) : 200;
 
         const city = getColVal(row, ["City", "city"]);
-        const state = getColVal(row, ["State", "state"]) || "Odisha";
+        const state = getColVal(row, ["State", "state"]);
         const pincode = getColVal(row, ["Pincode", "pincode"]);
 
         const joiningDateStr = getColVal(row, ["Joining Date", "joiningdate"]);
-        let joiningDate = new Date();
-        if (joiningDateStr) {
-          const parsedDate = new Date(joiningDateStr);
-          if (!Number.isNaN(parsedDate.getTime())) joiningDate = parsedDate;
-        }
-
         const dobStr = getColVal(row, ["Date of Birth", "dob", "dateofbirth"]);
-        let dateOfBirth: Date | null = null;
-        if (dobStr) {
-          const parsedDob = new Date(dobStr);
-          if (!Number.isNaN(parsedDob.getTime())) dateOfBirth = parsedDob;
-        }
 
         const statusStr = getColVal(row, ["Status", "status"]).toUpperCase();
-        let status: EmployeeStatus = "ACTIVE";
-        if (["ACTIVE", "ONBOARDING", "OFFBOARDING", "INACTIVE", "ALUMNI"].includes(statusStr)) {
-          status = statusStr as EmployeeStatus;
-        }
-
         const empTypeStr = getColVal(row, ["Employment Type", "employmenttype", "type"]).toUpperCase().replace(" ", "_");
-        let employmentType: EmploymentType = "FULL_TIME";
-        if (["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr)) {
-          employmentType = empTypeStr as EmploymentType;
-        }
 
         const deptCode = getColVal(row, ["Department Code", "departmentcode", "department"]);
-        let departmentId = defaultDept.id;
+        let departmentId: string | undefined = undefined;
         if (deptCode) {
           const matchedDept = await prisma.department.findFirst({
-            where: { code: deptCode.toUpperCase() }
+            where: {
+              OR: [
+                { code: deptCode.toUpperCase() },
+                { name: { equals: deptCode, mode: "insensitive" } }
+              ]
+            }
           });
           if (matchedDept) {
             departmentId = matchedDept.id;
@@ -407,39 +395,6 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        const updatePayload = {
-          firstName,
-          lastName,
-          designation,
-          deployedCompany: deployedCompany || undefined,
-          personalEmail: personalEmail || null,
-          phone: phone || null,
-          gender: gender || null,
-          bloodGroup: bloodGroup || null,
-          permanentAddress: address || null,
-          city: city || null,
-          state: state || "Odisha",
-          pincode: pincode || null,
-          emergencyContact: emergencyContact || null,
-          emergencyPhone: emergencyPhone || null,
-          bankName: bankName || null,
-          bankAccountNo: bankAccountNo || null,
-          ifscCode: ifscCode || null,
-          pan: pan || null,
-          uan: uan || null,
-          joiningDate,
-          dateOfBirth,
-          status,
-          employmentType,
-          departmentId,
-          ctc,
-          basicSalary,
-          hra,
-          specialAllowance,
-          pf,
-          professionalTax,
-        };
-
         const sheetPassword = getColVal(row, ["Password", "Password (Bcrypt Hash)", "password"]);
         let newPasswordHash: string | undefined = undefined;
         if (sheetPassword && !sheetPassword.startsWith("$2a$") && !sheetPassword.startsWith("$2b$") && !sheetPassword.startsWith("$2y$")) {
@@ -447,12 +402,71 @@ export async function syncGoogleSheetsWithDb() {
         }
 
         if (existingEmp) {
+          // Perform safe, non-destructive update
+          const updatePayload: Prisma.EmployeeUpdateInput = {};
+
+          if (firstName && firstName !== "—") updatePayload.firstName = firstName;
+          if (lastName && lastName !== "—") updatePayload.lastName = lastName;
+          if (designation && designation !== "—") updatePayload.designation = designation;
+          if (deployedCompany && deployedCompany !== "—") updatePayload.deployedCompany = deployedCompany;
+          if (personalEmail && personalEmail !== "—") updatePayload.personalEmail = personalEmail;
+          if (phone && phone !== "—") updatePayload.phone = phone;
+          if (gender && gender !== "—") updatePayload.gender = gender;
+          if (bloodGroup && bloodGroup !== "—") updatePayload.bloodGroup = bloodGroup;
+          if (address && address !== "—") updatePayload.permanentAddress = address;
+          if (city && city !== "—") updatePayload.city = city;
+          if (state && state !== "—") updatePayload.state = state;
+          if (pincode && pincode !== "—") updatePayload.pincode = pincode;
+          if (emergencyContact && emergencyContact !== "—") updatePayload.emergencyContact = emergencyContact;
+          if (emergencyPhone && emergencyPhone !== "—") updatePayload.emergencyPhone = emergencyPhone;
+          if (bankName && bankName !== "—") updatePayload.bankName = bankName;
+          if (bankAccountNo && bankAccountNo !== "—") updatePayload.bankAccountNo = bankAccountNo;
+          if (ifscCode && ifscCode !== "—") updatePayload.ifscCode = ifscCode;
+          if (pan && pan !== "—") updatePayload.pan = pan;
+          if (uan && uan !== "—") updatePayload.uan = uan;
+
+          const parsedCtc = cleanNumber(ctcVal);
+          if (parsedCtc !== undefined) updatePayload.ctc = parsedCtc;
+
+          const parsedBasic = cleanNumber(basicVal);
+          if (parsedBasic !== undefined) updatePayload.basicSalary = parsedBasic;
+
+          const parsedHra = cleanNumber(hraVal);
+          if (parsedHra !== undefined) updatePayload.hra = parsedHra;
+
+          const parsedSpecial = cleanNumber(specialVal);
+          if (parsedSpecial !== undefined) updatePayload.specialAllowance = parsedSpecial;
+
+          const parsedPf = cleanNumber(pfVal);
+          if (parsedPf !== undefined) updatePayload.pf = parsedPf;
+
+          const parsedPt = cleanNumber(ptVal);
+          if (parsedPt !== undefined) updatePayload.professionalTax = parsedPt;
+
+          const parsedJoining = parseSheetDate(joiningDateStr);
+          if (parsedJoining) updatePayload.joiningDate = parsedJoining;
+
+          const parsedDob = parseSheetDate(dobStr);
+          if (parsedDob) updatePayload.dateOfBirth = parsedDob;
+
+          if (statusStr && ["ACTIVE", "ONBOARDING", "OFFBOARDING", "INACTIVE", "ALUMNI"].includes(statusStr)) {
+            updatePayload.status = statusStr as EmployeeStatus;
+          }
+
+          if (empTypeStr && ["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr)) {
+            updatePayload.employmentType = empTypeStr as EmploymentType;
+          }
+
+          if (departmentId) {
+            updatePayload.department = { connect: { id: departmentId } };
+          }
+
           await prisma.employee.update({
             where: { id: existingEmp.id },
             data: updatePayload
           });
 
-          const isActive = status !== "INACTIVE" && status !== "ALUMNI";
+          const isActive = statusStr ? (statusStr !== "INACTIVE" && statusStr !== "ALUMNI") : existingEmp.user.isActive;
           await prisma.user.update({
             where: { id: existingEmp.userId },
             data: {
@@ -463,7 +477,15 @@ export async function syncGoogleSheetsWithDb() {
 
           updatedCount++;
         } else {
-          const baseEmail = email ? email.toLowerCase() : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@theantbox.com`;
+          // New employee creation
+          const fn = firstName || "New";
+          const ln = lastName || "Employee";
+          const des = designation || "Associate";
+          const deptId = departmentId || defaultDept.id;
+          const statusVal: EmployeeStatus = ["ACTIVE", "ONBOARDING", "OFFBOARDING", "INACTIVE", "ALUMNI"].includes(statusStr) ? (statusStr as EmployeeStatus) : "ACTIVE";
+          const empTypeVal: EmploymentType = ["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr) ? (empTypeStr as EmploymentType) : "FULL_TIME";
+
+          const baseEmail = email ? email.toLowerCase() : `${fn.toLowerCase()}.${ln.toLowerCase()}@theantbox.com`;
           let finalEmail = baseEmail;
           const userExists = await prisma.user.findUnique({ where: { email: finalEmail } });
           if (userExists) {
@@ -485,12 +507,41 @@ export async function syncGoogleSheetsWithDb() {
               email: finalEmail,
               passwordHash,
               role: "EMPLOYEE",
-              isActive: status !== "INACTIVE" && status !== "ALUMNI",
+              isActive: statusVal !== "INACTIVE" && statusVal !== "ALUMNI",
               employee: {
                 create: {
-                  ...updatePayload,
+                  firstName: fn,
+                  lastName: ln,
+                  designation: des,
                   email: finalEmail,
                   employeeId: finalEmpId,
+                  deployedCompany: deployedCompany || undefined,
+                  personalEmail: personalEmail || null,
+                  phone: phone || null,
+                  gender: gender || null,
+                  bloodGroup: bloodGroup || null,
+                  permanentAddress: address || null,
+                  city: city || null,
+                  state: state || "Odisha",
+                  pincode: pincode || null,
+                  emergencyContact: emergencyContact || null,
+                  emergencyPhone: emergencyPhone || null,
+                  bankName: bankName || null,
+                  bankAccountNo: bankAccountNo || null,
+                  ifscCode: ifscCode || null,
+                  pan: pan || null,
+                  uan: uan || null,
+                  joiningDate: parseSheetDate(joiningDateStr) || new Date(),
+                  dateOfBirth: parseSheetDate(dobStr),
+                  status: statusVal,
+                  employmentType: empTypeVal,
+                  departmentId: deptId,
+                  ctc: cleanNumber(ctcVal) ?? 0,
+                  basicSalary: cleanNumber(basicVal) ?? 0,
+                  hra: cleanNumber(hraVal) ?? 0,
+                  specialAllowance: cleanNumber(specialVal) ?? 0,
+                  pf: cleanNumber(pfVal) ?? 0,
+                  professionalTax: cleanNumber(ptVal) ?? 200,
                 }
               }
             }
