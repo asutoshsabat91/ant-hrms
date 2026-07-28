@@ -41,7 +41,7 @@ async function main() {
       [
         "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
         "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
-        "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Job Role", "Department", "Deployed Company",
+        "Emergency Contact Name", "Emergency Contact Phone", "Job Role", "Department", "Deployed Company",
         "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
         "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
         "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"
@@ -84,6 +84,59 @@ async function main() {
     } catch (err) {
       console.error(`Error processing sheet "${sheetName}":`, err instanceof Error ? err.message : String(err));
     }
+  }
+
+  // Set Data Validation rule on Employees sheet for Job Role column (Column P, index 15)
+  try {
+    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+    const empSheet = spreadsheet.data.sheets?.find(s => s.properties?.title === "Employees");
+    if (empSheet?.properties?.sheetId !== undefined) {
+      const sheetId = empSheet.properties.sheetId;
+      const jobRoles = [
+        "CEO",
+        "Chief Of Staff (COS)",
+        "Founder's Office HR",
+        "Founder'S Office",
+        "GTM Growth Executive",
+        "GTM Marketing and Operations",
+        "Strategies and Operations Associate",
+        "Implementation Consultant",
+        "Integration Consultant",
+        "Customer Support",
+        "L&D Knowledge Base",
+        "SDE"
+      ];
+
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              setDataValidation: {
+                range: {
+                  sheetId,
+                  startRowIndex: 1, // Row 2 downwards
+                  endRowIndex: 1000,
+                  startColumnIndex: 15, // Column P (Job Role)
+                  endColumnIndex: 16
+                },
+                rule: {
+                  condition: {
+                    type: "ONE_OF_LIST",
+                    values: jobRoles.map(role => ({ userEnteredValue: role }))
+                  },
+                  showCustomUi: true,
+                  strict: false
+                }
+              }
+            }
+          ]
+        }
+      });
+      console.log("Data Validation dropdown for 12 Job Roles applied to Employees sheet Column P!");
+    }
+  } catch (valErr) {
+    console.error("Failed to apply Data Validation dropdown:", valErr);
   }
 
   console.log("\nAll sheets blanked out! Ready for Rohit or Chandrita to dump clean data.");
