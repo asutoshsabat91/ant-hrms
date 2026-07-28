@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     delete data.variablePay;
   }
   const count = await prisma.employee.count();
-  const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
+  const employeeId = String(count + 1).padStart(2, "0");
   const joiningDate = new Date(data.joiningDate);
   const compensation = data.ctc ? breakdownFromCTC(data.ctc, data.employmentType) : null;
 

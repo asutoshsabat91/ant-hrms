@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       let attempts = 0;
       while (attempts < 10) {
         const empCount = await prisma.employee.count();
-        const candidateId = `ANT-${String(empCount + 100 + attempts).padStart(3, "0")}`;
+        const candidateId = String(empCount + 1 + attempts).padStart(2, "0");
         const exists = await prisma.employee.findUnique({ where: { employeeId: candidateId } });
         if (!exists) {
           employeeId = candidateId;
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
         attempts++;
       }
       if (!employeeId) {
-        employeeId = `ANT-${Date.now().toString().slice(-6)}`;
+        employeeId = Date.now().toString().slice(-6);
       }
 
       const compensation = ctc ? breakdownFromCTC(ctc, employmentType) : null;

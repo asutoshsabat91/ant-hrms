@@ -80,7 +80,7 @@ async function main() {
           firstName: "Admin",
           lastName: "AntBox",
           email: "admin@theantbox.com",
-          employeeId: "ANT-ADMIN",
+          employeeId: "01",
           designation: "CEO",
           jobRole: "CEO",
           departmentId: ops.id,

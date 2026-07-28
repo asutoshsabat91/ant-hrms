@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       let empIdToUse = data.employeeId;
       if (!empIdToUse || empIdToUse === "—") {
         currentCount++;
-        empIdToUse = `ANT-${String(currentCount).padStart(3, "0")}`;
+        empIdToUse = String(currentCount).padStart(2, "0");
       }
       const joiningDate = new Date(data.joiningDate);
 

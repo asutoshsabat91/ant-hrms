@@ -503,7 +503,7 @@ export async function syncGoogleSheetsWithDb() {
           let finalEmpId = empId;
           if (!finalEmpId || finalEmpId === "—") {
             const empTotal = await prisma.employee.count();
-            finalEmpId = `ANT-${String(empTotal + 100).padStart(3, "0")}`;
+            finalEmpId = String(empTotal + 1).padStart(2, "0");
           }
 
           const tempPassword = sheetPassword || "AntBox@2025";

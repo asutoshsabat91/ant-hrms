@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     }
 
     const count = await prisma.employee.count();
-    const employeeId = `ANT-${String(count + 1).padStart(3, "0")}`;
+    const employeeId = String(count + 1).padStart(2, "0");
     const joiningDate = new Date(data.joiningDate);
     const compensation = data.ctc ? breakdownFromCTC(data.ctc) : null;
     const tempPassword = data.password ?? "AntBox@2025";
