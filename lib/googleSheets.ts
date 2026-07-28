@@ -558,6 +558,45 @@ export async function syncGoogleSheetsWithDb() {
           createdCount++;
         }
       }
+
+      // Cleanup: Delete employees from DB that were removed from the Google Sheet
+      const foundInSheetEmails = new Set<string>();
+      const foundInSheetEmpIds = new Set<string>();
+      for (const row of employeeDataRows) {
+        const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
+        const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
+        if (email) foundInSheetEmails.add(email.toLowerCase());
+        if (empId) foundInSheetEmpIds.add(empId);
+      }
+
+      if (foundInSheetEmails.size > 0 || foundInSheetEmpIds.size > 0) {
+        const allDbEmps = await prisma.employee.findMany({ select: { id: true, userId: true, email: true, employeeId: true } });
+        const toDeleteUserIds: string[] = [];
+        const toDeleteEmpIds: string[] = [];
+        
+        for (const dbEmp of allDbEmps) {
+          const emailMatched = dbEmp.email && foundInSheetEmails.has(dbEmp.email.toLowerCase());
+          const idMatched = dbEmp.employeeId && foundInSheetEmpIds.has(dbEmp.employeeId);
+          if (!emailMatched && !idMatched) {
+            toDeleteUserIds.push(dbEmp.userId);
+            toDeleteEmpIds.push(dbEmp.id);
+          }
+        }
+        
+        if (toDeleteEmpIds.length > 0) {
+          // Because of Prisma foreign keys we might need to delete Employee first, then User
+          // However, Prisma deleteMany on Employee might fail if there are dependent records like OnboardingRequest, etc.
+          // To be safe, we'll mark them as INACTIVE and append them to sheet as INACTIVE or simply not export them?
+          // The user specifically asked to "remove" false data, so we will try to delete them.
+          try {
+            await prisma.employee.deleteMany({ where: { id: { in: toDeleteEmpIds } } });
+            await prisma.user.deleteMany({ where: { id: { in: toDeleteUserIds } } });
+            console.log(`[Google Sheets] Deleted ${toDeleteEmpIds.length} employees not found in the sheet.`);
+          } catch (e) {
+            console.error("[Google Sheets] Failed to delete orphaned employees:", e);
+          }
+        }
+      }
     }
 
     // 2. Fetch all database models and update Google Sheets format to match Export Report
