@@ -232,7 +232,29 @@ export async function syncGoogleSheetsWithDb() {
   const sheetName = "Employees";
 
   try {
-    await ensureWorksheetExists(sheets, spreadsheetId, sheetName);
+    // 0. Pull Departments tab if present
+    try {
+      const deptRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: "Departments!A:C",
+      });
+      const deptRows = deptRes.data.values || [];
+      if (deptRows.length > 1) {
+        for (let i = 1; i < deptRows.length; i++) {
+          const code = (deptRows[i][0] || "").toString().trim().toUpperCase();
+          const name = (deptRows[i][1] || "").toString().trim();
+          if (code && name) {
+            await prisma.department.upsert({
+              where: { code },
+              update: { name },
+              create: { code, name },
+            });
+          }
+        }
+      }
+    } catch {
+      // Departments sheet optional
+    }
 
     // 1. Pull data from Google Sheet
     const response = await sheets.spreadsheets.values.get({
@@ -501,6 +523,8 @@ export async function syncGoogleSheetsWithDb() {
 
     // Ensure all target worksheets exist sequentially to prevent concurrent write collisions
     await ensureWorksheetExists(sheets, spreadsheetId, "Employees");
+    await ensureWorksheetExists(sheets, spreadsheetId, "Departments");
+    await ensureWorksheetExists(sheets, spreadsheetId, "Clients");
     await ensureWorksheetExists(sheets, spreadsheetId, "Leave Requests");
     await ensureWorksheetExists(sheets, spreadsheetId, "Reimbursements");
     await ensureWorksheetExists(sheets, spreadsheetId, "Separations");
@@ -510,7 +534,7 @@ export async function syncGoogleSheetsWithDb() {
       [
         "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
         "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
-        "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Department",
+        "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Department", "Deployed Company",
         "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
         "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
         "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"
@@ -519,6 +543,8 @@ export async function syncGoogleSheetsWithDb() {
 
     const users = await prisma.user.findMany({ select: { email: true, passwordHash: true } });
     const userPasswordMap = new Map(users.map(u => [u.email.toLowerCase(), u.passwordHash]));
+
+    const clientHeadcountMap = new Map<string, number>();
 
     allEmployees.forEach((emp) => {
       const personalEmail = emp.personalEmail || "—";
@@ -545,6 +571,9 @@ export async function syncGoogleSheetsWithDb() {
       const pan = emp.pan || "—";
       const uan = emp.uan || "—";
       const passwordHash = userPasswordMap.get(emp.email.toLowerCase()) || "";
+      const clientName = emp.deployedCompany || "AntBox";
+
+      clientHeadcountMap.set(clientName, (clientHeadcountMap.get(clientName) || 0) + 1);
 
       employeeRows.push([
         emp.employeeId,
@@ -564,6 +593,7 @@ export async function syncGoogleSheetsWithDb() {
         emergencyPhone,
         emp.designation,
         emp.department?.name ?? "—",
+        clientName,
         emp.employmentType,
         emp.status,
         joiningDate,
@@ -580,6 +610,30 @@ export async function syncGoogleSheetsWithDb() {
         uan,
         passwordHash
       ]);
+    });
+
+    // 1b. Departments Tab Data
+    const allDepartments = await prisma.department.findMany({
+      include: { _count: { select: { employees: true } } },
+      orderBy: { name: "asc" }
+    });
+    const departmentRows: unknown[][] = [
+      ["Department Code", "Department Name", "Active Headcount"]
+    ];
+    allDepartments.forEach((dept) => {
+      departmentRows.push([
+        dept.code,
+        dept.name,
+        dept._count.employees
+      ]);
+    });
+
+    // 1c. Clients Tab Data
+    const clientRows: unknown[][] = [
+      ["Client / Deployed Company", "Active Headcount"]
+    ];
+    Array.from(clientHeadcountMap.entries()).forEach(([clientName, count]) => {
+      clientRows.push([clientName, count]);
     });
 
     // 2. Leave Requests Tab Data
@@ -646,6 +700,24 @@ export async function syncGoogleSheetsWithDb() {
       range: "Employees!A1",
       valueInputOption: "RAW",
       requestBody: { values: employeeRows }
+    });
+
+    // Departments
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Departments!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Departments!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: departmentRows }
+    });
+
+    // Clients
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Clients!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Clients!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: clientRows }
     });
 
     // Leave Requests

@@ -29,9 +29,16 @@ export async function createOffboardingChecklist(
   notes?: string,
   exitInterviewDate?: Date | null
 ) {
+  const existingTasks = await tx.offboardingTask.findMany({
+    where: { employeeId },
+    select: { title: true }
+  });
+  const existingTitles = new Set(existingTasks.map(t => t.title.toLowerCase().trim()));
+
   const tasks: Prisma.OffboardingTaskCreateManyInput[] = [];
 
   for (const task of defaultTasks) {
+    if (existingTitles.has(task.title.toLowerCase().trim())) continue;
     if (task.title.includes("relieving") && !letters.includes("Relieving Letter")) continue;
     if (task.title.includes("experience") && !letters.includes("Experience Letter")) continue;
     if (task.title.includes("LOR") && !letters.includes("LOR")) continue;
@@ -51,7 +58,7 @@ export async function createOffboardingChecklist(
     });
   }
 
-  if (exitInterviewDate) {
+  if (exitInterviewDate && !existingTitles.has("conduct exit interview")) {
     tasks.push({
       employeeId,
       title: "Conduct exit interview",
@@ -63,5 +70,7 @@ export async function createOffboardingChecklist(
     });
   }
 
-  await tx.offboardingTask.createMany({ data: tasks });
+  if (tasks.length > 0) {
+    await tx.offboardingTask.createMany({ data: tasks });
+  }
 }

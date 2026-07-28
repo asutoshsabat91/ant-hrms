@@ -287,7 +287,7 @@ function getDepartments(){
   var ss=SpreadsheetApp.getActiveSpreadsheet(),sheet=ss.getSheetByName(SHEETS.DEPARTMENTS);
   if(!sheet) return [];
   var data=sheet.getDataRange().getValues(),r=[];
-  for(var i=1;i<data.length;i++){if(data[i][0]) r.push({id:data[i][0],name:data[i][1]});}
+  for(var i=1;i<data.length;i++){if(data[i][0]) r.push({id:data[i][0],name:data[i][1],code:data[i][0]});}
   return r;
 }
 function saveDepartment(dept){
@@ -295,6 +295,23 @@ function saveDepartment(dept){
   var ss=SpreadsheetApp.getActiveSpreadsheet(),sheet=ss.getSheetByName(SHEETS.DEPARTMENTS);
   if(dept.id){var d=sheet.getDataRange().getValues();for(var i=1;i<d.length;i++){if(d[i][0]===dept.id){sheet.getRange(i+1,2).setValue(dept.name);return {success:true};}}}
   sheet.appendRow(["DEPT-"+Date.now(),dept.name,"",0,new Date()]);
+  return {success:true};
+}
+
+function getClients(){
+  var ss=SpreadsheetApp.getActiveSpreadsheet(),sheet=ss.getSheetByName(SHEETS.CLIENTS || "Clients");
+  if(!sheet) return [];
+  var data=sheet.getDataRange().getValues(),r=[];
+  for(var i=1;i<data.length;i++){if(data[i][0]) r.push({name:data[i][0],headcount:data[i][1]||0});}
+  return r;
+}
+function saveClient(client){
+  if(!canAdmin()) return {success:false,error:"Unauthorized"};
+  var ss=SpreadsheetApp.getActiveSpreadsheet(),sheet=ss.getSheetByName(SHEETS.CLIENTS || "Clients");
+  if(!sheet){sheet=ss.insertSheet(SHEETS.CLIENTS || "Clients");sheet.appendRow(["Client / Deployed Company","Active Headcount"]);}
+  var d=sheet.getDataRange().getValues();
+  for(var i=1;i<d.length;i++){if(d[i][0]===client.name){sheet.getRange(i+1,1).setValue(client.name);return {success:true};}}
+  sheet.appendRow([client.name,0]);
   return {success:true};
 }
 

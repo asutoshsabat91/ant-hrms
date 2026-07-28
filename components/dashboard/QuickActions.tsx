@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 const adminActions = [
-  { label: "Run Payroll", desc: "Monthly cycle", href: "/payroll" },
+  { label: "Onboarding", desc: "Manage new hires", href: "/onboarding" },
   { label: "Approve Leaves", desc: "Review requests", href: "/leave" },
   { label: "Separations", desc: "Resignation pipeline", href: "/separation" },
   { label: "Procurement", desc: "Pending approvals", href: "/portal/reimbursements" },

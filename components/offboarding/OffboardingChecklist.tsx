@@ -32,7 +32,15 @@ const badgeStyles: Record<string, string> = {
 };
 
 export function OffboardingChecklist({ initialTasks }: OffboardingChecklistProps) {
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState(() => {
+    const seen = new Set<string>();
+    return initialTasks.filter((t) => {
+      const key = t.title.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
   const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
 
   const groupedTasks = useMemo(() => {

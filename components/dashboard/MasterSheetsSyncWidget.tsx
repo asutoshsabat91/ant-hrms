@@ -11,6 +11,7 @@ export interface SyncEmployee {
   lastName: string;
   email: string;
   designation: string;
+  department?: { name: string; code: string } | null;
   deployedCompany?: string | null;
   status: string;
   leaveRequests?: { status: string }[];
@@ -171,8 +172,9 @@ export function MasterSheetsSyncWidget({
                       <th className="px-3 py-2 border-r border-zinc-100">First Name</th>
                       <th className="px-3 py-2 border-r border-zinc-100">Last Name</th>
                       <th className="px-3 py-2 border-r border-zinc-100">Official Email</th>
+                      <th className="px-3 py-2 border-r border-zinc-100">Department</th>
                       <th className="px-3 py-2 border-r border-zinc-100">Designation</th>
-                      <th className="px-3 py-2 border-r border-zinc-100">Deployed Company</th>
+                      <th className="px-3 py-2 border-r border-zinc-100">Deployed Company (Client)</th>
                       <th className="px-3 py-2 border-r border-zinc-100">Status</th>
                       <th className="px-3 py-2">Leaves Approved</th>
                     </tr>
@@ -184,6 +186,7 @@ export function MasterSheetsSyncWidget({
                         <td className="px-3 py-2 border-r border-zinc-100">{emp.firstName}</td>
                         <td className="px-3 py-2 border-r border-zinc-100">{emp.lastName}</td>
                         <td className="px-3 py-2 border-r border-zinc-100">{emp.email}</td>
+                        <td className="px-3 py-2 border-r border-zinc-100 font-medium text-zinc-800">{emp.department?.name || "General"}</td>
                         <td className="px-3 py-2 border-r border-zinc-100">{emp.designation}</td>
                         <td className="px-3 py-2 border-r border-zinc-100 font-bold text-violet-700">{emp.deployedCompany || "AntBox"}</td>
                         <td className={`px-3 py-2 border-r border-zinc-100 font-bold ${
