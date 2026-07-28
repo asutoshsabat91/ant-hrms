@@ -16,7 +16,7 @@ const createEventSchema = z.object({
 
 // Emails that can see ALL team leaves
 const ALL_LEAVES_EMAILS = [
-  "asutosh.sabat@theantbox.com",
+  "rohit@theantbox.com",
   "priyanshu.shekhar@theantbox.com",
   "hive@theantbox.com",
   "chandrita@theantbox.com",

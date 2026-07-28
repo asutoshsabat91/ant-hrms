@@ -416,9 +416,9 @@ export async function POST(req: Request) {
     const employeeName = `${employee.firstName} ${employee.lastName}`;
     
     // Route email to company admins if they exist, otherwise default to Chandrita and Hive
-    let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com"];
+    let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com"];
     if (employee.email?.toLowerCase() === "chandrita@theantbox.com") {
-      emailRecipients = ["hive@theantbox.com"];
+      emailRecipients = ["hive@theantbox.com", "rohit@theantbox.com"];
     } else if (employee.deployedCompany) {
       const admins = await prisma.user.findMany({
         where: {
@@ -429,7 +429,7 @@ export async function POST(req: Request) {
         },
       });
       if (admins.length > 0) {
-        emailRecipients = Array.from(new Set([...admins.map((a) => a.email), "chandrita@theantbox.com", "hive@theantbox.com"]));
+        emailRecipients = Array.from(new Set([...admins.map((a) => a.email), "chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com"]));
       }
     }
 

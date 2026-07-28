@@ -107,7 +107,7 @@ async function main() {
     let count = 0;
     for (const emp of employees) {
       count++;
-      const isSuperAdmin = emp.officialEmail === "asutosh.sabat@theantbox.com";
+      const isSuperAdmin = emp.officialEmail === "rohit@theantbox.com";
       const isHrAdmin = emp.client === "Admin";
       const isSpecialAdmin = ["chandrita@theantbox.com", "ritesh@theantbox.com"].includes(emp.officialEmail.toLowerCase());
       
