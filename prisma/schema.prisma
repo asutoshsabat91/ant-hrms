@@ -209,6 +209,7 @@ model Employee {
   permanentAddress          String?
   employeeId       String         @unique
   designation      String
+  jobRole          String?
   department       Department     @relation(fields: [departmentId], references: [id])
   departmentId     String
   managerId        String?

@@ -23,6 +23,7 @@ interface EmployeeProfile {
   firstName: string;
   lastName: string;
   designation: string;
+  jobRole?: string | null;
   department: { name: string };
   managerId?: string | null;
   employmentType: string;
@@ -236,7 +237,9 @@ export function Topbar({ user, employee }: TopbarProps) {
                   {user.name}
                 </p>
                 <p className="text-[10px] font-bold text-[var(--purple)] uppercase tracking-wider leading-none mt-0.5">
-                  {user.role === "ADMIN"
+                  {employee?.jobRole
+                    ? employee.jobRole
+                    : user.role === "ADMIN"
                     ? user.email?.toLowerCase() === "chandrita@theantbox.com"
                       ? "HR Admin"
                       : user.email?.toLowerCase() === "ritesh@theantbox.com"

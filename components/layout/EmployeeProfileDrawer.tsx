@@ -13,6 +13,7 @@ interface EmployeeProfile {
   firstName: string;
   lastName: string;
   designation: string;
+  jobRole?: string | null;
   department: { name: string };
   managerId?: string | null;
   employmentType: string;
@@ -122,7 +123,7 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
                 {employee.firstName} {employee.lastName}
               </p>
               <p className="text-[10px] text-zinc-400 font-medium">
-                {employee.employeeId} · {employee.designation}
+                {employee.employeeId} · {employee.jobRole || employee.designation}
               </p>
             </div>
           </div>
@@ -152,6 +153,7 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
 
           {/* Personal */}
           <Section icon={User} title="Personal Details">
+            <Field label="Job Role" value={employee.jobRole || employee.designation} />
             <Field label="Gender" value={employee.gender} />
             <Field label="Blood Group" value={employee.bloodGroup} />
             <Field
@@ -171,6 +173,7 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
           {/* Employment */}
           <Section icon={Building2} title="Employment">
             <Field label="Department" value={employee.department.name} />
+            <Field label="Job Role" value={employee.jobRole || employee.designation} />
             <Field label="Designation" value={employee.designation} />
             <Field label="Employment Type" value={employee.employmentType.replace("_", " ")} />
             <Field label="Status" value={employee.status} />

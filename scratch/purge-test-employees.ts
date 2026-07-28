@@ -75,7 +75,7 @@ async function main() {
         [
           "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
           "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
-          "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Department", "Deployed Company",
+          "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Job Role", "Department", "Deployed Company",
           "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
           "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
           "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"

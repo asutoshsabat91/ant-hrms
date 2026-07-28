@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, CheckCircle2, Camera, Rocket, Mail, RefreshCw } from "lucide-react";
 import Image from "next/image";
 
+import { ALLOWED_JOB_ROLES } from "@/lib/jobRoles";
+
 const wizardSchema = z.object({
   firstName: z.string().min(1, "Required"),
   lastName: z.string().min(1, "Required"),
@@ -30,6 +32,7 @@ const wizardSchema = z.object({
   emergencyPhone: z.string().optional(),
   profilePhoto: z.string().optional(),
   designation: z.string().min(1, "Required"),
+  jobRole: z.string().optional(),
   departmentId: z.string().min(1, "Required"),
   managerId: z.string().optional(),
   employmentType: z.enum(["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"]),
@@ -434,6 +437,12 @@ export function NewHireWizard({ departments, managers, templates, isChandrita }:
                 <Input className={inputCls} {...register("designation")} placeholder="e.g. Software Engineer Intern" />
                 {errors.designation && <p className="mt-1 text-[10px] text-rose-600">{errors.designation.message}</p>}
               </FieldGroup>
+              <FieldGroup label="Job Role">
+                <select className={selectCls} {...register("jobRole")}>
+                  <option value="">Select official Job Role</option>
+                  {ALLOWED_JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                </select>
+              </FieldGroup>
               <FieldGroup label="Department *">
                 <select className={selectCls} {...register("departmentId")}>
                   <option value="">Select department</option>
@@ -648,6 +657,12 @@ export function NewHireWizard({ departments, managers, templates, isChandrita }:
             <FieldGroup label="Designation *">
               <Input className={inputCls} {...register("designation")} placeholder="e.g. Software Engineer Intern" />
               {errors.designation && <p className="mt-1 text-[10px] text-rose-600">{errors.designation.message}</p>}
+            </FieldGroup>
+            <FieldGroup label="Job Role">
+              <select className={selectCls} {...register("jobRole")}>
+                <option value="">Select official Job Role</option>
+                {ALLOWED_JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+              </select>
             </FieldGroup>
             <FieldGroup label="Department *">
               <select className={selectCls} {...register("departmentId")}>

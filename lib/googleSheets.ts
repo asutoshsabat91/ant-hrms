@@ -343,6 +343,7 @@ export async function syncGoogleSheetsWithDb() {
         const firstName = getColVal(row, ["First Name", "firstname", "name"]);
         const lastName = getColVal(row, ["Last Name", "lastname"]);
         const designation = getColVal(row, ["Designation"]);
+        const jobRole = getColVal(row, ["Job Role", "jobrole", "job role", "role"]);
         const deployedCompany = getColVal(row, ["Deployed Company", "deployedcompany", "company"]);
         const personalEmail = getColVal(row, ["Personal Email", "personalemail"]);
         const phone = getColVal(row, ["Phone", "phone number", "mobile"]);
@@ -408,6 +409,7 @@ export async function syncGoogleSheetsWithDb() {
           if (firstName && firstName !== "—") updatePayload.firstName = firstName;
           if (lastName && lastName !== "—") updatePayload.lastName = lastName;
           if (designation && designation !== "—") updatePayload.designation = designation;
+          if (jobRole && jobRole !== "—") updatePayload.jobRole = jobRole;
           if (deployedCompany && deployedCompany !== "—") updatePayload.deployedCompany = deployedCompany;
           if (personalEmail && personalEmail !== "—") updatePayload.personalEmail = personalEmail;
           if (phone && phone !== "—") updatePayload.phone = phone;
@@ -513,6 +515,7 @@ export async function syncGoogleSheetsWithDb() {
                   firstName: fn,
                   lastName: ln,
                   designation: des,
+                  jobRole: jobRole || undefined,
                   email: finalEmail,
                   employeeId: finalEmpId,
                   deployedCompany: deployedCompany || undefined,
@@ -585,7 +588,7 @@ export async function syncGoogleSheetsWithDb() {
       [
         "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
         "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
-        "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Department", "Deployed Company",
+        "Emergency Contact Name", "Emergency Contact Phone", "Designation", "Job Role", "Department", "Deployed Company",
         "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
         "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
         "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"
@@ -623,6 +626,7 @@ export async function syncGoogleSheetsWithDb() {
       const uan = emp.uan || "—";
       const passwordHash = userPasswordMap.get(emp.email.toLowerCase()) || "";
       const clientName = emp.deployedCompany || "AntBox";
+      const jobRole = emp.jobRole || emp.designation;
 
       clientHeadcountMap.set(clientName, (clientHeadcountMap.get(clientName) || 0) + 1);
 
@@ -643,6 +647,7 @@ export async function syncGoogleSheetsWithDb() {
         emergencyContact,
         emergencyPhone,
         emp.designation,
+        jobRole,
         emp.department?.name ?? "—",
         clientName,
         emp.employmentType,
