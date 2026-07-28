@@ -60,12 +60,21 @@ export async function PATCH(
     return NextResponse.json({ error: "You cannot approve your own leave request." }, { status: 403 });
   }
 
+  const approverEmail = (session.user.email || user.email || "").toLowerCase();
+  const applicantEmail = (request.employee.email || "").toLowerCase();
+
+  const isSuperAdmin = ["hive@theantbox.com", "rohit@theantbox.com"].includes(approverEmail);
   const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
   const isManager = session.user.role === "EMPLOYEE";
   const isHr = ["ADMIN"].includes(session.user.role);
 
   let allowed = false;
-  if (isHr) {
+
+  if (applicantEmail === "chandrita@theantbox.com") {
+    // Only Super Admins (Hive & Rohit) can approve or reject Chandrita's leave requests
+    allowed = isSuperAdmin;
+  } else if (isSuperAdmin || isHr) {
+    // Super Admins (Hive & Rohit) and HR Admins can approve anyone's leave
     allowed = true;
   } else if (isManager && request.employee.managerId === currentEmployee.id) {
     allowed = true;
@@ -74,7 +83,7 @@ export async function PATCH(
   }
 
   if (!allowed) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "Forbidden: You do not have permission to review this leave request." }, { status: 403 });
   }
 
   const { action, rejectionReason } = parsed.data;
