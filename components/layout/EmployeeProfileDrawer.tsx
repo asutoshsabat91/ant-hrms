@@ -153,7 +153,6 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
 
           {/* Personal */}
           <Section icon={User} title="Personal Details">
-            <Field label="Job Role" value={employee.jobRole || employee.designation} />
             <Field label="Gender" value={employee.gender} />
             <Field label="Blood Group" value={employee.bloodGroup} />
             <Field
@@ -174,7 +173,6 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
           <Section icon={Building2} title="Employment">
             <Field label="Department" value={employee.department.name} />
             <Field label="Job Role" value={employee.jobRole || employee.designation} />
-            <Field label="Designation" value={employee.designation} />
             <Field label="Employment Type" value={employee.employmentType.replace("_", " ")} />
             <Field label="Status" value={employee.status} />
             <Field label="Joining Date" value={format(new Date(employee.joiningDate), "dd MMM yyyy")} />

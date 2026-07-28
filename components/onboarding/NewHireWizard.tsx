@@ -433,15 +433,16 @@ export function NewHireWizard({ departments, managers, templates, isChandrita }:
                 <Input type="email" className={inputCls} {...register("email")} placeholder="riya.sharma@theantbox.com" />
                 {errors.email && <p className="mt-1 text-[10px] text-rose-600">{errors.email.message}</p>}
               </FieldGroup>
-              <FieldGroup label="Designation *">
-                <Input className={inputCls} {...register("designation")} placeholder="e.g. Software Engineer Intern" />
-                {errors.designation && <p className="mt-1 text-[10px] text-rose-600">{errors.designation.message}</p>}
-              </FieldGroup>
-              <FieldGroup label="Job Role">
-                <select className={selectCls} {...register("jobRole")}>
+              <FieldGroup label="Job Role *">
+                <select className={selectCls} {...register("jobRole")} onChange={(e) => {
+                  const val = e.target.value;
+                  setValue("jobRole", val);
+                  setValue("designation", val);
+                }}>
                   <option value="">Select official Job Role</option>
                   {ALLOWED_JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
                 </select>
+                {errors.designation && <p className="mt-1 text-[10px] text-rose-600">Job Role is required</p>}
               </FieldGroup>
               <FieldGroup label="Department *">
                 <select className={selectCls} {...register("departmentId")}>
@@ -654,15 +655,16 @@ export function NewHireWizard({ departments, managers, templates, isChandrita }:
         {/* ── STEP 2: JOB ROLE ─────────────────────────────── */}
         {onboardingMode !== "invite" && step === 2 && (
           <div className="grid gap-5 md:grid-cols-2">
-            <FieldGroup label="Designation *">
-              <Input className={inputCls} {...register("designation")} placeholder="e.g. Software Engineer Intern" />
-              {errors.designation && <p className="mt-1 text-[10px] text-rose-600">{errors.designation.message}</p>}
-            </FieldGroup>
-            <FieldGroup label="Job Role">
-              <select className={selectCls} {...register("jobRole")}>
+            <FieldGroup label="Job Role *">
+              <select className={selectCls} {...register("jobRole")} onChange={(e) => {
+                const val = e.target.value;
+                setValue("jobRole", val);
+                setValue("designation", val);
+              }}>
                 <option value="">Select official Job Role</option>
                 {ALLOWED_JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
               </select>
+              {errors.designation && <p className="mt-1 text-[10px] text-rose-600">Job Role is required</p>}
             </FieldGroup>
             <FieldGroup label="Department *">
               <select className={selectCls} {...register("departmentId")}>

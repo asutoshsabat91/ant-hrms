@@ -5,12 +5,14 @@ import { createPortal } from "react-dom";
 import { X, Save, AlertCircle, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ALLOWED_JOB_ROLES } from "@/lib/jobRoles";
 
 interface EmployeeData {
   id: string;
   firstName: string;
   lastName: string;
   designation: string;
+  jobRole?: string | null;
   deployedCompany: string | null;
   phone: string | null;
   personalEmail: string | null;
@@ -44,6 +46,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
   const [firstName, setFirstName] = useState(employee.firstName);
   const [lastName, setLastName] = useState(employee.lastName);
   const [designation, setDesignation] = useState(employee.designation);
+  const [jobRole, setJobRole] = useState(employee.jobRole ?? employee.designation);
   const [deployedCompany, setDeployedCompany] = useState(employee.deployedCompany ?? "");
   const [phone, setPhone] = useState(employee.phone ?? "");
   const [personalEmail, setPersonalEmail] = useState(employee.personalEmail ?? "");
@@ -88,7 +91,8 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
       id: employee.id,
       firstName,
       lastName,
-      designation,
+      designation: jobRole || designation,
+      jobRole: jobRole || designation,
       deployedCompany: deployedCompany.trim() || null,
       phone: phone.trim() || null,
       personalEmail: personalEmail.trim() || null,
@@ -206,8 +210,19 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
                 <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required className="mt-1" />
               </div>
               <div>
-                <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Designation</label>
-                <Input value={designation} onChange={(e) => setDesignation(e.target.value)} required className="mt-1" />
+                <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Job Role</label>
+                <select
+                  value={jobRole || designation}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setJobRole(val);
+                    setDesignation(val);
+                  }}
+                  className="mt-1 flex h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-1 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950"
+                >
+                  <option value="">Select Job Role</option>
+                  {ALLOWED_JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                </select>
               </div>
               <div>
                 <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Deployed Company</label>

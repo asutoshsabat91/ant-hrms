@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, ShieldAlert, Sparkles, User, Mail, Phone, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { ALLOWED_JOB_ROLES } from "@/lib/jobRoles";
 
 type PendingRequest = {
   id: string;
@@ -48,6 +49,7 @@ export function PendingOnboardings({ requests, departments, managers, templates,
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Form states for the expanded approval configuration
+  const [jobRole, setJobRole] = useState("");
   const [designation, setDesignation] = useState("New Joinee");
   const [departmentId, setDepartmentId] = useState(departments[0]?.id || "");
   const [managerId, setManagerId] = useState("");
@@ -72,7 +74,8 @@ export function PendingOnboardings({ requests, departments, managers, templates,
         ? {
             requestId,
             action,
-            designation,
+            designation: jobRole || designation,
+            jobRole: jobRole || designation,
             departmentId,
             managerId: managerId || null,
             employmentType,
@@ -242,14 +245,18 @@ export function PendingOnboardings({ requests, departments, managers, templates,
                 <div className="border-t border-zinc-800 p-5 bg-zinc-950/40 rounded-b-2xl space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Designation</label>
-                      <input
-                        type="text"
-                        value={designation}
-                        onChange={(e) => setDesignation(e.target.value)}
+                      <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Job Role</label>
+                      <select
+                        value={jobRole}
+                        onChange={(e) => {
+                          setJobRole(e.target.value);
+                          setDesignation(e.target.value);
+                        }}
                         className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
-                        placeholder="e.g. Associate Software Engineer"
-                      />
+                      >
+                        <option value="">Select official Job Role</option>
+                        {ALLOWED_JOB_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                      </select>
                     </div>
 
                     <div>

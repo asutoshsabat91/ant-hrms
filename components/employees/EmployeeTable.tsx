@@ -110,7 +110,7 @@ export function EmployeeTable({
                             </Link>
                           )}
                           <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
-                            {emp.designation} · {emp.employeeId}
+                            {emp.jobRole || emp.designation} · {emp.employeeId}
                           </p>
                         </div>
                       </div>
