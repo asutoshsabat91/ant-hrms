@@ -33,7 +33,7 @@ export function EmployeeDirectoryClient({ employees, userRole }: Props) {
     const list = employees.filter((emp) => {
       // 1. Search term match
       const name = `${emp.firstName} ${emp.lastName}`.toLowerCase();
-      const designation = (emp.designation || "").toLowerCase();
+      const designation = (emp.jobRole || emp.designation || "").toLowerCase();
       const dept = (emp.department?.name || "").toLowerCase();
       const email = (emp.email || "").toLowerCase();
       const id = (emp.employeeId || "").toLowerCase();

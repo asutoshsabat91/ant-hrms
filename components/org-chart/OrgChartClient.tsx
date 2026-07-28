@@ -20,6 +20,7 @@ interface Employee {
   lastName: string;
   email: string;
   designation: string;
+  jobRole?: string | null;
   managerId: string | null;
   profilePhoto: string | null;
   status: string;
@@ -280,7 +281,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
                 )}
               </h5>
               <p className="text-[10px] font-semibold text-zinc-400 truncate leading-none mt-1">
-                {employee.designation}
+                {employee.jobRole || employee.designation}
               </p>
               <div className="flex items-center gap-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/50 border border-violet-100/50 px-1.5 py-0.5 rounded-md w-fit">
                 <Building className="h-2.5 w-2.5 shrink-0" />
@@ -388,7 +389,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
                   {selectedEmployee.firstName} {selectedEmployee.lastName}
                 </h3>
                 <p className="text-[11px] font-semibold text-zinc-400 mt-0.5 mb-4">
-                  {selectedEmployee.designation}
+                  {selectedEmployee.jobRole || selectedEmployee.designation}
                 </p>
 
                 {/* Info rows */}
@@ -543,7 +544,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
                           {emp.firstName} {emp.lastName}
                         </h5>
                         <p className="text-[9px] font-semibold text-zinc-400 truncate leading-none mt-0.5">
-                          {emp.designation}
+                          {emp.jobRole || emp.designation}
                         </p>
                       </div>
                     </div>

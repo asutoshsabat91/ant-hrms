@@ -10,6 +10,7 @@ export interface OnboardingEmployee {
   firstName: string;
   lastName: string;
   designation: string;
+  jobRole?: string | null;
   employeeId: string;
   joiningDate: string;
   department: { name: string };
@@ -135,7 +136,7 @@ export function OnboardingHub({ employees }: OnboardingHubProps) {
                           {emp.firstName} {emp.lastName}
                         </p>
                         <p className="text-[10px] text-zinc-400 font-medium truncate">
-                          {emp.designation} · {emp.department.name}
+                          {emp.jobRole || emp.designation} · {emp.department.name}
                         </p>
                       </div>
 

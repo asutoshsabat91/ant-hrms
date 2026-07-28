@@ -65,7 +65,7 @@ export default async function EmployeeProfilePage({
     <div>
       <PageHeader
         title={`${employee.firstName} ${employee.lastName}`}
-        description={employee.designation}
+        description={employee.jobRole || employee.designation}
         action={
           <div className="flex flex-wrap gap-2">
             <Link href="/employees" className={cn(buttonVariants({ variant: "outline" }))}>
