@@ -9,7 +9,10 @@ import {
   ChevronUp, 
   Building,
   Edit2,
-  Search as SearchIcon
+  Search as SearchIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Users
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -45,6 +48,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
@@ -493,16 +497,25 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
     <div className="w-full h-full flex relative select-none bg-zinc-50/50">
       
       {/* Sidebar for Unassigned Employees — Admin only */}
-      {isAdmin && (
-        <div className="w-80 flex-none border-r border-zinc-200 bg-white flex flex-col h-full z-10 shadow-sm">
+      {isAdmin && isSidebarOpen && (
+        <div className="w-80 flex-none border-r border-zinc-200 bg-white flex flex-col h-full z-10 shadow-sm transition-all duration-300">
           <div className="p-4 border-b border-zinc-100">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-extrabold text-zinc-950 uppercase tracking-widest">
-                Unassigned List
-              </h4>
-              <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
-                {unassigned.length} Employees
-              </span>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-extrabold text-zinc-950 uppercase tracking-widest">
+                  Unassigned List
+                </h4>
+                <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
+                  {unassigned.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 transition-colors"
+                title="Collapse Unassigned List"
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
             </div>
             <p className="text-[10px] text-zinc-400 font-medium mb-3 leading-snug">
               These employees report to no one. Assign them to Rohit or other managers to add them to the Org Chart.
@@ -579,8 +592,23 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
       {/* Main Canvas Area */}
       <div className="flex-1 h-full flex flex-col relative overflow-hidden">
         
+        {/* Toggle Unassigned List Button when collapsed */}
+        {isAdmin && !isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-white/90 backdrop-blur-md text-xs font-bold text-zinc-800 hover:text-violet-600 hover:border-violet-300 shadow-md transition-all group"
+            title="Expand Unassigned List"
+          >
+            <PanelLeftOpen className="h-4 w-4 text-zinc-500 group-hover:text-violet-600" />
+            <span>Unassigned List</span>
+            <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">
+              {unassigned.length}
+            </span>
+          </button>
+        )}
+
         {/* Helper Instructions overlay */}
-        <div className="absolute top-4 left-4 pointer-events-none select-none z-10 bg-white/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-200/50 shadow-sm">
+        <div className={`absolute top-4 ${isAdmin && !isSidebarOpen ? "left-44" : "left-4"} pointer-events-none select-none z-10 bg-white/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-200/50 shadow-sm transition-all`}>
           <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
             <span>💡 Drag background to pan chart</span>
             <span className="text-zinc-300">•</span>

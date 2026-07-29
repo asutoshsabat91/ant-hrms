@@ -327,9 +327,23 @@ export async function syncGoogleSheetsWithDb() {
 
       const pendingManagerMap = new Map<string, string>();
 
+      const normalizeEmpId = (id?: string | null) => (id || "").replace(/^ANT-/i, "").trim().replace(/^0+/, "") || "";
+
       const allDbEmployees = await prisma.employee.findMany({ include: { user: true } });
-      const empByEmailMap = new Map(allDbEmployees.filter(e => e.email).map(e => [e.email.toLowerCase(), e]));
-      const empByIdMap = new Map(allDbEmployees.filter(e => e.employeeId).map(e => [e.employeeId, e]));
+      const empByEmailMap = new Map<string, typeof allDbEmployees[0]>();
+      const empByIdMap = new Map<string, typeof allDbEmployees[0]>();
+      const empByNameMap = new Map<string, typeof allDbEmployees[0]>();
+
+      allDbEmployees.forEach(e => {
+        if (e.email) empByEmailMap.set(e.email.toLowerCase(), e);
+        if (e.employeeId) {
+          empByIdMap.set(e.employeeId.toLowerCase(), e);
+          const normId = normalizeEmpId(e.employeeId);
+          if (normId) empByIdMap.set(normId, e);
+        }
+        const fn = `${e.firstName} ${e.lastName}`.trim().toLowerCase();
+        if (fn) empByNameMap.set(fn, e);
+      });
 
       const allDbDepts = await prisma.department.findMany();
       const deptMap = new Map<string, string>();
@@ -341,13 +355,21 @@ export async function syncGoogleSheetsWithDb() {
       for (const row of employeeDataRows) {
         const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
         const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
-
-        if (!email && !empId) continue;
-
-        const existingEmp = (email ? empByEmailMap.get(email.toLowerCase()) : null) || (empId ? empByIdMap.get(empId) : null) || null;
-
         const firstName = getColVal(row, ["First Name", "firstname", "name"]);
         const lastName = getColVal(row, ["Last Name", "lastname"]);
+
+        if (!email && !empId && !firstName) continue;
+
+        const normEmpId = normalizeEmpId(empId);
+        const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
+
+        const existingEmp = 
+          (email ? empByEmailMap.get(email.toLowerCase()) : null) || 
+          (empId ? empByIdMap.get(empId.toLowerCase()) : null) ||
+          (normEmpId ? empByIdMap.get(normEmpId) : null) ||
+          (fullName ? empByNameMap.get(fullName) : null) ||
+          null;
+
         const designation = getColVal(row, ["Designation"]);
         const jobRole = getColVal(row, ["Job Role", "jobrole", "job role", "role"]);
         const reportingManagerVal = getColVal(row, ["Reporting Manager", "reportingmanager", "manager", "reporting manager email", "reporting manager id"]);
@@ -411,7 +433,7 @@ export async function syncGoogleSheetsWithDb() {
 
         if (existingEmp) {
           targetEmpId = existingEmp.id;
-          // Perform safe, non-destructive update
+          // Perform safe, non-destructive update from Sheet into DB
           const updatePayload: Prisma.EmployeeUpdateInput = {};
 
           if (firstName && firstName !== "—") updatePayload.firstName = firstName;
@@ -570,38 +592,40 @@ export async function syncGoogleSheetsWithDb() {
           createdCount++;
         }
 
-        if (targetEmpId && reportingManagerVal) {
-          pendingManagerMap.set(targetEmpId, reportingManagerVal);
+        if (targetEmpId) {
+          pendingManagerMap.set(targetEmpId, reportingManagerVal || "");
         }
       }
 
-      // Resolve Reporting Manager relationships
+      // Pass 2: Resolve Reporting Manager relationships
       if (pendingManagerMap.size > 0) {
         const allDbEmployees = await prisma.employee.findMany({
           select: { id: true, email: true, employeeId: true, firstName: true, lastName: true }
         });
 
         for (const [empDbId, rawManagerVal] of Array.from(pendingManagerMap.entries())) {
-          if (!rawManagerVal || rawManagerVal === "—") {
+          if (!rawManagerVal || rawManagerVal === "—" || rawManagerVal.toLowerCase() === "none" || rawManagerVal.toLowerCase() === "unassigned") {
             await prisma.employee.update({ where: { id: empDbId }, data: { managerId: null } });
             continue;
           }
+
           const cleanVal = rawManagerVal.trim().toLowerCase();
+          const normManagerId = normalizeEmpId(cleanVal);
+
           const matchedManager = allDbEmployees.find((e) =>
             e.id !== empDbId && (
               (e.email && e.email.toLowerCase() === cleanVal) ||
               (e.employeeId && e.employeeId.toLowerCase() === cleanVal) ||
+              (e.employeeId && normalizeEmpId(e.employeeId) === normManagerId) ||
               (`${e.firstName} ${e.lastName}`.toLowerCase() === cleanVal) ||
               (e.firstName.toLowerCase() === cleanVal)
             )
           );
 
-          if (matchedManager) {
-            await prisma.employee.update({
-              where: { id: empDbId },
-              data: { managerId: matchedManager.id }
-            });
-          }
+          await prisma.employee.update({
+            where: { id: empDbId },
+            data: { managerId: matchedManager ? matchedManager.id : null }
+          });
         }
       }
 
