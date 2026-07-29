@@ -607,8 +607,8 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
         )}
 
         {/* Helper Instructions overlay */}
-        <div className={`absolute top-4 ${isAdmin && !isSidebarOpen ? "left-44" : "left-4"} pointer-events-none select-none z-10 bg-white/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-200/50 shadow-sm transition-all`}>
-          <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none select-none z-10 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-200/60 shadow-sm transition-all hidden md:block">
+          <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
             <span>💡 Drag background to pan chart</span>
             <span className="text-zinc-300">•</span>
             <span>Zoom scroll at controls below</span>
