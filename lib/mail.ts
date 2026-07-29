@@ -350,8 +350,8 @@ export async function sendSeparationRequestEmail(
   noticeDays: number,
 ) {
   const adminEmail = employeeEmail.toLowerCase() === "chandrita@theantbox.com"
-    ? "hive@theantbox.com, rohit@theantbox.com"
-    : "chandrita@theantbox.com, hive@theantbox.com, rohit@theantbox.com";
+    ? "hive@theantbox.com, rohit@theantbox.com, sukhman@theantbox.com"
+    : "chandrita@theantbox.com, hive@theantbox.com, rohit@theantbox.com, sukhman@theantbox.com";
   const escEmployeeName = escapeHtml(employeeName);
   const escEmployeeEmail = escapeHtml(employeeEmail);
   const escReason = escapeHtml(reason);
