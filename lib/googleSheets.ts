@@ -465,6 +465,7 @@ export async function syncGoogleSheetsWithDb() {
               if (!otherUser || otherUser.id === existingEmp.id) {
                 updatePayload.email = cleanEmail;
                 userUpdatePayload.email = cleanEmail;
+                empByEmailMap.set(cleanEmail, existingEmp);
               }
             }
           }
