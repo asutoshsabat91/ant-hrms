@@ -13,6 +13,24 @@ const decisionSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+async function isAncestorManager(approverEmployeeId: string, applicantEmployeeId: string): Promise<boolean> {
+  const allEmployees = await prisma.employee.findMany({
+    select: { id: true, managerId: true },
+  });
+  const empMap = new Map<string, string | null>(allEmployees.map((e) => [e.id, e.managerId]));
+  
+  let currentManagerId = empMap.get(applicantEmployeeId);
+  const visited = new Set<string>();
+  while (currentManagerId && !visited.has(currentManagerId)) {
+    if (currentManagerId === approverEmployeeId) {
+      return true;
+    }
+    visited.add(currentManagerId);
+    currentManagerId = empMap.get(currentManagerId) ?? null;
+  }
+  return false;
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -63,20 +81,20 @@ export async function PATCH(
   const approverEmail = (session.user.email || user.email || "").toLowerCase();
   const applicantEmail = (request.employee.email || "").toLowerCase();
 
-  const isSuperAdmin = ["hive@theantbox.com", "rohit@theantbox.com"].includes(approverEmail);
+  const isSuperAdmin = ["hive@theantbox.com", "rohit@theantbox.com", "chandrita@theantbox.com"].includes(approverEmail);
   const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
-  const isManager = session.user.role === "EMPLOYEE";
   const isHr = ["ADMIN"].includes(session.user.role);
 
   let allowed = false;
 
   if (applicantEmail === "chandrita@theantbox.com") {
     // Only Super Admins (Hive & Rohit) can approve or reject Chandrita's leave requests
-    allowed = isSuperAdmin;
+    allowed = ["hive@theantbox.com", "rohit@theantbox.com"].includes(approverEmail);
   } else if (isSuperAdmin || isHr) {
-    // Super Admins (Hive & Rohit) and HR Admins can approve anyone's leave
+    // Super Admins and HR Admins can approve anyone's leave
     allowed = true;
-  } else if (isManager && request.employee.managerId === currentEmployee.id) {
+  } else if (await isAncestorManager(currentEmployee.id, request.employeeId)) {
+    // Direct or Senior Reporting Manager up the reporting chain
     allowed = true;
   } else if (isCompanyAdmin && currentEmployee.managedCompany && request.employee.deployedCompany === currentEmployee.managedCompany) {
     allowed = true;

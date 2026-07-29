@@ -325,6 +325,8 @@ export async function syncGoogleSheetsWithDb() {
         });
       }
 
+      const pendingManagerMap = new Map<string, string>();
+
       for (const row of employeeDataRows) {
         const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
         const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
@@ -344,6 +346,7 @@ export async function syncGoogleSheetsWithDb() {
         const lastName = getColVal(row, ["Last Name", "lastname"]);
         const designation = getColVal(row, ["Designation"]);
         const jobRole = getColVal(row, ["Job Role", "jobrole", "job role", "role"]);
+        const reportingManagerVal = getColVal(row, ["Reporting Manager", "reportingmanager", "manager", "reporting manager email", "reporting manager id"]);
         const deployedCompany = getColVal(row, ["Deployed Company", "deployedcompany", "company"]);
         const personalEmail = getColVal(row, ["Personal Email", "personalemail"]);
         const phone = getColVal(row, ["Phone", "phone number", "mobile"]);
@@ -402,7 +405,10 @@ export async function syncGoogleSheetsWithDb() {
           newPasswordHash = await bcrypt.hash(sheetPassword, 12);
         }
 
+        let targetEmpId = "";
+
         if (existingEmp) {
+          targetEmpId = existingEmp.id;
           // Perform safe, non-destructive update
           const updatePayload: Prisma.EmployeeUpdateInput = {};
 
@@ -509,7 +515,7 @@ export async function syncGoogleSheetsWithDb() {
           const tempPassword = sheetPassword || "AntBox@2025";
           const passwordHash = newPasswordHash || await bcrypt.hash(tempPassword, 12);
 
-          await prisma.user.create({
+          const newEmpUser = await prisma.user.create({
             data: {
               email: finalEmail,
               passwordHash,
@@ -552,10 +558,48 @@ export async function syncGoogleSheetsWithDb() {
                   professionalTax: cleanNumber(ptVal) ?? 200,
                 }
               }
-            }
+            },
+            include: { employee: true }
           });
           
+          if (newEmpUser.employee) {
+            targetEmpId = newEmpUser.employee.id;
+          }
           createdCount++;
+        }
+
+        if (targetEmpId && reportingManagerVal) {
+          pendingManagerMap.set(targetEmpId, reportingManagerVal);
+        }
+      }
+
+      // Resolve Reporting Manager relationships
+      if (pendingManagerMap.size > 0) {
+        const allDbEmployees = await prisma.employee.findMany({
+          select: { id: true, email: true, employeeId: true, firstName: true, lastName: true }
+        });
+
+        for (const [empDbId, rawManagerVal] of Array.from(pendingManagerMap.entries())) {
+          if (!rawManagerVal || rawManagerVal === "—") {
+            await prisma.employee.update({ where: { id: empDbId }, data: { managerId: null } });
+            continue;
+          }
+          const cleanVal = rawManagerVal.trim().toLowerCase();
+          const matchedManager = allDbEmployees.find((e) =>
+            e.id !== empDbId && (
+              (e.email && e.email.toLowerCase() === cleanVal) ||
+              (e.employeeId && e.employeeId.toLowerCase() === cleanVal) ||
+              (`${e.firstName} ${e.lastName}`.toLowerCase() === cleanVal) ||
+              (e.firstName.toLowerCase() === cleanVal)
+            )
+          );
+
+          if (matchedManager) {
+            await prisma.employee.update({
+              where: { id: empDbId },
+              data: { managerId: matchedManager.id }
+            });
+          }
         }
       }
 
@@ -584,10 +628,6 @@ export async function syncGoogleSheetsWithDb() {
         }
         
         if (toDeleteEmpIds.length > 0) {
-          // Because of Prisma foreign keys we might need to delete Employee first, then User
-          // However, Prisma deleteMany on Employee might fail if there are dependent records like OnboardingRequest, etc.
-          // To be safe, we'll mark them as INACTIVE and append them to sheet as INACTIVE or simply not export them?
-          // The user specifically asked to "remove" false data, so we will try to delete them.
           try {
             await prisma.employee.deleteMany({ where: { id: { in: toDeleteEmpIds } } });
             await prisma.user.deleteMany({ where: { id: { in: toDeleteUserIds } } });
@@ -602,7 +642,7 @@ export async function syncGoogleSheetsWithDb() {
     // 2. Fetch all database models and update Google Sheets format to match Export Report
     const [allEmployees, allLeaves, allReimbursements, allSeparations] = await Promise.all([
       prisma.employee.findMany({
-        include: { department: true },
+        include: { department: true, manager: true },
         orderBy: { employeeId: "asc" }
       }),
       prisma.leaveRequest.findMany({
@@ -632,7 +672,7 @@ export async function syncGoogleSheetsWithDb() {
       [
         "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
         "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
-        "Emergency Contact Name", "Emergency Contact Phone", "Job Role", "Department", "Deployed Company",
+        "Emergency Contact Name", "Emergency Contact Phone", "Job Role", "Reporting Manager", "Department", "Deployed Company",
         "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
         "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
         "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"
@@ -671,6 +711,7 @@ export async function syncGoogleSheetsWithDb() {
       const passwordHash = userPasswordMap.get(emp.email.toLowerCase()) || "";
       const clientName = emp.deployedCompany || "AntBox";
       const jobRole = emp.jobRole || emp.designation;
+      const reportingManagerStr = emp.manager ? (emp.manager.email || `${emp.manager.firstName} ${emp.manager.lastName}`) : "—";
 
       clientHeadcountMap.set(clientName, (clientHeadcountMap.get(clientName) || 0) + 1);
 
@@ -691,6 +732,7 @@ export async function syncGoogleSheetsWithDb() {
         emergencyContact,
         emergencyPhone,
         jobRole,
+        reportingManagerStr,
         emp.department?.name ?? "—",
         clientName,
         emp.employmentType,

@@ -13,6 +13,30 @@ const requestSchema = z.object({
   reason: z.string().min(5),
 });
 
+async function getSubordinateEmployeeIds(managerEmployeeId: string): Promise<string[]> {
+  const allEmployees = await prisma.employee.findMany({
+    select: { id: true, managerId: true },
+  });
+  const map = new Map<string, string[]>();
+  for (const emp of allEmployees) {
+    if (emp.managerId) {
+      if (!map.has(emp.managerId)) map.set(emp.managerId, []);
+      map.get(emp.managerId)!.push(emp.id);
+    }
+  }
+
+  const subordinates: string[] = [];
+  const queue = [...(map.get(managerEmployeeId) || [])];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    subordinates.push(current);
+    if (map.has(current)) {
+      queue.push(...map.get(current)!);
+    }
+  }
+  return subordinates;
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) {
@@ -29,6 +53,8 @@ export async function GET() {
   }
 
   const currentYear = new Date().getFullYear();
+  const userEmail = (session.user.email || user.email || "").toLowerCase();
+  const isSuperAdmin = ["rohit@theantbox.com", "chandrita@theantbox.com", "hive@theantbox.com"].includes(userEmail);
 
   const [leaveTypes, myRequests] = await Promise.all([
     prisma.leaveType.findMany({ orderBy: { name: "asc" } }),
@@ -46,7 +72,7 @@ export async function GET() {
   const leaveBalances = await getDynamicBalances(user.employee.id, user.employee.employmentType, currentYear);
 
   let approvalRequests: Awaited<ReturnType<typeof prisma.leaveRequest.findMany>> = [];
-  if (session.user.role === "ADMIN") {
+  if (session.user.role === "ADMIN" || isSuperAdmin) {
     approvalRequests = await prisma.leaveRequest.findMany({
       where: { status: "PENDING" },
       include: {
@@ -70,19 +96,23 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 16,
     });
-  } else if (session.user.role === "EMPLOYEE") {
-    approvalRequests = await prisma.leaveRequest.findMany({
-      where: {
-        status: "PENDING",
-        employee: { managerId: user.employee.id },
-      },
-      include: {
-        leaveType: true,
-        employee: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 16,
-    });
+  } else {
+    // Hierarchical reporting managers (direct & indirect subordinates)
+    const subordinateIds = await getSubordinateEmployeeIds(user.employee.id);
+    if (subordinateIds.length > 0) {
+      approvalRequests = await prisma.leaveRequest.findMany({
+        where: {
+          status: "PENDING",
+          employeeId: { in: subordinateIds },
+        },
+        include: {
+          leaveType: true,
+          employee: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 16,
+      });
+    }
   }
 
   return NextResponse.json({
@@ -415,10 +445,21 @@ export async function POST(req: Request) {
   try {
     const employeeName = `${employee.firstName} ${employee.lastName}`;
     
-    // Route email to company admins if they exist, otherwise default to Chandrita and Hive
+    // Route email to Reporting Manager and Super Admins
     let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com"];
+    
+    if (employee.managerId) {
+      const managerEmp = await prisma.employee.findUnique({
+        where: { id: employee.managerId },
+        select: { email: true },
+      });
+      if (managerEmp?.email) {
+        emailRecipients.unshift(managerEmp.email);
+      }
+    }
+
     if (employee.email?.toLowerCase() === "chandrita@theantbox.com") {
-      emailRecipients = ["hive@theantbox.com", "rohit@theantbox.com"];
+      emailRecipients = emailRecipients.filter(e => e !== "chandrita@theantbox.com");
     } else if (employee.deployedCompany) {
       const admins = await prisma.user.findMany({
         where: {
@@ -429,9 +470,10 @@ export async function POST(req: Request) {
         },
       });
       if (admins.length > 0) {
-        emailRecipients = Array.from(new Set([...admins.map((a) => a.email), "chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com"]));
+        emailRecipients = Array.from(new Set([...emailRecipients, ...admins.map((a) => a.email)]));
       }
     }
+    emailRecipients = Array.from(new Set(emailRecipients.map(e => e.toLowerCase())));
 
     for (const recipientEmail of emailRecipients) {
       await sendLeaveRequestEmail(

@@ -48,15 +48,19 @@ export default async function LeavePage() {
 
   let leaveTypes: LeaveType[] = [];
   let employmentType = "FULL_TIME";
+  let isManager = false;
   try {
     leaveTypes = await prisma.leaveType.findMany({ orderBy: { name: "asc" } });
     if (userId) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { employee: true },
+        include: { employee: { include: { reportees: true } } },
       });
       if (user?.employee) {
         employmentType = user.employee.employmentType;
+        if (user.employee.reportees.length > 0) {
+          isManager = true;
+        }
       }
     }
   } catch {
@@ -77,6 +81,7 @@ export default async function LeavePage() {
       leaveTypes={safeLeaveTypes}
       userRole={userRole}
       employmentType={employmentType}
+      isManager={isManager}
     />
   );
 }
