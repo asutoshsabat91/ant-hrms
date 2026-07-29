@@ -471,7 +471,14 @@ export async function syncGoogleSheetsWithDb() {
           }
 
           if (empId && empId !== "—" && empId !== existingEmp.employeeId) {
-            updatePayload.employeeId = empId;
+            const otherEmpById = empByIdMap.get(empId.toLowerCase()) || (normEmpId ? empByIdMap.get(normEmpId) : null);
+            if (!otherEmpById || otherEmpById.id === existingEmp.id) {
+              updatePayload.employeeId = empId;
+              empByIdMap.set(empId.toLowerCase(), existingEmp);
+              if (normEmpId) empByIdMap.set(normEmpId, existingEmp);
+            } else {
+              console.warn(`[Google Sheets Sync] Skipping employeeId update to "${empId}" for ${existingEmp.firstName} ${existingEmp.lastName} — ID already belongs to ${otherEmpById.firstName} ${otherEmpById.lastName}`);
+            }
           }
 
           if (firstName && firstName !== "—") updatePayload.firstName = firstName;
@@ -536,23 +543,30 @@ export async function syncGoogleSheetsWithDb() {
             updatePayload.department = { connect: { id: departmentId } };
           }
 
-          await prisma.employee.update({
-            where: { id: existingEmp.id },
-            data: updatePayload
-          });
+          try {
+            if (Object.keys(updatePayload).length > 0) {
+              await prisma.employee.update({
+                where: { id: existingEmp.id },
+                data: updatePayload
+              });
+            }
 
-          const isActive = statusStr ? (statusStr !== "INACTIVE" && statusStr !== "ALUMNI") : existingEmp.user.isActive;
-          userUpdatePayload.isActive = isActive;
-          if (newPasswordHash) {
-            userUpdatePayload.passwordHash = newPasswordHash;
+            const isActive = statusStr ? (statusStr !== "INACTIVE" && statusStr !== "ALUMNI") : existingEmp.user.isActive;
+            userUpdatePayload.isActive = isActive;
+            if (newPasswordHash) {
+              userUpdatePayload.passwordHash = newPasswordHash;
+            }
+
+            if (Object.keys(userUpdatePayload).length > 0) {
+              await prisma.user.update({
+                where: { id: existingEmp.userId },
+                data: userUpdatePayload
+              });
+            }
+            updatedCount++;
+          } catch (rowUpdateErr) {
+            console.error(`[Google Sheets Sync] Non-fatal error updating row for ${existingEmp.firstName} ${existingEmp.lastName}:`, rowUpdateErr);
           }
-
-          await prisma.user.update({
-            where: { id: existingEmp.userId },
-            data: userUpdatePayload
-          });
-
-          updatedCount++;
         } else {
           // New employee creation
           const fn = firstName || "New Joinee";
@@ -570,10 +584,24 @@ export async function syncGoogleSheetsWithDb() {
             finalEmail = `${finalEmail.split("@")[0]}${emailCount + 1}@theantbox.com`;
           }
 
-          let finalEmpId = empId;
-          if (!finalEmpId || finalEmpId === "—") {
+          let finalEmpId = empId && empId !== "—" ? empId : "";
+          if (finalEmpId) {
+            const existingWithId = await prisma.employee.findFirst({ where: { employeeId: finalEmpId } });
+            if (existingWithId) {
+              const empTotal = await prisma.employee.count();
+              finalEmpId = `${finalEmpId}-${empTotal + 1}`;
+            }
+          } else {
             const empTotal = await prisma.employee.count();
-            finalEmpId = String(empTotal + 1).padStart(2, "0");
+            let candidateId = String(empTotal + 1).padStart(2, "0");
+            let idCheck = await prisma.employee.findFirst({ where: { employeeId: candidateId } });
+            let count = 1;
+            while (idCheck) {
+              candidateId = String(empTotal + 1 + count).padStart(2, "0");
+              idCheck = await prisma.employee.findFirst({ where: { employeeId: candidateId } });
+              count++;
+            }
+            finalEmpId = candidateId;
           }
 
           const tempPassword = sheetPassword || "AntBox@2025";
