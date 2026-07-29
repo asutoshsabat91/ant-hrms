@@ -54,7 +54,7 @@ export async function GET() {
 
   const currentYear = new Date().getFullYear();
   const userEmail = (session.user.email || user.email || "").toLowerCase();
-  const isSuperAdmin = ["rohit@theantbox.com", "chandrita@theantbox.com", "hive@theantbox.com", "sukhman@theantbox.com"].includes(userEmail);
+  const isSuperAdmin = ["rohit@theantbox.com", "chandrita@theantbox.com", "hive@theantbox.com"].includes(userEmail);
 
   const [leaveTypes, myRequests] = await Promise.all([
     prisma.leaveType.findMany({ orderBy: { name: "asc" } }),
@@ -446,7 +446,7 @@ export async function POST(req: Request) {
     const employeeName = `${employee.firstName} ${employee.lastName}`;
     
     // Route email to Reporting Manager and Super Admins
-    let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com", "sukhman@theantbox.com"];
+    let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com"];
     
     if (employee.managerId) {
       const managerEmp = await prisma.employee.findUnique({

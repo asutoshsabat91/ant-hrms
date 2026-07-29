@@ -81,7 +81,7 @@ export async function PATCH(
   const approverEmail = (session.user.email || user.email || "").toLowerCase();
   const applicantEmail = (request.employee.email || "").toLowerCase();
 
-  const isSuperAdmin = ["hive@theantbox.com", "rohit@theantbox.com", "chandrita@theantbox.com", "sukhman@theantbox.com"].includes(approverEmail);
+  const isSuperAdmin = ["hive@theantbox.com", "rohit@theantbox.com", "chandrita@theantbox.com"].includes(approverEmail);
   const isCompanyAdmin = session.user.role === "COMPANY_ADMIN";
   const isHr = ["ADMIN"].includes(session.user.role);
 
