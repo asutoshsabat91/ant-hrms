@@ -271,7 +271,10 @@ export async function syncGoogleSheetsWithDb() {
     let isParsingEmployees = false;
 
     for (let i = 0; i < rows.length; i++) {
-      const firstCell = (rows[i]?.[0] || "").toString().trim();
+      const row = rows[i] || [];
+      const firstCell = (row[0] || "").toString().trim();
+      const hasAnyData = row.some(cell => String(cell || "").trim() !== "");
+
       if (firstCell.startsWith("SECTION 1:")) {
         const headerRow = rows[i + 1] || [];
         headers = headerRow.map((h) => String(h).trim().toLowerCase());
@@ -281,18 +284,36 @@ export async function syncGoogleSheetsWithDb() {
       }
       
       if (isParsingEmployees) {
-        if (firstCell.startsWith("SECTION ") || firstCell === "") {
+        if (firstCell.startsWith("SECTION ") && !firstCell.startsWith("SECTION 1:")) {
           isParsingEmployees = false;
           break;
         }
-        employeeDataRows.push(rows[i]);
+        if (hasAnyData) {
+          employeeDataRows.push(row);
+        }
       }
     }
 
-    // Fallback if no sections exist yet
+    // Fallback if no SECTION 1 header was found
     if (headers.length === 0 && rows.length > 0) {
-      headers = rows[0].map((h) => String(h).trim().toLowerCase());
-      employeeDataRows = rows.slice(1);
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const rowStr = (rows[i] || []).map(c => String(c).toLowerCase()).join(" ");
+        if (rowStr.includes("email") || rowStr.includes("first name") || rowStr.includes("employee id")) {
+          headerIdx = i;
+          break;
+        }
+      }
+      headers = rows[headerIdx].map((h) => String(h).trim().toLowerCase());
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i] || [];
+        const hasData = row.some(cell => String(cell || "").trim() !== "");
+        const cell0 = String(row[0] || "").trim();
+        if (cell0.startsWith("SECTION ")) break;
+        if (hasData) {
+          employeeDataRows.push(row);
+        }
+      }
     }
 
     if (employeeDataRows.length > 0 && headers.length > 0) {
