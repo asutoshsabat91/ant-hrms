@@ -327,20 +327,24 @@ export async function syncGoogleSheetsWithDb() {
 
       const pendingManagerMap = new Map<string, string>();
 
+      const allDbEmployees = await prisma.employee.findMany({ include: { user: true } });
+      const empByEmailMap = new Map(allDbEmployees.filter(e => e.email).map(e => [e.email.toLowerCase(), e]));
+      const empByIdMap = new Map(allDbEmployees.filter(e => e.employeeId).map(e => [e.employeeId, e]));
+
+      const allDbDepts = await prisma.department.findMany();
+      const deptMap = new Map<string, string>();
+      allDbDepts.forEach(d => {
+        deptMap.set(d.code.toUpperCase(), d.id);
+        deptMap.set(d.name.toLowerCase(), d.id);
+      });
+
       for (const row of employeeDataRows) {
         const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
         const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
 
         if (!email && !empId) continue;
 
-        const orConditions: Prisma.EmployeeWhereInput[] = [];
-        if (email) orConditions.push({ email: email.toLowerCase() });
-        if (empId) orConditions.push({ employeeId: empId });
-
-        const existingEmp = orConditions.length > 0 ? await prisma.employee.findFirst({
-          where: { OR: orConditions },
-          include: { user: true }
-        }) : null;
+        const existingEmp = (email ? empByEmailMap.get(email.toLowerCase()) : null) || (empId ? empByIdMap.get(empId) : null) || null;
 
         const firstName = getColVal(row, ["First Name", "firstname", "name"]);
         const lastName = getColVal(row, ["Last Name", "lastname"]);
@@ -381,21 +385,19 @@ export async function syncGoogleSheetsWithDb() {
         const deptCode = getColVal(row, ["Department Code", "departmentcode", "department"]);
         let departmentId: string | undefined = undefined;
         if (deptCode) {
-          const matchedDept = await prisma.department.findFirst({
-            where: {
-              OR: [
-                { code: deptCode.toUpperCase() },
-                { name: { equals: deptCode, mode: "insensitive" } }
-              ]
-            }
-          });
-          if (matchedDept) {
-            departmentId = matchedDept.id;
+          const upperCode = deptCode.toUpperCase();
+          const lowerCode = deptCode.toLowerCase();
+          if (deptMap.has(upperCode)) {
+            departmentId = deptMap.get(upperCode);
+          } else if (deptMap.has(lowerCode)) {
+            departmentId = deptMap.get(lowerCode);
           } else {
             const newDept = await prisma.department.create({
-              data: { name: deptCode, code: deptCode.toUpperCase() }
+              data: { name: deptCode, code: upperCode }
             });
             departmentId = newDept.id;
+            deptMap.set(upperCode, newDept.id);
+            deptMap.set(lowerCode, newDept.id);
           }
         }
 
@@ -629,6 +631,11 @@ export async function syncGoogleSheetsWithDb() {
         
         if (toDeleteEmpIds.length > 0) {
           try {
+            await prisma.leaveBalance.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
+            await prisma.leaveRequest.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
+            await prisma.attendancePunch.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
+            await prisma.reimbursement.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
+            await prisma.separation.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
             await prisma.employee.deleteMany({ where: { id: { in: toDeleteEmpIds } } });
             await prisma.user.deleteMany({ where: { id: { in: toDeleteUserIds } } });
             console.log(`[Google Sheets] Deleted ${toDeleteEmpIds.length} employees not found in the sheet.`);
@@ -637,6 +644,108 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
       }
+    }
+
+    // 1b. Pull Leave Requests tab from Google Sheet and sync to DB
+    try {
+      const leaveRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: "'Leave Requests'!A:Z",
+      });
+      const leaveRowsFromSheet = leaveRes.data.values || [];
+      if (leaveRowsFromSheet.length > 1) {
+        const leaveHeaders = (leaveRowsFromSheet[0] || []).map((h: any) => String(h).trim().toLowerCase());
+        
+        const getLeaveColVal = (row: string[], possibleHeaders: string[]) => {
+          for (const ph of possibleHeaders) {
+            const idx = leaveHeaders.indexOf(ph.toLowerCase());
+            if (idx !== -1 && row[idx] !== undefined) return String(row[idx]).trim();
+          }
+          return "";
+        };
+
+        const allDbEmpsForLeave = await prisma.employee.findMany({
+          select: { id: true, employeeId: true, firstName: true, lastName: true, email: true }
+        });
+        const allLeaveTypes = await prisma.leaveType.findMany();
+        const defaultLeaveType = allLeaveTypes[0];
+
+        for (let i = 1; i < leaveRowsFromSheet.length; i++) {
+          const row = leaveRowsFromSheet[i];
+          const rawEmpId = getLeaveColVal(row, ["employee id", "employeeid", "emp id"]);
+          const rawEmpName = getLeaveColVal(row, ["employee name", "employeename", "name"]);
+          const leaveTypeName = getLeaveColVal(row, ["leave type", "leavetype", "type"]);
+          const startDateStr = getLeaveColVal(row, ["start date", "startdate", "from"]);
+          const endDateStr = getLeaveColVal(row, ["end date", "enddate", "to"]);
+          const daysStr = getLeaveColVal(row, ["# days", "days", "number of days"]);
+          const reason = getLeaveColVal(row, ["reason"]);
+          const statusStr = getLeaveColVal(row, ["status"]).toUpperCase();
+
+          if (!startDateStr || (!rawEmpId && !rawEmpName)) continue;
+
+          // Match Employee (support clean ID e.g. 250138 or legacy ANT-250138)
+          const cleanEmpId = rawEmpId.replace(/^ANT-/i, "");
+          const matchedEmp = allDbEmpsForLeave.find(e =>
+            (e.employeeId && e.employeeId === rawEmpId) ||
+            (e.employeeId && e.employeeId === cleanEmpId) ||
+            (e.employeeId && e.employeeId.replace(/^ANT-/i, "") === cleanEmpId) ||
+            (`${e.firstName} ${e.lastName}`.toLowerCase() === rawEmpName.toLowerCase()) ||
+            (e.email && e.email.toLowerCase() === rawEmpName.toLowerCase())
+          );
+
+          if (!matchedEmp) continue;
+
+          // Match Leave Type
+          const matchedLeaveType = allLeaveTypes.find(lt =>
+            lt.name.toLowerCase() === leaveTypeName.toLowerCase() ||
+            lt.code.toLowerCase() === leaveTypeName.toLowerCase()
+          ) || defaultLeaveType;
+
+          if (!matchedLeaveType) continue;
+
+          const startDate = new Date(startDateStr);
+          const endDate = endDateStr ? new Date(endDateStr) : startDate;
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) continue;
+
+          const days = parseFloat(daysStr) || Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1);
+          const status = ["PENDING", "APPROVED", "REJECTED"].includes(statusStr) ? statusStr : "PENDING";
+
+          // Find existing request or create new
+          const existingReq = await prisma.leaveRequest.findFirst({
+            where: {
+              employeeId: matchedEmp.id,
+              startDate,
+              endDate,
+            }
+          });
+
+          if (existingReq) {
+            await prisma.leaveRequest.update({
+              where: { id: existingReq.id },
+              data: {
+                status: status as any,
+                reason: reason || existingReq.reason,
+                days,
+                leaveTypeId: matchedLeaveType.id,
+              }
+            });
+          } else {
+            await prisma.leaveRequest.create({
+              data: {
+                employeeId: matchedEmp.id,
+                leaveTypeId: matchedLeaveType.id,
+                startDate,
+                endDate,
+                days,
+                reason: reason || "Imported from Sheet",
+                status: status as any,
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[Google Sheets] Failed to sync Leave Requests tab:", e);
     }
 
     // 2. Fetch all database models and update Google Sheets format to match Export Report
