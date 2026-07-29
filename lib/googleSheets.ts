@@ -435,6 +435,22 @@ export async function syncGoogleSheetsWithDb() {
           targetEmpId = existingEmp.id;
           // Perform safe, non-destructive update from Sheet into DB
           const updatePayload: Prisma.EmployeeUpdateInput = {};
+          const userUpdatePayload: Prisma.UserUpdateInput = {};
+
+          if (email && email !== "—") {
+            const cleanEmail = email.toLowerCase();
+            if (cleanEmail !== existingEmp.email.toLowerCase()) {
+              const otherUser = empByEmailMap.get(cleanEmail);
+              if (!otherUser || otherUser.id === existingEmp.id) {
+                updatePayload.email = cleanEmail;
+                userUpdatePayload.email = cleanEmail;
+              }
+            }
+          }
+
+          if (empId && empId !== "—" && empId !== existingEmp.employeeId) {
+            updatePayload.employeeId = empId;
+          }
 
           if (firstName && firstName !== "—") updatePayload.firstName = firstName;
           if (lastName && lastName !== "—") updatePayload.lastName = lastName;
@@ -504,12 +520,14 @@ export async function syncGoogleSheetsWithDb() {
           });
 
           const isActive = statusStr ? (statusStr !== "INACTIVE" && statusStr !== "ALUMNI") : existingEmp.user.isActive;
+          userUpdatePayload.isActive = isActive;
+          if (newPasswordHash) {
+            userUpdatePayload.passwordHash = newPasswordHash;
+          }
+
           await prisma.user.update({
             where: { id: existingEmp.userId },
-            data: {
-              isActive,
-              ...(newPasswordHash ? { passwordHash: newPasswordHash } : {})
-            }
+            data: userUpdatePayload
           });
 
           updatedCount++;
