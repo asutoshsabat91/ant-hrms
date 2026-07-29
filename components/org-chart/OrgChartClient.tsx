@@ -11,8 +11,7 @@ import {
   Edit2,
   Search as SearchIcon,
   PanelLeftClose,
-  PanelLeftOpen,
-  Users
+  PanelLeftOpen
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 

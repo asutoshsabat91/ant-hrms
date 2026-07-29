@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from "googleapis";
-import type { EmployeeStatus, EmploymentType, PunchType } from "@prisma/client";
+import type { EmployeeStatus, EmploymentType, PunchType, LeaveStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -267,7 +267,7 @@ export async function syncGoogleSheetsWithDb() {
     let createdCount = 0;
 
     let headers: string[] = [];
-    let employeeDataRows: string[][] = [];
+    const employeeDataRows: string[][] = [];
     let isParsingEmployees = false;
 
     for (let i = 0; i < rows.length; i++) {
@@ -717,7 +717,7 @@ export async function syncGoogleSheetsWithDb() {
       });
       const leaveRowsFromSheet = leaveRes.data.values || [];
       if (leaveRowsFromSheet.length > 1) {
-        const leaveHeaders = (leaveRowsFromSheet[0] || []).map((h: any) => String(h).trim().toLowerCase());
+        const leaveHeaders = (leaveRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
         
         const getLeaveColVal = (row: string[], possibleHeaders: string[]) => {
           for (const ph of possibleHeaders) {
@@ -786,7 +786,7 @@ export async function syncGoogleSheetsWithDb() {
             await prisma.leaveRequest.update({
               where: { id: existingReq.id },
               data: {
-                status: status as any,
+                status: status as LeaveStatus,
                 reason: reason || existingReq.reason,
                 days,
                 leaveTypeId: matchedLeaveType.id,
@@ -801,7 +801,7 @@ export async function syncGoogleSheetsWithDb() {
                 endDate,
                 days,
                 reason: reason || "Imported from Sheet",
-                status: status as any,
+                status: status as LeaveStatus,
               }
             });
           }
