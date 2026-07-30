@@ -773,6 +773,8 @@ export async function syncGoogleSheetsWithDb() {
         const allLeaveTypes = await prisma.leaveType.findMany();
         const defaultLeaveType = allLeaveTypes[0];
 
+        const processedLeaveReqIds = new Set<string>();
+
         for (let i = 1; i < leaveRowsFromSheet.length; i++) {
           const row = leaveRowsFromSheet[i];
           const rawEmpId = getLeaveColVal(row, ["employee id", "employeeid", "emp id"]);
@@ -813,17 +815,19 @@ export async function syncGoogleSheetsWithDb() {
           const days = parseFloat(daysStr) || Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1);
           const status = ["PENDING", "APPROVED", "REJECTED"].includes(statusStr) ? statusStr : "PENDING";
 
-          // Find existing request or create new
+          // Flexible day-range matching to prevent UTC vs Local timezone lookup mismatches
+          const dayStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
+          const dayEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59);
+
           const existingReq = await prisma.leaveRequest.findFirst({
             where: {
               employeeId: matchedEmp.id,
-              startDate,
-              endDate,
+              startDate: { gte: dayStart, lte: dayEnd },
             }
           });
 
           if (existingReq) {
-            await prisma.leaveRequest.update({
+            const updated = await prisma.leaveRequest.update({
               where: { id: existingReq.id },
               data: {
                 status: status as LeaveStatus,
@@ -832,8 +836,9 @@ export async function syncGoogleSheetsWithDb() {
                 leaveTypeId: matchedLeaveType.id,
               }
             });
+            processedLeaveReqIds.add(updated.id);
           } else {
-            await prisma.leaveRequest.create({
+            const created = await prisma.leaveRequest.create({
               data: {
                 employeeId: matchedEmp.id,
                 leaveTypeId: matchedLeaveType.id,
@@ -844,8 +849,20 @@ export async function syncGoogleSheetsWithDb() {
                 status: status as LeaveStatus,
               }
             });
+            processedLeaveReqIds.add(created.id);
           }
         }
+
+        // Delete leave requests from DB that were removed from Google Sheet
+        if (processedLeaveReqIds.size > 0) {
+          await prisma.leaveRequest.deleteMany({
+            where: { id: { notIn: Array.from(processedLeaveReqIds) } }
+          });
+        } else {
+          await prisma.leaveRequest.deleteMany({});
+        }
+      } else {
+        await prisma.leaveRequest.deleteMany({});
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Leave Requests tab:", e);
