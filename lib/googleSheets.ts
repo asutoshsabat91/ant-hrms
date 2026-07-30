@@ -703,7 +703,7 @@ export async function syncGoogleSheetsWithDb() {
         range: "'Leave Requests'!A:Z",
       });
       const leaveRowsFromSheet = leaveRes.data.values || [];
-      if (leaveRowsFromSheet.length > 1) {
+      if (leaveRowsFromSheet.length >= 0) {
         const leaveHeaders = (leaveRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
         
         const getLeaveColVal = (row: string[], possibleHeaders: string[]) => {
