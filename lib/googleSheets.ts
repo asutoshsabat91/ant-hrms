@@ -868,8 +868,186 @@ export async function syncGoogleSheetsWithDb() {
       console.error("[Google Sheets] Failed to sync Leave Requests tab:", e);
     }
 
+    // 1c. Pull Reimbursements tab from Google Sheet and sync to DB
+    try {
+      const reimRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: "'Reimbursements'!A:Z",
+      });
+      const reimRowsFromSheet = reimRes.data.values || [];
+      if (reimRowsFromSheet.length > 1) {
+        const headers = (reimRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
+        const getCol = (row: string[], possible: string[]) => {
+          for (const p of possible) {
+            const idx = headers.indexOf(p.toLowerCase());
+            if (idx !== -1 && row[idx] !== undefined) return String(row[idx]).trim();
+          }
+          return "";
+        };
+
+        const allDbEmps = await prisma.employee.findMany({ select: { id: true, employeeId: true, firstName: true, lastName: true, email: true } });
+        const processedReimIds = new Set<string>();
+
+        for (let i = 1; i < reimRowsFromSheet.length; i++) {
+          const row = reimRowsFromSheet[i];
+          const rawEmpId = getCol(row, ["employee id", "employeeid", "emp id"]);
+          const rawEmpName = getCol(row, ["employee name", "employeename", "name"]);
+          const title = getCol(row, ["title"]);
+          const category = getCol(row, ["category"]);
+          const amountStr = getCol(row, ["amount"]);
+          const currency = getCol(row, ["currency"]) || "INR";
+          const dateStr = getCol(row, ["date"]);
+          const statusStr = getCol(row, ["status"]).toUpperCase();
+
+          if (!title || (!rawEmpId && !rawEmpName)) continue;
+
+          const cleanEmpId = rawEmpId.replace(/^ANT-/i, "");
+          const matchedEmp = allDbEmps.find(e =>
+            (e.employeeId && e.employeeId === rawEmpId) ||
+            (e.employeeId && e.employeeId === cleanEmpId) ||
+            (e.employeeId && e.employeeId.replace(/^ANT-/i, "") === cleanEmpId) ||
+            (`${e.firstName} ${e.lastName}`.toLowerCase() === rawEmpName.toLowerCase()) ||
+            (e.email && e.email.toLowerCase() === rawEmpName.toLowerCase())
+          );
+
+          if (!matchedEmp) continue;
+
+          const amount = parseFloat(amountStr) || 0;
+          const validStatuses = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "PAID"];
+          const status = validStatuses.includes(statusStr) ? statusStr : "SUBMITTED";
+          const claimDate = dateStr ? new Date(dateStr) : new Date();
+
+          const existingReim = await prisma.reimbursement.findFirst({
+            where: {
+              employeeId: matchedEmp.id,
+              title,
+            }
+          });
+
+          if (existingReim) {
+            const updated = await prisma.reimbursement.update({
+              where: { id: existingReim.id },
+              data: {
+                status: status as any,
+                amount: amount || existingReim.amount,
+                category: category || existingReim.category,
+              }
+            });
+            processedReimIds.add(updated.id);
+          } else {
+            const created = await prisma.reimbursement.create({
+              data: {
+                employeeId: matchedEmp.id,
+                title,
+                category: category || "General",
+                amount,
+                currency,
+                date: claimDate,
+                status: status as any,
+              }
+            });
+            processedReimIds.add(created.id);
+          }
+        }
+
+        if (processedReimIds.size > 0) {
+          await prisma.reimbursement.deleteMany({ where: { id: { notIn: Array.from(processedReimIds) } } });
+        } else {
+          await prisma.reimbursement.deleteMany({});
+        }
+      } else {
+        await prisma.reimbursement.deleteMany({});
+      }
+    } catch (e) {
+      console.error("[Google Sheets] Failed to sync Reimbursements tab:", e);
+    }
+
+    // 1d. Pull Separations tab from Google Sheet and sync to DB
+    try {
+      const sepRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: "'Separations'!A:Z",
+      });
+      const sepRowsFromSheet = sepRes.data.values || [];
+      if (sepRowsFromSheet.length > 1) {
+        const headers = (sepRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
+        const getCol = (row: string[], possible: string[]) => {
+          for (const p of possible) {
+            const idx = headers.indexOf(p.toLowerCase());
+            if (idx !== -1 && row[idx] !== undefined) return String(row[idx]).trim();
+          }
+          return "";
+        };
+
+        const allDbEmps = await prisma.employee.findMany({ select: { id: true, employeeId: true, firstName: true, lastName: true, email: true } });
+        const processedSepIds = new Set<string>();
+
+        for (let i = 1; i < sepRowsFromSheet.length; i++) {
+          const row = sepRowsFromSheet[i];
+          const rawEmpId = getCol(row, ["employee id", "employeeid", "emp id"]);
+          const rawEmpName = getCol(row, ["employee name", "employeename", "name"]);
+          const statusStr = getCol(row, ["status"]).toUpperCase();
+          const noticeDaysStr = getCol(row, ["notice days", "noticedays"]);
+          const reason = getCol(row, ["reason"]);
+
+          if (!rawEmpId && !rawEmpName) continue;
+
+          const cleanEmpId = rawEmpId.replace(/^ANT-/i, "");
+          const matchedEmp = allDbEmps.find(e =>
+            (e.employeeId && e.employeeId === rawEmpId) ||
+            (e.employeeId && e.employeeId === cleanEmpId) ||
+            (e.employeeId && e.employeeId.replace(/^ANT-/i, "") === cleanEmpId) ||
+            (`${e.firstName} ${e.lastName}`.toLowerCase() === rawEmpName.toLowerCase()) ||
+            (e.email && e.email.toLowerCase() === rawEmpName.toLowerCase())
+          );
+
+          if (!matchedEmp) continue;
+
+          const validStatuses = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"];
+          const status = validStatuses.includes(statusStr) ? statusStr : "PENDING";
+          const noticeDays = parseInt(noticeDaysStr) || 60;
+
+          const existingSep = await prisma.separation.findUnique({
+            where: { employeeId: matchedEmp.id }
+          });
+
+          if (existingSep) {
+            const updated = await prisma.separation.update({
+              where: { id: existingSep.id },
+              data: {
+                status: status as any,
+                reason: reason || existingSep.reason,
+                noticeDays,
+              }
+            });
+            processedSepIds.add(updated.id);
+          } else {
+            const created = await prisma.separation.create({
+              data: {
+                employeeId: matchedEmp.id,
+                reason: reason || "Imported from Sheet",
+                noticeDays,
+                status: status as any,
+              }
+            });
+            processedSepIds.add(created.id);
+          }
+        }
+
+        if (processedSepIds.size > 0) {
+          await prisma.separation.deleteMany({ where: { id: { notIn: Array.from(processedSepIds) } } });
+        } else {
+          await prisma.separation.deleteMany({});
+        }
+      } else {
+        await prisma.separation.deleteMany({});
+      }
+    } catch (e) {
+      console.error("[Google Sheets] Failed to sync Separations tab:", e);
+    }
+
     // 2. Fetch all database models and update Google Sheets format to match Export Report
-    const [allEmployees, allLeaves, allReimbursements, allSeparations] = await Promise.all([
+    const [allEmployees, allLeaves, allReimbursements, allSeparations, allAttendance] = await Promise.all([
       prisma.employee.findMany({
         include: { department: true, manager: true },
         orderBy: { employeeId: "asc" }
@@ -885,6 +1063,11 @@ export async function syncGoogleSheetsWithDb() {
       prisma.separation.findMany({
         include: { employee: true },
         orderBy: { createdAt: "desc" }
+      }),
+      prisma.attendanceRecord.findMany({
+        include: { employee: true },
+        orderBy: { workDate: "desc" },
+        take: 500,
       })
     ]);
 
@@ -1108,6 +1291,29 @@ export async function syncGoogleSheetsWithDb() {
       requestBody: { values: reimbursementRows }
     });
 
+    // 5. Attendance Logs Tab Data
+    const attendanceRows: unknown[][] = [
+      ["Employee ID", "Employee Name", "Work Date", "Check In", "Check Out", "Total Hours", "Status"]
+    ];
+    allAttendance.forEach((att) => {
+      const empName = `${att.employee?.firstName ?? ""} ${att.employee?.lastName ?? ""}`;
+      const workDate = att.workDate ? new Date(att.workDate).toISOString().slice(0, 10) : "—";
+      const checkIn = att.checkIn ? new Date(att.checkIn).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" }) : "—";
+      const checkOut = att.checkOut ? new Date(att.checkOut).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" }) : "—";
+      attendanceRows.push([
+        att.employee?.employeeId ?? "—",
+        empName,
+        workDate,
+        checkIn,
+        checkOut,
+        att.totalHours ?? 0,
+        att.status
+      ]);
+    });
+
+    // Ensure worksheet exists
+    await ensureWorksheetExists(sheets, spreadsheetId, "Attendance Logs");
+
     // Separations
     await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Separations!A:Z" });
     await sheets.spreadsheets.values.update({
@@ -1115,6 +1321,15 @@ export async function syncGoogleSheetsWithDb() {
       range: "Separations!A1",
       valueInputOption: "RAW",
       requestBody: { values: separationRows }
+    });
+
+    // Attendance Logs
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Attendance Logs'!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "'Attendance Logs'!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: attendanceRows }
     });
 
     console.log(`[Google Sheets] Bi-directional sync completed successfully. Updated: ${updatedCount}, Created: ${createdCount}`);
