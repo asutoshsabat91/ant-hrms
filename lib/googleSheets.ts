@@ -704,7 +704,11 @@ export async function syncGoogleSheetsWithDb() {
         const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
         const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
         if (email) foundInSheetEmails.add(email.toLowerCase());
-        if (empId) foundInSheetEmpIds.add(empId);
+        if (empId) {
+          foundInSheetEmpIds.add(empId.toLowerCase());
+          const norm = normalizeEmpId(empId);
+          if (norm) foundInSheetEmpIds.add(norm);
+        }
       }
 
       if (foundInSheetEmails.size > 0 || foundInSheetEmpIds.size > 0) {
@@ -713,8 +717,15 @@ export async function syncGoogleSheetsWithDb() {
         const toDeleteEmpIds: string[] = [];
         
         for (const dbEmp of allDbEmps) {
-          const emailMatched = dbEmp.email && foundInSheetEmails.has(dbEmp.email.toLowerCase());
-          const idMatched = dbEmp.employeeId && foundInSheetEmpIds.has(dbEmp.employeeId);
+          const normDbId = normalizeEmpId(dbEmp.employeeId);
+          const emailMatched = dbEmp.email && (
+            foundInSheetEmails.has(dbEmp.email.toLowerCase()) || 
+            empByEmailMap.has(dbEmp.email.toLowerCase())
+          );
+          const idMatched = dbEmp.employeeId && (
+            foundInSheetEmpIds.has(dbEmp.employeeId.toLowerCase()) || 
+            (normDbId && foundInSheetEmpIds.has(normDbId))
+          );
           if (!emailMatched && !idMatched) {
             toDeleteUserIds.push(dbEmp.userId);
             toDeleteEmpIds.push(dbEmp.id);

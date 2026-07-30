@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { exportDataToGoogleSheets } from "@/lib/googleSheets";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -72,6 +73,9 @@ export async function POST(req: Request) {
         link: `/onboarding/${updated.id}`,
       })),
     });
+
+    // Auto-sync new employee details to Google Sheet in background
+    exportDataToGoogleSheets().catch((e: unknown) => console.error("[Google Sheets Auto-Export]", e));
 
     return NextResponse.json({ employee: updated }, { status: 200 });
   } catch (err: unknown) {
