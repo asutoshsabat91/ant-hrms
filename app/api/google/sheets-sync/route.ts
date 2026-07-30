@@ -21,7 +21,7 @@ export async function POST() {
         hasEscapedNewlines: rawKey.includes("\\n"),
       };
       return NextResponse.json({ 
-        error: result.error || "Failed to perform sync",
+        error: ("error" in result && result.error) ? result.error : "Failed to perform sync",
         diagnostics
       }, { status: 500 });
     }
@@ -31,7 +31,7 @@ export async function POST() {
       simulated: result.simulated ?? false,
       updatedCount: result.updatedCount ?? 0,
       createdCount: result.createdCount ?? 0,
-      message: result.message || "Sync completed successfully."
+      message: ("message" in result && result.message) ? result.message : "Sync completed successfully."
     });
   } catch (error) {
     const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || "";

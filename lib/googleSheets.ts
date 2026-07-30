@@ -151,9 +151,9 @@ export async function updateEmployeeInSheet(
   }
 }
 
-// 3. Export all types (Dashboard, Leaves, Calendar) - redirected to unified sync
+// 3. Export all types (Dashboard, Leaves, Calendar) - direct export to sheet
 export async function exportDataToGoogleSheets() {
-  return syncGoogleSheetsWithDb();
+  return exportDbToGoogleSheetsOnly();
 }
 
 // 4. Import Employees from Google Sheets
@@ -263,8 +263,6 @@ export async function syncGoogleSheetsWithDb() {
     });
 
     const rows = response.data.values || [];
-    let updatedCount = 0;
-    let createdCount = 0;
 
     let headers: string[] = [];
     const employeeDataRows: string[][] = [];
@@ -563,7 +561,6 @@ export async function syncGoogleSheetsWithDb() {
                 data: userUpdatePayload
               });
             }
-            updatedCount++;
           } catch (rowUpdateErr) {
             console.error(`[Google Sheets Sync] Non-fatal error updating row for ${existingEmp.firstName} ${existingEmp.lastName}:`, rowUpdateErr);
           }
@@ -657,7 +654,6 @@ export async function syncGoogleSheetsWithDb() {
           if (newEmpUser.employee) {
             targetEmpId = newEmpUser.employee.id;
           }
-          createdCount++;
         }
 
         if (targetEmpId) {
@@ -697,56 +693,7 @@ export async function syncGoogleSheetsWithDb() {
         }
       }
 
-      // Cleanup: Delete employees from DB that were removed from the Google Sheet
-      const foundInSheetEmails = new Set<string>();
-      const foundInSheetEmpIds = new Set<string>();
-      for (const row of employeeDataRows) {
-        const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
-        const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
-        if (email) foundInSheetEmails.add(email.toLowerCase());
-        if (empId) {
-          foundInSheetEmpIds.add(empId.toLowerCase());
-          const norm = normalizeEmpId(empId);
-          if (norm) foundInSheetEmpIds.add(norm);
-        }
-      }
-
-      if (foundInSheetEmails.size > 0 || foundInSheetEmpIds.size > 0) {
-        const allDbEmps = await prisma.employee.findMany({ select: { id: true, userId: true, email: true, employeeId: true } });
-        const toDeleteUserIds: string[] = [];
-        const toDeleteEmpIds: string[] = [];
-        
-        for (const dbEmp of allDbEmps) {
-          const normDbId = normalizeEmpId(dbEmp.employeeId);
-          const emailMatched = dbEmp.email && (
-            foundInSheetEmails.has(dbEmp.email.toLowerCase()) || 
-            empByEmailMap.has(dbEmp.email.toLowerCase())
-          );
-          const idMatched = dbEmp.employeeId && (
-            foundInSheetEmpIds.has(dbEmp.employeeId.toLowerCase()) || 
-            (normDbId && foundInSheetEmpIds.has(normDbId))
-          );
-          if (!emailMatched && !idMatched) {
-            toDeleteUserIds.push(dbEmp.userId);
-            toDeleteEmpIds.push(dbEmp.id);
-          }
-        }
-        
-        if (toDeleteEmpIds.length > 0) {
-          try {
-            await prisma.leaveBalance.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
-            await prisma.leaveRequest.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
-            await prisma.attendancePunch.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
-            await prisma.reimbursement.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
-            await prisma.separation.deleteMany({ where: { employeeId: { in: toDeleteEmpIds } } });
-            await prisma.employee.deleteMany({ where: { id: { in: toDeleteEmpIds } } });
-            await prisma.user.deleteMany({ where: { id: { in: toDeleteUserIds } } });
-            console.log(`[Google Sheets] Deleted ${toDeleteEmpIds.length} employees not found in the sheet.`);
-          } catch (e) {
-            console.error("[Google Sheets] Failed to delete orphaned employees:", e);
-          }
-        }
-      }
+      // Employees are imported/updated into DB without deleting existing DB employees.
     }
 
     // 1b. Pull Leave Requests tab from Google Sheet and sync to DB
@@ -853,12 +800,7 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        // Delete leave requests from DB that were removed from Google Sheet
-        if (processedLeaveReqIds.size > 0) {
-          await prisma.leaveRequest.deleteMany({
-            where: { id: { notIn: Array.from(processedLeaveReqIds) } }
-          });
-        }
+        // Leave requests imported/updated from sheet without deleting DB records.
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Leave Requests tab:", e);
@@ -946,9 +888,7 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        if (processedReimIds.size > 0) {
-          await prisma.reimbursement.deleteMany({ where: { id: { notIn: Array.from(processedReimIds) } } });
-        }
+        // Reimbursements imported/updated from sheet without deleting DB records.
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Reimbursements tab:", e);
@@ -1026,15 +966,35 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        if (processedSepIds.size > 0) {
-          await prisma.separation.deleteMany({ where: { id: { notIn: Array.from(processedSepIds) } } });
-        }
+        // Separations imported/updated from sheet without deleting DB records.
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Separations tab:", e);
     }
 
-    // 2. Fetch all database models and update Google Sheets format to match Export Report
+    // 2. Export database state directly to Google Sheets
+    return await exportDbToGoogleSheetsOnly();
+  } catch (error) {
+    console.error("[Google Sheets] Sync failed:", error);
+    return {
+      success: false,
+      simulated: false,
+      updatedCount: 0,
+      createdCount: 0,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+export async function exportDbToGoogleSheetsOnly() {
+  const client = getSheetsClient();
+  if (!client) {
+    return { success: false, simulated: true, updatedCount: 0, createdCount: 0 };
+  }
+
+  const { sheets, spreadsheetId } = client;
+
+  try {
     const [allEmployees, allLeaves, allReimbursements, allSeparations, allAttendance] = await Promise.all([
       prisma.employee.findMany({
         include: { department: true, manager: true },
@@ -1059,13 +1019,13 @@ export async function syncGoogleSheetsWithDb() {
       })
     ]);
 
-    // Ensure all target worksheets exist sequentially to prevent concurrent write collisions
     await ensureWorksheetExists(sheets, spreadsheetId, "Employees");
     await ensureWorksheetExists(sheets, spreadsheetId, "Departments");
     await ensureWorksheetExists(sheets, spreadsheetId, "Clients");
     await ensureWorksheetExists(sheets, spreadsheetId, "Leave Requests");
     await ensureWorksheetExists(sheets, spreadsheetId, "Reimbursements");
     await ensureWorksheetExists(sheets, spreadsheetId, "Separations");
+    await ensureWorksheetExists(sheets, spreadsheetId, "Attendance Logs");
 
     // 1. Employees Tab Data
     const employeeRows: unknown[][] = [
@@ -1153,7 +1113,7 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // 1b. Departments Tab Data
+    // 2. Departments Tab Data
     const allDepartments = await prisma.department.findMany({
       include: { _count: { select: { employees: true } } },
       orderBy: { name: "asc" }
@@ -1169,7 +1129,7 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // 1c. Clients Tab Data
+    // 3. Clients Tab Data
     const clientRows: unknown[][] = [
       ["Client / Deployed Company", "Active Headcount"]
     ];
@@ -1177,7 +1137,7 @@ export async function syncGoogleSheetsWithDb() {
       clientRows.push([clientName, count]);
     });
 
-    // 2. Leave Requests Tab Data
+    // 4. Leave Requests Tab Data
     const leaveRows: unknown[][] = [
       ["Employee ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Days", "Reason", "Status"]
     ];
@@ -1197,7 +1157,7 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // 3. Reimbursement Claims Tab Data
+    // 5. Reimbursement Claims Tab Data
     const reimbursementRows: unknown[][] = [
       ["Employee ID", "Employee Name", "Title", "Category", "Amount", "Currency", "Date", "Status"]
     ];
@@ -1216,7 +1176,7 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // 4. Separation Initiations Tab Data
+    // 6. Separation Initiations Tab Data
     const separationRows: unknown[][] = [
       ["Employee ID", "Employee Name", "Status", "Notice Days", "Reason", "Initiated At"]
     ];
@@ -1233,53 +1193,7 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // Execute clear and update sequentially to prevent write conflicts
-    // Employees
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Employees!A:Z" });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Employees!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: employeeRows }
-    });
-
-    // Departments
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Departments!A:Z" });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Departments!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: departmentRows }
-    });
-
-    // Clients
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Clients!A:Z" });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Clients!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: clientRows }
-    });
-
-    // Leave Requests
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Leave Requests'!A:Z" });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "'Leave Requests'!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: leaveRows }
-    });
-
-    // Reimbursements
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Reimbursements!A:Z" });
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Reimbursements!A1",
-      valueInputOption: "RAW",
-      requestBody: { values: reimbursementRows }
-    });
-
-    // 5. Attendance Logs Tab Data
+    // 7. Attendance Logs Tab Data
     const attendanceRows: unknown[][] = [
       ["Employee ID", "Employee Name", "Work Date", "Check In", "Check Out", "Total Hours", "Status"]
     ];
@@ -1299,10 +1213,47 @@ export async function syncGoogleSheetsWithDb() {
       ]);
     });
 
-    // Ensure worksheet exists
-    await ensureWorksheetExists(sheets, spreadsheetId, "Attendance Logs");
+    // Write all worksheets cleanly
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Employees!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Employees!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: employeeRows }
+    });
 
-    // Separations
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Departments!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Departments!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: departmentRows }
+    });
+
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Clients!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Clients!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: clientRows }
+    });
+
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Leave Requests'!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "'Leave Requests'!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: leaveRows }
+    });
+
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Reimbursements!A:Z" });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Reimbursements!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: reimbursementRows }
+    });
+
     await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Separations!A:Z" });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
@@ -1311,7 +1262,6 @@ export async function syncGoogleSheetsWithDb() {
       requestBody: { values: separationRows }
     });
 
-    // Attendance Logs
     await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Attendance Logs'!A:Z" });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
@@ -1320,21 +1270,11 @@ export async function syncGoogleSheetsWithDb() {
       requestBody: { values: attendanceRows }
     });
 
-    console.log(`[Google Sheets] Bi-directional sync completed successfully. Updated: ${updatedCount}, Created: ${createdCount}`);
-
-    return {
-      success: true,
-      simulated: false,
-      updatedCount,
-      createdCount
-    };
+    console.log(`[Google Sheets] DB Export completed successfully.`);
+    return { success: true, simulated: false, updatedCount: allEmployees.length, createdCount: 0, message: "Sync completed successfully." };
   } catch (error) {
-    console.error("[Google Sheets] Sync failed:", error);
-    return {
-      success: false,
-      simulated: false,
-      error: error instanceof Error ? error.message : String(error)
-    };
+    console.error("[Google Sheets] DB Export failed:", error);
+    return { success: false, simulated: false, updatedCount: 0, createdCount: 0, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

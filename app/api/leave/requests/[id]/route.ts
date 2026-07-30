@@ -236,5 +236,13 @@ export async function PATCH(
     }
   }
 
+  // Export updated DB state to Google Master Sheet
+  try {
+    const { exportDbToGoogleSheetsOnly } = await import("@/lib/googleSheets");
+    exportDbToGoogleSheetsOnly().catch(err => console.error("[Google Sheets Export]", err));
+  } catch (sheetsErr) {
+    console.error("Failed to trigger sheet export", sheetsErr);
+  }
+
   return NextResponse.json({ request: result });
 }

@@ -499,6 +499,10 @@ export async function POST(req: Request) {
     } catch (chatErr) {
       console.error("[Google Chat] Leave request notification failed", chatErr);
     }
+
+    // Export updated DB state to Google Master Sheet
+    const { exportDbToGoogleSheetsOnly } = await import("@/lib/googleSheets");
+    exportDbToGoogleSheetsOnly().catch(err => console.error("[Google Sheets Export]", err));
   } catch (mailErr) {
     console.error("Failed to send leave request email", mailErr);
   }
