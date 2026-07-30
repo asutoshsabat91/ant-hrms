@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from "googleapis";
-import type { EmployeeStatus, EmploymentType, PunchType, LeaveStatus } from "@prisma/client";
+import type { EmployeeStatus, EmploymentType, PunchType, LeaveStatus, ReimbursementStatus, SeparationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -928,7 +928,7 @@ export async function syncGoogleSheetsWithDb() {
             const updated = await prisma.reimbursement.update({
               where: { id: existingReim.id },
               data: {
-                status: status as any,
+                status: status as ReimbursementStatus,
                 amount: amount || existingReim.amount,
                 category: category || existingReim.category,
               }
@@ -943,7 +943,7 @@ export async function syncGoogleSheetsWithDb() {
                 amount,
                 currency,
                 date: claimDate,
-                status: status as any,
+                status: status as ReimbursementStatus,
               }
             });
             processedReimIds.add(created.id);
@@ -1015,7 +1015,7 @@ export async function syncGoogleSheetsWithDb() {
             const updated = await prisma.separation.update({
               where: { id: existingSep.id },
               data: {
-                status: status as any,
+                status: status as SeparationStatus,
                 reason: reason || existingSep.reason,
                 noticeDays,
               }
@@ -1027,7 +1027,7 @@ export async function syncGoogleSheetsWithDb() {
                 employeeId: matchedEmp.id,
                 reason: reason || "Imported from Sheet",
                 noticeDays,
-                status: status as any,
+                status: status as SeparationStatus,
               }
             });
             processedSepIds.add(created.id);
