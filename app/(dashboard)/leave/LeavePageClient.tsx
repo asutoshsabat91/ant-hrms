@@ -74,30 +74,6 @@ interface LeavePageClientProps {
   isManager?: boolean;
 }
 
-// Static mock data — defined outside component so it never re-creates
-const DEFAULT_REQUESTS: LeaveRequestItem[] = [
-  {
-    id: "mock-1",
-    employee: { firstName: "Karthik", lastName: "Reddy", employeeId: "LV-101" },
-    leaveType: { name: "Earned Leaves" },
-    startDate: "2026-06-10",
-    endDate: "2026-06-14",
-    days: 5,
-    status: "PENDING",
-    reason: "Family vacation to Hill Station",
-  },
-  {
-    id: "mock-2",
-    employee: { firstName: "Ishita", lastName: "Sen", employeeId: "LV-102" },
-    leaveType: { name: "Paid/Quarter Leaves" },
-    startDate: "2026-06-06",
-    endDate: "2026-06-06",
-    days: 1,
-    status: "APPROVED",
-    reason: "Severe fever and doctor appointment",
-  },
-];
-
 export function LeavePageClient({ initialData, leaveTypes, userRole, employmentType, isManager }: LeavePageClientProps) {
   const [requests, setRequests] = useState<LeaveRequestItem[]>(initialData.recentRequests);
   const [balances, setBalances] = useState<LeaveBalanceItem[]>(initialData.leaveBalances);
@@ -108,8 +84,8 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
   const openDialog = useCallback(() => setIsDialogOpen(true), []);
 
   const displayRequests = useMemo(() => {
-    return requests.length > 0 ? requests : (canApprove ? DEFAULT_REQUESTS : []);
-  }, [requests, canApprove]);
+    return requests;
+  }, [requests]);
 
   // Memoize balance cards — only recalculates when balances change
   const balancesData = useMemo(() => {
@@ -159,15 +135,6 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
 
   const handleDecision = useCallback(
     async (id: string, action: "APPROVE" | "REJECT") => {
-      if (id.startsWith("mock-")) {
-        setRequests((current) => {
-          const base = current.length === 0 ? DEFAULT_REQUESTS : current;
-          return base.map((r) =>
-            r.id === id ? { ...r, status: action === "APPROVE" ? "APPROVED" : "REJECTED" } : r
-          );
-        });
-        return;
-      }
       let rejectionReason = "";
       if (action === "REJECT") {
         const note = window.prompt("Please enter a reason for declining this leave request (required):");
