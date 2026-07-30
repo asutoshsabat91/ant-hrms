@@ -2,6 +2,30 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+async function getSubordinateEmployeeIds(managerEmployeeId: string): Promise<string[]> {
+  const allEmployees = await prisma.employee.findMany({
+    select: { id: true, managerId: true },
+  });
+  const map = new Map<string, string[]>();
+  for (const emp of allEmployees) {
+    if (emp.managerId) {
+      if (!map.has(emp.managerId)) map.set(emp.managerId, []);
+      map.get(emp.managerId)!.push(emp.id);
+    }
+  }
+
+  const subordinates: string[] = [];
+  const queue = [...(map.get(managerEmployeeId) || [])];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    subordinates.push(current);
+    if (map.has(current)) {
+      queue.push(...map.get(current)!);
+    }
+  }
+  return subordinates;
+}
+
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,24 +48,50 @@ export async function GET(req: Request) {
         orderBy: { createdAt: "desc" },
       });
     } else {
-      // Get requests for self or specific employee (if authorized)
+      // Get requests for self, subordinates, or specific employee (if authorized)
       const emp = await prisma.employee.findFirst({
         where: { userId: session.user.id },
       });
 
-      const targetEmpId = employeeId || emp?.id;
-      if (!targetEmpId) {
+      if (!emp) {
         return NextResponse.json({ error: "Employee profile not found" }, { status: 404 });
       }
 
-      if (!isAdmin && targetEmpId !== emp?.id) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
+      const subordinateIds = await getSubordinateEmployeeIds(emp.id);
+      
+      if (!employeeId && subordinateIds.length > 0) {
+        requests = await prisma.regularizationRequest.findMany({
+          where: {
+            OR: [
+              { employeeId: emp.id },
+              { employeeId: { in: subordinateIds } }
+            ]
+          },
+          include: {
+            employee: {
+              select: { id: true, firstName: true, lastName: true, employeeId: true },
+            },
+          },
+          orderBy: { date: "desc" },
+        });
+      } else {
+        const targetEmpId = employeeId || emp.id;
+        const isAllowed = isAdmin || targetEmpId === emp.id || subordinateIds.includes(targetEmpId);
+        
+        if (!isAllowed) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
 
-      requests = await prisma.regularizationRequest.findMany({
-        where: { employeeId: targetEmpId },
-        orderBy: { date: "desc" },
-      });
+        requests = await prisma.regularizationRequest.findMany({
+          where: { employeeId: targetEmpId },
+          include: {
+            employee: {
+              select: { id: true, firstName: true, lastName: true, employeeId: true },
+            },
+          },
+          orderBy: { date: "desc" },
+        });
+      }
     }
 
     return NextResponse.json({ success: true, requests });
@@ -143,11 +193,32 @@ function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[])
   return Math.round((totalMs / 3600000) * 100) / 100;
 }
 
+async function isAncestorManager(approverEmployeeId: string, applicantEmployeeId: string): Promise<boolean> {
+  const allEmployees = await prisma.employee.findMany({
+    select: { id: true, managerId: true },
+  });
+  const empMap = new Map<string, string | null>(allEmployees.map((e) => [e.id, e.managerId]));
+  
+  let currentManagerId = empMap.get(applicantEmployeeId);
+  const visited = new Set<string>();
+  while (currentManagerId && !visited.has(currentManagerId)) {
+    if (currentManagerId === approverEmployeeId) {
+      return true;
+    }
+    visited.add(currentManagerId);
+    currentManagerId = empMap.get(currentManagerId) ?? null;
+  }
+  return false;
+}
+
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const currentEmployee = await prisma.employee.findFirst({ where: { userId: session.user.id } });
+  const isHrOrAdmin = ["ADMIN"].includes(session.user.role);
 
   try {
     const { ids, action, comment } = await req.json();
@@ -164,6 +235,11 @@ export async function PATCH(req: Request) {
       });
 
       if (!request || request.status !== "PENDING") {
+        continue;
+      }
+
+      const isManager = currentEmployee ? await isAncestorManager(currentEmployee.id, request.employeeId) : false;
+      if (!isHrOrAdmin && !isManager) {
         continue;
       }
 

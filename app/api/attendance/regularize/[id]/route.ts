@@ -20,10 +20,28 @@ function sumWorkedHours(punches: { punchType: "IN" | "OUT"; punchedAt: Date }[])
   return Math.round((totalMs / 3600000) * 100) / 100;
 }
 
+async function isAncestorManager(approverEmployeeId: string, applicantEmployeeId: string): Promise<boolean> {
+  const allEmployees = await prisma.employee.findMany({
+    select: { id: true, managerId: true },
+  });
+  const empMap = new Map<string, string | null>(allEmployees.map((e) => [e.id, e.managerId]));
+  
+  let currentManagerId = empMap.get(applicantEmployeeId);
+  const visited = new Set<string>();
+  while (currentManagerId && !visited.has(currentManagerId)) {
+    if (currentManagerId === approverEmployeeId) {
+      return true;
+    }
+    visited.add(currentManagerId);
+    currentManagerId = empMap.get(currentManagerId) ?? null;
+  }
+  return false;
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user || !["ADMIN"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
@@ -37,6 +55,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (!request) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    const currentEmployee = await prisma.employee.findFirst({ where: { userId: session.user.id } });
+    const isHrOrAdmin = ["ADMIN"].includes(session.user.role);
+    const isManager = currentEmployee ? await isAncestorManager(currentEmployee.id, request.employeeId) : false;
+
+    if (!isHrOrAdmin && !isManager) {
+      return NextResponse.json({ error: "Forbidden: You do not have permission to review this regularization request." }, { status: 403 });
     }
 
     if (request.status !== "PENDING") {

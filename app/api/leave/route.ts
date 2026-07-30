@@ -5,6 +5,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { getDynamicBalances } from "@/lib/leave";
 import { sendLeaveRequestEmail } from "@/lib/mail";
+import { sendGoogleChatNotification } from "@/lib/googleChat";
 
 const requestSchema = z.object({
   leaveTypeId: z.string().min(1),
@@ -485,6 +486,18 @@ export async function POST(req: Request) {
         format(end, "dd MMM yyyy"),
         reason
       );
+    }
+
+    try {
+      await sendGoogleChatNotification(
+        `📝 *New Leave Request Submitted*\n\n` +
+        `• *Employee:* ${employeeName}\n` +
+        `• *Leave Type:* ${leaveType.name}\n` +
+        `• *Duration:* ${days} Day(s) (${format(start, "dd MMM yyyy")} to ${format(end, "dd MMM yyyy")})\n` +
+        `• *Reason:* ${reason}`
+      );
+    } catch (chatErr) {
+      console.error("[Google Chat] Leave request notification failed", chatErr);
     }
   } catch (mailErr) {
     console.error("Failed to send leave request email", mailErr);
