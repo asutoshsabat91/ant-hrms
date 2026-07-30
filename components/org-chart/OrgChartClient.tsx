@@ -33,6 +33,8 @@ interface Employee {
 
 interface OrgChartClientProps {
   isAdmin: boolean;
+  userEmail?: string;
+  userRole?: string;
 }
 
 interface TreeNode {
@@ -40,7 +42,7 @@ interface TreeNode {
   children: TreeNode[];
 }
 
-export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
+export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedNodes, setCollapsedNodes] = useState<Record<string, boolean>>({});
@@ -50,6 +52,9 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  // View Mode: Regular employees default to Focused View ("FOCUSED"), admins default to "FULL"
+  const [viewMode, setViewMode] = useState<"FOCUSED" | "FULL">(!isAdmin ? "FOCUSED" : "FULL");
 
   // Zoom & Pan state
   const [zoom, setZoom] = useState(0.85);
@@ -77,33 +82,20 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
     fetchStructure();
   }, []);
 
-  // Construct hierarchy tree starting from Rohit Singh and gather unassigned employees
-  const buildHierarchy = (): { tree: TreeNode[]; unassigned: Employee[] } => {
-    const nodeMap: Record<string, TreeNode> = {};
+  // Auto-fit helper to center view
+  const autoFitView = () => {
+    setZoom(0.85);
+    setPan({ x: 0, y: 0 });
+  };
 
-    // Initialize map
+  // Construct hierarchy tree starting from Rohit Singh or Focused Employee Branch
+  const buildHierarchy = (): { tree: TreeNode[]; unassigned: Employee[] } => {
+    if (employees.length === 0) return { tree: [], unassigned: [] };
+
+    const nodeMap: Record<string, TreeNode> = {};
     employees.forEach(emp => {
       nodeMap[emp.id] = { employee: emp, children: [] };
     });
-
-    // Find Rohit Singh (the absolute Root Node)
-    const rohitNode = employees.find(
-      e => e.email.toLowerCase() === "rohit@theantbox.com"
-    );
-
-    if (!rohitNode) {
-      // Fallback if Rohit Singh is not found: treat all top level as roots
-      const fallbackRoots: TreeNode[] = [];
-      employees.forEach(emp => {
-        const node = nodeMap[emp.id];
-        if (emp.managerId && nodeMap[emp.managerId]) {
-          nodeMap[emp.managerId].children.push(node);
-        } else {
-          fallbackRoots.push(node);
-        }
-      });
-      return { tree: fallbackRoots, unassigned: [] };
-    }
 
     // Populate children for all nodes
     employees.forEach(emp => {
@@ -113,7 +105,46 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
       }
     });
 
-    // Traverse tree starting from Rohit to find all connected reportees
+    // FIND FOCUSED ROOT NODE if in FOCUSED mode
+    if (viewMode === "FOCUSED" && userEmail) {
+      const currentEmp = employees.find(e => e.email.toLowerCase() === userEmail.toLowerCase());
+      if (currentEmp) {
+        // Start from employee's manager if available, else employee themselves
+        const focusRootId = currentEmp.managerId && nodeMap[currentEmp.managerId] 
+          ? currentEmp.managerId 
+          : currentEmp.id;
+        
+        const focusNode = nodeMap[focusRootId];
+        if (focusNode) {
+          const connectedIds = new Set<string>();
+          const traverse = (node: TreeNode) => {
+            connectedIds.add(node.employee.id);
+            node.children.forEach(traverse);
+          };
+          traverse(focusNode);
+          const unassigned = employees.filter(emp => !connectedIds.has(emp.id));
+
+          return { tree: [focusNode], unassigned };
+        }
+      }
+    }
+
+    // FULL VIEW MODE: Find Rohit Singh (or fallback root)
+    const rohitNode = employees.find(
+      e => e.email.toLowerCase() === "rohit@theantbox.com"
+    );
+
+    if (!rohitNode) {
+      const fallbackRoots: TreeNode[] = [];
+      employees.forEach(emp => {
+        const node = nodeMap[emp.id];
+        if (!emp.managerId || !nodeMap[emp.managerId]) {
+          fallbackRoots.push(node);
+        }
+      });
+      return { tree: fallbackRoots, unassigned: [] };
+    }
+
     const connectedIds = new Set<string>();
     const traverse = (node: TreeNode) => {
       connectedIds.add(node.employee.id);
@@ -123,7 +154,6 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
     const rohitTree = nodeMap[rohitNode.id];
     traverse(rohitTree);
 
-    // Unassigned employees are those not reachable from Rohit Singh's tree
     const unassigned = employees.filter(emp => !connectedIds.has(emp.id));
 
     return {
@@ -157,10 +187,6 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
   // Zoom controls
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.8));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.3));
-  const handleZoomReset = () => {
-    setZoom(0.85);
-    setPan({ x: 0, y: 0 });
-  };
 
   // Pan controls (mouse drag)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -266,16 +292,16 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
             onMouseEnter={() => setHoveredNodeId(employee.id)}
             onMouseLeave={() => setHoveredNodeId(null)}
             onClick={(e) => { e.stopPropagation(); setSelectedEmployee(employee); setEditingNodeId(null); }}
-            className={`nocanvasdrag cursor-pointer relative z-10 bg-white rounded-2xl border p-4 w-52 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
+            className={`nocanvasdrag cursor-pointer relative z-10 bg-white rounded-2xl border p-3.5 w-48 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
           >
-            <div className="flex items-start gap-3 w-full">
-            <Avatar className="h-10 w-10 border border-zinc-100 shrink-0">
+            <div className="flex items-start gap-2.5 w-full">
+            <Avatar className="h-9 w-9 border border-zinc-100 shrink-0">
               <AvatarFallback className="bg-zinc-950 text-white text-xs font-bold">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h5 className="text-xs font-bold text-zinc-950 leading-tight flex flex-wrap items-center gap-1">
+              <h5 className="text-[11px] font-bold text-zinc-950 leading-tight flex flex-wrap items-center gap-1">
                 {employee.firstName} {employee.lastName}
                 {isRoot && (
                   <span className="text-[8px] font-extrabold uppercase tracking-widest text-violet-600 bg-violet-50 px-1 rounded border border-violet-100">
@@ -286,7 +312,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
               <p className="text-[10px] font-semibold text-zinc-400 truncate leading-none mt-1">
                 {employee.jobRole || employee.designation}
               </p>
-              <div className="flex items-center gap-1.5 mt-2 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/50 border border-violet-100/50 px-1.5 py-0.5 rounded-md w-fit">
+              <div className="flex items-center gap-1 mt-1.5 text-[8px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/50 border border-violet-100/50 px-1.5 py-0.5 rounded-md w-fit">
                 <Building className="h-2.5 w-2.5 shrink-0" />
                 {employee.department.name}
               </div>
@@ -296,7 +322,7 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           {/* Admin edit button */}
           {isAdmin && (
             <button
-              onClick={() => setEditingNodeId(editingNodeId === employee.id ? null : employee.id)}
+              onClick={(e) => { e.stopPropagation(); setEditingNodeId(editingNodeId === employee.id ? null : employee.id); }}
               className="absolute top-2 right-2 p-1 rounded-md bg-zinc-50 border border-zinc-200/50 opacity-0 group-hover:opacity-100 hover:bg-zinc-100 transition-all shadow-sm"
               title="Edit Reporting Manager"
             >
@@ -306,7 +332,12 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
 
           {/* Manager selector */}
           {editingNodeId === employee.id && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-zinc-200 shadow-xl p-2.5 z-20 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div 
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-zinc-200 shadow-xl p-2.5 z-30 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150"
+            >
               <label className="block text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Reports To Manager</label>
               <div className="relative">
                 <select
@@ -353,6 +384,8 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           {/* Employee Profile Popup */}
           {selectedEmployee?.id === employee.id && (
             <div
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
               className="absolute top-0 left-[calc(100%+16px)] z-50 w-72 bg-white rounded-2xl border border-zinc-200 shadow-2xl shadow-zinc-200/60 overflow-hidden animate-in fade-in slide-in-from-left-4 duration-200 text-left nocanvasdrag cursor-default"
             >
@@ -445,24 +478,12 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
             {visibleChildren.length === 1 ? (
               renderNode(visibleChildren[0])
             ) : (
-              /*
-                Each child column:
-                  ┌─────────────── full column width ───────────────┐
-                  │  [left half bar] │ [right half bar]             │
-                  │           [vertical drop]                       │
-                  │               [card]                            │
-                  └─────────────────────────────────────────────────┘
-                  - first child: left half is transparent (nothing to left)
-                  - last child: right half is transparent (nothing to right)
-                  - middle children: both halves visible → continuous bar
-                  All vertical drops start at the same row as the bar, creating the T-junction.
-              */
               <div className="flex">
                 {visibleChildren.map((child, idx) => {
                   const isFirst = idx === 0;
                   const isLast = idx === visibleChildren.length - 1;
                   return (
-                    <div key={child.employee.id} className="flex flex-col items-center px-4">
+                    <div key={child.employee.id} className="flex flex-col items-center px-2">
                       {/* Horizontal bar halves: meet at child center to form continuous line */}
                       <div className="flex w-full h-px">
                         <div className={`flex-1 h-px transition-colors duration-200 ${isFirst ? "bg-transparent" : stemColor}`} />
@@ -562,7 +583,11 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
                     </div>
 
                     {/* Quick Assignment Dropdown — admin only */}
-                    <div className="relative shrink-0 select-none">
+                    <div 
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="relative shrink-0 select-none"
+                    >
                       <select
                         disabled={updatingId === emp.id}
                         defaultValue=""
@@ -591,20 +616,50 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
       {/* Main Canvas Area */}
       <div className="flex-1 h-full flex flex-col relative overflow-hidden">
         
-        {/* Toggle Unassigned List Button when collapsed */}
-        {isAdmin && !isSidebarOpen && (
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-white/90 backdrop-blur-md text-xs font-bold text-zinc-800 hover:text-violet-600 hover:border-violet-300 shadow-md transition-all group"
-            title="Expand Unassigned List"
+        {/* Top Header Control Bar: View Mode Switcher + Unassigned List button */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+          {isAdmin && !isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 bg-white/90 backdrop-blur-md text-xs font-bold text-zinc-800 hover:text-violet-600 hover:border-violet-300 shadow-md transition-all group"
+              title="Expand Unassigned List"
+            >
+              <PanelLeftOpen className="h-4 w-4 text-zinc-500 group-hover:text-violet-600" />
+              <span>Unassigned</span>
+              <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">
+                {unassigned.length}
+              </span>
+            </button>
+          )}
+
+          {/* Focused View vs Full Company Tree Mode Switcher */}
+          <div 
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="nocanvasdrag flex items-center rounded-xl border border-zinc-200 bg-white/90 backdrop-blur-md p-1 shadow-md"
           >
-            <PanelLeftOpen className="h-4 w-4 text-zinc-500 group-hover:text-violet-600" />
-            <span>Unassigned List</span>
-            <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full">
-              {unassigned.length}
-            </span>
-          </button>
-        )}
+            <button
+              onClick={() => { setViewMode("FOCUSED"); autoFitView(); }}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                viewMode === "FOCUSED"
+                  ? "bg-violet-600 text-white shadow-sm"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+              }`}
+            >
+              👥 My Team Branch
+            </button>
+            <button
+              onClick={() => { setViewMode("FULL"); autoFitView(); }}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                viewMode === "FULL"
+                  ? "bg-violet-600 text-white shadow-sm"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+              }`}
+            >
+              🌐 Full Org Chart
+            </button>
+          </div>
+        </div>
 
         {/* Helper Instructions overlay */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none select-none z-10 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-200/60 shadow-sm transition-all hidden md:block">
@@ -649,7 +704,11 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
         </div>
 
         {/* Floating Canvas Action Controls */}
-        <div className="nocanvasdrag absolute bottom-6 right-6 flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 backdrop-blur-md p-1.5 shadow-lg z-10">
+        <div 
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="nocanvasdrag absolute bottom-6 right-6 flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 backdrop-blur-md p-1.5 shadow-lg z-10"
+        >
           <button
             onClick={handleZoomOut}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/50 bg-white text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 transition-all"
@@ -669,9 +728,9 @@ export function OrgChartClient({ isAdmin }: OrgChartClientProps) {
           </button>
           <div className="w-px h-4 bg-zinc-200 mx-1" />
           <button
-            onClick={handleZoomReset}
+            onClick={autoFitView}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/50 bg-white text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 transition-all"
-            title="Center View"
+            title="Fit to Screen"
           >
             <Maximize2 className="h-3.5 w-3.5" />
           </button>

@@ -27,6 +27,8 @@ export default async function OrgChartPage() {
       <div className="flex-1 min-h-0 bg-zinc-50/50 rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm">
         <OrgChartClient
           isAdmin={canEdit}
+          userEmail={email}
+          userRole={session.user.role}
         />
       </div>
     </div>

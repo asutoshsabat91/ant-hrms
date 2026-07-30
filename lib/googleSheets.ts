@@ -858,11 +858,7 @@ export async function syncGoogleSheetsWithDb() {
           await prisma.leaveRequest.deleteMany({
             where: { id: { notIn: Array.from(processedLeaveReqIds) } }
           });
-        } else {
-          await prisma.leaveRequest.deleteMany({});
         }
-      } else {
-        await prisma.leaveRequest.deleteMany({});
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Leave Requests tab:", e);
@@ -952,11 +948,7 @@ export async function syncGoogleSheetsWithDb() {
 
         if (processedReimIds.size > 0) {
           await prisma.reimbursement.deleteMany({ where: { id: { notIn: Array.from(processedReimIds) } } });
-        } else {
-          await prisma.reimbursement.deleteMany({});
         }
-      } else {
-        await prisma.reimbursement.deleteMany({});
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Reimbursements tab:", e);
@@ -1036,11 +1028,7 @@ export async function syncGoogleSheetsWithDb() {
 
         if (processedSepIds.size > 0) {
           await prisma.separation.deleteMany({ where: { id: { notIn: Array.from(processedSepIds) } } });
-        } else {
-          await prisma.separation.deleteMany({});
         }
-      } else {
-        await prisma.separation.deleteMany({});
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Separations tab:", e);
