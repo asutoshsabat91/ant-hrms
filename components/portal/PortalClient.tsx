@@ -220,7 +220,7 @@ export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
   // Standard Indian HRMS PF capped at 1800 unless employee opts for full basic PF.
   const pfMonthly = Math.round(basic * 0.12);
   const pfAnnual = pfMonthly * 12;
-  const ptMonthly = employee.professionalTax || 200; // Odisha PT is standard 200
+  const ptMonthly = grossMonthly > 0 ? (employee.professionalTax || 200) : 0;
 
   // Tax Declarations Summaries
   const dec80C = pfAnnual + elss + ppf + lic + tuition + nsc + homeLoanPrincipal;
@@ -302,7 +302,7 @@ export function PortalClient({ employee, isAdmin = false }: PortalClientProps) {
 
   const annualTax = calculateAnnualTax(taxableIncome, regime);
   const tdsMonthly = Math.round(annualTax / 12);
-  const netMonthlyPay = grossMonthly - (pfMonthly + ptMonthly + tdsMonthly);
+  const netMonthlyPay = Math.max(0, grossMonthly - (pfMonthly + ptMonthly + tdsMonthly));
 
   // Indian Landlord PAN Regex check (Standard: 5 alphabets, 4 digits, 1 alphabet)
   const isPanValid = (panStr: string) => {
