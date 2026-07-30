@@ -800,20 +800,113 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        // Leave requests imported/updated from sheet without deleting DB records.
+        // DELETION SYNC: Delete any LeaveRequest in DB that was deleted by the user from the Sheet
+        await prisma.leaveRequest.deleteMany({
+          where: {
+            id: { notIn: Array.from(processedLeaveReqIds) }
+          }
+        });
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Leave Requests tab:", e);
     }
 
-    // 1c. Pull Reimbursements tab from Google Sheet and sync to DB
+    // 1c. Pull Attendance Logs tab from Google Sheet and sync to DB
+    try {
+      const attRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: "'Attendance Logs'!A:Z",
+      });
+      const attRowsFromSheet = attRes.data.values || [];
+      if (attRowsFromSheet.length >= 1) {
+        const headers = (attRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
+        const getCol = (row: string[], possible: string[]) => {
+          for (const p of possible) {
+            const idx = headers.indexOf(p.toLowerCase());
+            if (idx !== -1 && row[idx] !== undefined) return String(row[idx]).trim();
+          }
+          return "";
+        };
+
+        const allDbEmps = await prisma.employee.findMany({ select: { id: true, employeeId: true, firstName: true, lastName: true, email: true } });
+        const processedAttIds = new Set<string>();
+
+        for (let i = 1; i < attRowsFromSheet.length; i++) {
+          const row = attRowsFromSheet[i];
+          const rawEmpId = getCol(row, ["employee id", "employeeid", "emp id"]);
+          const rawEmpName = getCol(row, ["employee name", "employeename", "name"]);
+          const workDateStr = getCol(row, ["work date", "workdate", "date"]);
+          const totalHoursStr = getCol(row, ["total hours", "totalhours", "hours"]);
+          const statusStr = getCol(row, ["status"]).toUpperCase();
+
+          if (!workDateStr || (!rawEmpId && !rawEmpName)) continue;
+
+          const cleanEmpId = rawEmpId.replace(/^ANT-/i, "");
+          const matchedEmp = allDbEmps.find(e =>
+            (e.employeeId && e.employeeId === rawEmpId) ||
+            (e.employeeId && e.employeeId === cleanEmpId) ||
+            (e.employeeId && e.employeeId.replace(/^ANT-/i, "") === cleanEmpId) ||
+            (`${e.firstName} ${e.lastName}`.toLowerCase() === rawEmpName.toLowerCase()) ||
+            (e.email && e.email.toLowerCase() === rawEmpName.toLowerCase())
+          );
+
+          if (!matchedEmp) continue;
+
+          const workDate = new Date(workDateStr);
+          if (isNaN(workDate.getTime())) continue;
+
+          const validStatuses = ["PRESENT", "ABSENT", "HALF_DAY", "ON_LEAVE", "HOLIDAY", "WEEKEND"];
+          const status = validStatuses.includes(statusStr) ? statusStr : "PRESENT";
+          const totalHours = parseFloat(totalHoursStr) || 0;
+
+          const existingAtt = await prisma.attendanceRecord.findFirst({
+            where: {
+              employeeId: matchedEmp.id,
+              workDate: workDate,
+            }
+          });
+
+          if (existingAtt) {
+            const updated = await prisma.attendanceRecord.update({
+              where: { id: existingAtt.id },
+              data: {
+                status,
+                totalHours: totalHours || existingAtt.totalHours,
+              }
+            });
+            processedAttIds.add(updated.id);
+          } else {
+            const created = await prisma.attendanceRecord.create({
+              data: {
+                employeeId: matchedEmp.id,
+                workDate,
+                status,
+                totalHours,
+              }
+            });
+            processedAttIds.add(created.id);
+          }
+        }
+
+        // DELETION SYNC: Delete attendance records from DB that were removed from the Sheet
+        await prisma.attendanceRecord.deleteMany({
+          where: {
+            id: { notIn: Array.from(processedAttIds) }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("[Google Sheets] Failed to sync Attendance Logs tab:", e);
+    }
+
+    // 1d. Pull Reimbursements tab from Google Sheet and sync to DB
     try {
       const reimRes = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: "'Reimbursements'!A:Z",
       });
       const reimRowsFromSheet = reimRes.data.values || [];
-      if (reimRowsFromSheet.length > 1) {
+      if (reimRowsFromSheet.length >= 1) {
         const headers = (reimRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
         const getCol = (row: string[], possible: string[]) => {
           for (const p of possible) {
@@ -888,20 +981,25 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        // Reimbursements imported/updated from sheet without deleting DB records.
+        // DELETION SYNC: Delete reimbursements from DB that were removed from the Sheet
+        await prisma.reimbursement.deleteMany({
+          where: {
+            id: { notIn: Array.from(processedReimIds) }
+          }
+        });
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Reimbursements tab:", e);
     }
 
-    // 1d. Pull Separations tab from Google Sheet and sync to DB
+    // 1e. Pull Separations tab from Google Sheet and sync to DB
     try {
       const sepRes = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: "'Separations'!A:Z",
       });
       const sepRowsFromSheet = sepRes.data.values || [];
-      if (sepRowsFromSheet.length > 1) {
+      if (sepRowsFromSheet.length >= 1) {
         const headers = (sepRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
         const getCol = (row: string[], possible: string[]) => {
           for (const p of possible) {
@@ -966,7 +1064,12 @@ export async function syncGoogleSheetsWithDb() {
           }
         }
 
-        // Separations imported/updated from sheet without deleting DB records.
+        // DELETION SYNC: Delete separations from DB that were removed from the Sheet
+        await prisma.separation.deleteMany({
+          where: {
+            id: { notIn: Array.from(processedSepIds) }
+          }
+        });
       }
     } catch (e) {
       console.error("[Google Sheets] Failed to sync Separations tab:", e);
