@@ -662,11 +662,11 @@ export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
         </div>
 
         {/* Helper Instructions overlay */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none select-none z-10 bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-200/60 shadow-sm transition-all hidden md:block">
-          <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+        <div className="absolute bottom-6 left-6 pointer-events-none select-none z-10 bg-white/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-zinc-200 shadow-md transition-all hidden md:block">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
             <span>💡 Drag background to pan chart</span>
             <span className="text-zinc-300">•</span>
-            <span>Zoom scroll at controls below</span>
+            <span>Zoom scroll at controls</span>
           </p>
         </div>
 
