@@ -753,9 +753,11 @@ export function DocumentsHub({ isAdmin, currentEmployeeId, documents: initialDoc
             </div>
             <a
               href={currentEmployeeId ? `/onboarding/${currentEmployeeId}` : "/onboarding"}
-              className="flex items-center gap-1 text-[10px] font-semibold text-violet-600 hover:underline"
+              className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:via-purple-700 hover:to-indigo-700 shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
             >
-              View Onboarding Tasks <ExternalLink className="h-3 w-3" />
+              <CheckCircle2 className="h-4 w-4 text-violet-200 group-hover:scale-110 transition-transform" />
+              <span>View Onboarding Tasks</span>
+              <ArrowRight className="h-3.5 w-3.5 text-violet-200 group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
