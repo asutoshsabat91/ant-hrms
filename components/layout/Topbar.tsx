@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Search, LogOut, User, Briefcase, Network } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +41,7 @@ interface EmployeeProfile {
   bankAccountNo?: string | null;
   ifscCode?: string | null;
   pan?: string | null;
+  profilePhoto?: string | null;
 }
 
 interface TopbarProps {
@@ -248,7 +249,10 @@ export function Topbar({ user, employee }: TopbarProps) {
                     : user.role.replace("_", " ")}
                 </p>
               </div>
-              <Avatar className="h-8 w-8 border border-zinc-200">
+              <Avatar className="h-8 w-8 border border-zinc-200 overflow-hidden">
+                {employee?.profilePhoto ? (
+                  <AvatarImage src={employee.profilePhoto} alt={user.name || "User"} className="object-cover h-full w-full" />
+                ) : null}
                 <AvatarFallback className="bg-[var(--brand-secondary)] text-white text-xs font-bold">
                   {initials}
                 </AvatarFallback>

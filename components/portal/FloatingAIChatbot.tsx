@@ -8,7 +8,7 @@ export function FloatingAIChatbot() {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     {
       role: "assistant",
-      content: "Namaste! I'm AntBox Chachi 💅✨ — your favorite quick-witted, extroverted HR Chachi! Ask me about leaves, attendance, policies, or drop your funniest questions if you dare! No cap fr fr!",
+      content: "Namaste! I'm AntBox Chachi 💅✨ — your friendly HR Assistant! I'm here to help you with leaves, attendance, company policies, or any questions on your mind. How can I assist you today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -47,7 +47,7 @@ export function FloatingAIChatbot() {
           ...prev,
           {
             role: "assistant",
-            content: "Arrégay! Chachi is having trouble connecting right now. Try again in a bit, bestie!",
+            content: "Arré! Chachi is having trouble connecting right now. Please try again in a moment!",
           },
         ]);
       }
@@ -96,9 +96,9 @@ export function FloatingAIChatbot() {
               <div>
                 <h4 className="text-xs font-bold leading-tight flex items-center gap-1.5">
                   <span>AntBox Chachi</span>
-                  <span className="text-[9px] font-semibold bg-violet-500/30 text-violet-200 px-1.5 py-0.2 rounded">Witty HR</span>
+                  <span className="text-[9px] font-semibold bg-violet-500/30 text-violet-200 px-1.5 py-0.2 rounded">HR Assistant</span>
                 </h4>
-                <p className="text-[9px] text-zinc-400 leading-none mt-0.5">HR&apos;s Favorite Quick-Witted Assistant</p>
+                <p className="text-[9px] text-zinc-400 leading-none mt-0.5">Your Friendly HR Companion ✨</p>
               </div>
             </div>
             <button

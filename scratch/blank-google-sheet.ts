@@ -129,11 +129,30 @@ async function main() {
                   strict: false
                 }
               }
+            },
+            {
+              setDataValidation: {
+                range: {
+                  sheetId,
+                  startRowIndex: 1, // Row 2 downwards
+                  endRowIndex: 1000,
+                  startColumnIndex: 19, // Column T (Employment Type)
+                  endColumnIndex: 20
+                },
+                rule: {
+                  condition: {
+                    type: "ONE_OF_LIST",
+                    values: [{ userEnteredValue: "FULL_TIME" }, { userEnteredValue: "INTERN" }]
+                  },
+                  showCustomUi: true,
+                  strict: true
+                }
+              }
             }
           ]
         }
       });
-      console.log("Data Validation dropdown for 12 Job Roles applied to Employees sheet Column P!");
+      console.log("Data Validation dropdowns applied for Job Roles (Col P) and Employment Type (Col T)!");
     }
   } catch (valErr) {
     console.error("Failed to apply Data Validation dropdown:", valErr);

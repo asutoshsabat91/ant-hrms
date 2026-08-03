@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   try {
     employee = await prisma.employee.findFirst({
       where: { userId: session.user.id },
-      select: { id: true, employeeId: true, gender: true, firstName: true, lastName: true, designation: true, departmentId: true, department: { select: { name: true } }, managerId: true, employmentType: true, status: true, joiningDate: true, phone: true, personalEmail: true, dateOfBirth: true, bloodGroup: true, address: true, city: true, state: true, pincode: true, bankName: true, bankAccountNo: true, ifscCode: true, pan: true },
+      select: { id: true, employeeId: true, gender: true, firstName: true, lastName: true, designation: true, jobRole: true, departmentId: true, department: { select: { name: true } }, managerId: true, employmentType: true, status: true, joiningDate: true, phone: true, personalEmail: true, dateOfBirth: true, bloodGroup: true, address: true, city: true, state: true, pincode: true, bankName: true, bankAccountNo: true, ifscCode: true, pan: true, profilePhoto: true },
     });
   } catch {
     // DB not connected

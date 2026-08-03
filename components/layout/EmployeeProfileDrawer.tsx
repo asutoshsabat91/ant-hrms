@@ -31,6 +31,7 @@ interface EmployeeProfile {
   bankAccountNo?: string | null;
   ifscCode?: string | null;
   pan?: string | null;
+  profilePhoto?: string | null;
 }
 
 interface Props {
@@ -115,8 +116,12 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 bg-zinc-950">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white font-bold text-sm border border-white/20">
-              {employee.firstName[0]}{employee.lastName[0]}
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white font-bold text-sm border border-white/20 overflow-hidden shrink-0 shadow-inner">
+              {employee.profilePhoto ? (
+                <img src={employee.profilePhoto} alt={employee.firstName} className="h-full w-full object-cover" />
+              ) : (
+                <span>{employee.firstName[0]}{employee.lastName[0]}</span>
+              )}
             </div>
             <div>
               <p className="font-semibold text-white text-sm">
