@@ -26,8 +26,29 @@ interface Props {
 
 
 
+const LEAVE_PRIORITY: Record<string, number> = {
+  EARNED: 1,
+  PAID_QUARTER: 1,
+  OPTIONAL_HOLIDAY: 2,
+  FLOATER: 3,
+  SICK: 4,
+  WFH: 5,
+  COMP_OFF: 6,
+  BEREAVEMENT: 7,
+  ACADEMIC: 8,
+  CLIENT_LEAVE: 9,
+  LOP: 10,
+};
+
 export function LeaveBalancesCard({ balances }: Props) {
-  const displayBalances = balances || [];
+  const displayBalances = [...(balances || [])].sort((a, b) => {
+    const codeA = a?.leaveType?.code || "";
+    const codeB = b?.leaveType?.code || "";
+    const pA = LEAVE_PRIORITY[codeA] ?? 99;
+    const pB = LEAVE_PRIORITY[codeB] ?? 99;
+    if (pA !== pB) return pA - pB;
+    return (a?.leaveType?.name || "").localeCompare(b?.leaveType?.name || "");
+  });
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">

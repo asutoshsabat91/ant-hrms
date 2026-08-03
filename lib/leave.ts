@@ -113,13 +113,34 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
     };
   });
 
-  return balances.filter(Boolean) as Array<{
+  const LEAVE_PRIORITY: Record<string, number> = {
+    EARNED: 1,
+    PAID_QUARTER: 1,
+    OPTIONAL_HOLIDAY: 2,
+    FLOATER: 3,
+    SICK: 4,
+    WFH: 5,
+    COMP_OFF: 6,
+    BEREAVEMENT: 7,
+    ACADEMIC: 8,
+    CLIENT_LEAVE: 9,
+    LOP: 10,
+  };
+
+  const validBalances = balances.filter(Boolean) as Array<{
     leaveType: { id: string; name: string; code: string };
     allocated: number;
     used: number;
     pending: number;
     carryover: number;
   }>;
+
+  return validBalances.sort((a, b) => {
+    const pA = LEAVE_PRIORITY[a.leaveType.code] ?? 99;
+    const pB = LEAVE_PRIORITY[b.leaveType.code] ?? 99;
+    if (pA !== pB) return pA - pB;
+    return a.leaveType.name.localeCompare(b.leaveType.name);
+  });
 }
 
 export async function getLeaveOverview(userId?: string, userRole?: string) {

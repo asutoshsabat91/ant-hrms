@@ -104,19 +104,19 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
     if (employmentType === "INTERN") {
       return [
         { label: "PAID/QUARTER LEAVES", code: "PAID_QUARTER", ...getInfo("PAID_QUARTER"), isUnlimited: false },
-        { label: "LOSS OF PAY", code: "LOP", ...getInfo("LOP"), isUnlimited: true },
-        { label: "ACADEMIC LEAVES", code: "ACADEMIC", ...getInfo("ACADEMIC"), isUnlimited: true },
         { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
+        { label: "ACADEMIC LEAVES", code: "ACADEMIC", ...getInfo("ACADEMIC"), isUnlimited: true },
         { label: "WORK FROM HOME", code: "WFH", ...getInfo("WFH"), isUnlimited: true },
+        { label: "LOSS OF PAY", code: "LOP", ...getInfo("LOP"), isUnlimited: true },
       ];
     }
 
     return [
       { label: "EARNED LEAVES", code: "EARNED", ...getInfo("EARNED"), isUnlimited: false },
+      { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
       { label: "FLOATER", code: "FLOATER", ...getInfo("FLOATER"), isUnlimited: false },
       { label: "BEREAVEMENT LEAVE", code: "BEREAVEMENT", ...getInfo("BEREAVEMENT"), isUnlimited: false },
       { label: "COMP-OFF LEAVE", code: "COMP_OFF", ...getInfo("COMP_OFF"), isUnlimited: true },
-      { label: "OPTIONAL HOLIDAY", code: "OPTIONAL_HOLIDAY", ...getInfo("OPTIONAL_HOLIDAY"), isUnlimited: false },
       { label: "WORK FROM HOME", code: "WFH", ...getInfo("WFH"), isUnlimited: true },
     ];
   }, [balances, employmentType]);
