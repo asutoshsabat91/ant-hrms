@@ -1341,35 +1341,35 @@ export async function exportDbToGoogleSheetsOnly() {
       requestBody: { values: clientRows }
     });
 
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Leave Requests'!A:Z" });
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Leave Requests'!A2:Z10000" });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: "'Leave Requests'!A1",
-      valueInputOption: "RAW",
+      valueInputOption: "USER_ENTERED",
       requestBody: { values: leaveRows }
     });
 
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Reimbursements!A:Z" });
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Reimbursements!A2:Z10000" });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: "Reimbursements!A1",
-      valueInputOption: "RAW",
+      valueInputOption: "USER_ENTERED",
       requestBody: { values: reimbursementRows }
     });
 
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Separations!A:Z" });
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "Separations!A2:Z10000" });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: "Separations!A1",
-      valueInputOption: "RAW",
+      valueInputOption: "USER_ENTERED",
       requestBody: { values: separationRows }
     });
 
-    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Attendance Logs'!A:Z" });
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: "'Attendance Logs'!A2:Z10000" });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: "'Attendance Logs'!A1",
-      valueInputOption: "RAW",
+      valueInputOption: "USER_ENTERED",
       requestBody: { values: attendanceRows }
     });
 
