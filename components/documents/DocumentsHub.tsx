@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import {
   FileText, Upload, CheckCircle2, AlertCircle, Download,
   ShieldCheck, GraduationCap, Briefcase, Building2, LogOut,
-  Plus, X, ExternalLink, Star, ArrowRight,
+  Plus, X, Star, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
