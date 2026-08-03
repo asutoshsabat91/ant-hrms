@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Sparkles, User, Bot } from "lucide-react";
+import { MessageSquare, X, Send, User, Bot } from "lucide-react";
 
 export function FloatingAIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     {
       role: "assistant",
-      content: "Hello! I am your AntBox HR AI Assistant. Ask me anything about leaves, policies, payslips, or attendance guidelines!",
+      content: "Namaste! I'm AntBox Chachi 💅✨ — your favorite quick-witted, extroverted HR Chachi! Ask me about leaves, attendance, policies, or drop your funniest questions if you dare! No cap fr fr!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -47,7 +47,7 @@ export function FloatingAIChatbot() {
           ...prev,
           {
             role: "assistant",
-            content: "Sorry, I am having trouble connecting right now. Please try again later.",
+            content: "Arrégay! Chachi is having trouble connecting right now. Try again in a bit, bestie!",
           },
         ]);
       }
@@ -71,15 +71,15 @@ export function FloatingAIChatbot() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-950 text-white shadow-2xl hover:bg-zinc-800 hover:scale-105 transition-all relative group"
-          title="Chat with AI HR"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-950 text-white shadow-2xl hover:bg-zinc-800 hover:scale-105 transition-all relative group border-2 border-violet-500/30"
+          title="Chat with AntBox Chachi 💅✨"
         >
-          <MessageSquare className="h-6 w-6" />
+          <MessageSquare className="h-6 w-6 text-violet-400" />
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[9px] font-bold text-white animate-pulse">
-            AI
+            ✨
           </span>
-          <span className="absolute right-16 top-1/2 -translate-y-1/2 scale-0 group-hover:scale-100 transition-all bg-zinc-900 text-white text-[10px] px-3 py-1.5 rounded-lg shadow-md whitespace-nowrap font-bold">
-            Ask HR Assistant
+          <span className="absolute right-16 top-1/2 -translate-y-1/2 scale-0 group-hover:scale-100 transition-all bg-zinc-900 text-white text-[10px] px-3 py-1.5 rounded-lg shadow-md whitespace-nowrap font-bold border border-violet-500/20">
+            Ask AntBox Chachi 💅
           </span>
         </button>
       )}
@@ -88,14 +88,17 @@ export function FloatingAIChatbot() {
       {isOpen && (
         <div className="flex h-[500px] w-[380px] flex-col rounded-2xl border border-zinc-200 bg-white shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between bg-zinc-950 px-4 py-3.5 text-white">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800">
-                <Sparkles className="h-4.5 w-4.5 text-violet-400" />
+          <div className="flex items-center justify-between bg-gradient-to-r from-zinc-950 via-zinc-900 to-violet-950 px-4 py-3.5 text-white">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600/30 border border-violet-400/40 text-sm">
+                💅
               </div>
               <div>
-                <h4 className="text-xs font-bold leading-tight">AntBox HR Assistant</h4>
-                <p className="text-[9px] text-zinc-400 leading-none">Powered by Gemini AI</p>
+                <h4 className="text-xs font-bold leading-tight flex items-center gap-1.5">
+                  <span>AntBox Chachi</span>
+                  <span className="text-[9px] font-semibold bg-violet-500/30 text-violet-200 px-1.5 py-0.2 rounded">Witty HR</span>
+                </h4>
+                <p className="text-[9px] text-zinc-400 leading-none mt-0.5">HR&apos;s Favorite Quick-Witted Assistant</p>
               </div>
             </div>
             <button

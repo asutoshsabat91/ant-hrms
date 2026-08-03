@@ -50,8 +50,8 @@ export function ApplyLeaveDialog({
       }
       const isIntern = employmentType === "INTERN";
       const allowedCodes = isIntern
-        ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH", "SICK"]
-        : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH", "SICK"];
+        ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH", "SICK", "CLIENT_LEAVE"]
+        : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH", "SICK", "CLIENT_LEAVE", "LOP"];
       const code = type.code || "";
       return allowedCodes.includes(code);
     });

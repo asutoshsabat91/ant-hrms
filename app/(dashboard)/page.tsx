@@ -53,7 +53,7 @@ export default async function DashboardPage() {
           prisma.holiday.findMany({
             where: { date: { gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1) } },
           }),
-          prisma.leaveType.findMany({ select: { id: true, name: true, code: true } }),
+          prisma.leaveType.findMany({ select: { id: true, name: true, code: true, applicableTo: true } }),
           prisma.leaveRequest.findMany({
             where: {
               employeeId: employee.id,
@@ -73,7 +73,18 @@ export default async function DashboardPage() {
         }));
         leaveBalances = balances.map((b) => ({ leaveType: b.leaveType, allocated: b.allocated, used: b.used, pending: b.pending }));
         holidays = holidayData.map((h) => ({ date: h.date.toISOString(), name: h.name }));
-        leaveTypes = leaveTypeData;
+        leaveTypes = leaveTypeData
+          .filter((lt) => {
+            if (lt.applicableTo && Array.isArray(lt.applicableTo) && lt.applicableTo.length > 0) {
+              return lt.applicableTo.includes(employee.employmentType as "FULL_TIME" | "INTERN" | "PART_TIME" | "CONTRACT");
+            }
+            const isIntern = employee.employmentType === "INTERN";
+            const allowedCodes = isIntern
+              ? ["PAID_QUARTER", "LOP", "ACADEMIC", "OPTIONAL_HOLIDAY", "WFH", "SICK", "CLIENT_LEAVE"]
+              : ["EARNED", "FLOATER", "BEREAVEMENT", "COMP_OFF", "OPTIONAL_HOLIDAY", "WFH", "SICK", "CLIENT_LEAVE", "LOP"];
+            return allowedCodes.includes(lt.code);
+          })
+          .map((lt) => ({ id: lt.id, name: lt.name, code: lt.code }));
 
         for (const lr of recentLeaves) {
           const start = new Date(lr.startDate);

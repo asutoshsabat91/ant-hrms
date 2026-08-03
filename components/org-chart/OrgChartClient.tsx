@@ -8,6 +8,7 @@ import {
   ChevronDown, 
   ChevronUp, 
   Building,
+  Phone,
   Edit2,
   Search as SearchIcon,
   PanelLeftClose,
@@ -21,6 +22,7 @@ interface Employee {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string | null;
   designation: string;
   jobRole?: string | null;
   managerId: string | null;
@@ -451,6 +453,16 @@ export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
                     <div className="min-w-0">
                       <p className="text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Office Email</p>
                       <p className="text-xs font-bold text-zinc-800 truncate">{selectedEmployee.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                      <Phone className="h-3.5 w-3.5 text-indigo-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[8px] font-extrabold uppercase tracking-widest text-zinc-400">Phone Number</p>
+                      <p className="text-xs font-bold text-zinc-800 truncate">{selectedEmployee.phone || "—"}</p>
                     </div>
                   </div>
 
