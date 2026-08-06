@@ -4,8 +4,8 @@ import { exportDataToGoogleSheets } from "@/lib/googleSheets";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user) {
-    return new Response("Unauthorized", { status: 401 });
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return new Response("Forbidden: Admin access required", { status: 403 });
   }
 
   try {

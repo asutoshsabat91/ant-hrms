@@ -9,8 +9,8 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
   const token = process.env.HRMS_API_TOKEN;
-  if (token && auth !== `Bearer ${token}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token || auth !== `Bearer ${token}`) {
+    return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
   }
 
   const employees = await prisma.employee.findMany({
