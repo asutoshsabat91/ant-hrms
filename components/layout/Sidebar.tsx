@@ -86,8 +86,8 @@ export function Sidebar({ role, gender, email }: SidebarProps) {
       // HR: Handles Onboarding/Offboarding/Attendance/Leave/Separations/Docs, no Payroll or Portal
       adminNavFiltered = adminNavFiltered.filter((item) => !["Payroll", "Portal"].includes(item.title));
     } else if (email?.toLowerCase() === "ritesh@theantbox.com") {
-      // Ritesh Rath: Payroll & Employees + regular employee items (no Onboarding, Offboarding, POSH, Separation)
-      const riteshExcludes = ["Onboarding", "Offboarding", "POSH", "Separation"];
+      // Ritesh Rath: Super Admin Dashboard + Payroll, Attendance, & Employees (no Onboarding, Offboarding, POSH, Separation, Settings)
+      const riteshExcludes = ["Onboarding", "Offboarding", "POSH", "Separation", "Settings"];
       adminNavFiltered = adminNavFiltered.filter((item) => !riteshExcludes.includes(item.title));
     }
     baseNav = adminNavFiltered;

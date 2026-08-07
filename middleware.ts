@@ -59,11 +59,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Checks for Ritesh: Allow Payroll & Employees + regular employee tabs, restrict Onboarding, Offboarding, POSH, Separation
+  // 2. Checks for Ritesh: Allow Super Admin Dashboard, Payroll, Attendance, & Employees. Restrict Onboarding, Offboarding, POSH, Separation, Settings
   if (email === "ritesh@theantbox.com") {
     const isRestrictedForRitesh = [
-      "/onboarding", "/offboarding", "/posh", "/separation",
-      "/api/onboarding", "/api/offboarding", "/api/posh", "/api/separation"
+      "/onboarding", "/offboarding", "/posh", "/separation", "/settings",
+      "/api/onboarding", "/api/offboarding", "/api/posh", "/api/separation", "/api/settings"
     ].some((route) => pathname.startsWith(route));
 
     if (isRestrictedForRitesh) {
