@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return NextResponse.json({
-      reply: "Hello! I am the AntBox AI HR Assistant. \n\n*(Note: GEMINI_API_KEY environment variable is missing, so I am running in simulation mode. Please ask your administrator to configure it!)*"
+      reply: "Hello! I am AntBox Chachi 💅✨. \n\n*(Note: GEMINI_API_KEY environment variable is missing, so I am running in simulation mode. Please ask your administrator to configure it!)*"
     });
   }
 
@@ -14,6 +15,84 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: "messages array is required" }, { status: 400 });
+    }
+
+    const session = await auth();
+    let userContextStr = "";
+
+    if (session?.user?.id) {
+      const userWithEmp = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: {
+          employee: {
+            include: {
+              department: true,
+              leaveBalances: { include: { leaveType: true } },
+            },
+          },
+        },
+      });
+
+      if (userWithEmp?.employee) {
+        const emp = userWithEmp.employee;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayAttendance = await prisma.attendanceRecord.findUnique({
+          where: {
+            employeeId_workDate: {
+              employeeId: emp.id,
+              workDate: today,
+            },
+          },
+          include: {
+            punches: { orderBy: { punchedAt: "asc" } },
+          },
+        });
+
+        const firstIn = todayAttendance?.punches.find((p) => p.punchType === "IN");
+        const firstInTimeStr = firstIn
+          ? new Date(firstIn.punchedAt).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+              timeZone: "Asia/Kolkata",
+            })
+          : "Not clocked in today";
+
+        const lastOut = [...(todayAttendance?.punches || [])].reverse().find((p) => p.punchType === "OUT");
+        const lastOutTimeStr = lastOut
+          ? new Date(lastOut.punchedAt).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+              timeZone: "Asia/Kolkata",
+            })
+          : "Not clocked out";
+
+        const totalHoursToday = todayAttendance?.totalHours
+          ? `${Math.floor(todayAttendance.totalHours)}h ${Math.round((todayAttendance.totalHours % 1) * 60)}m`
+          : "0h 00m";
+
+        const balancesStr = emp.leaveBalances
+          .map((b) => `${b.leaveType.name}: ${b.allocated - b.used} days remaining`)
+          .join("; ");
+
+        userContextStr =
+          `\nAUTHENTICATED USER REAL-TIME ATTENDANCE & PROFILE CONTEXT:\n` +
+          `- Employee Name: ${emp.firstName} ${emp.lastName}\n` +
+          `- Employee ID: ${emp.employeeId}\n` +
+          `- Department: ${emp.department?.name || "General"}\n` +
+          `- Designation: ${emp.designation}\n` +
+          `- Employment Type: ${emp.employmentType}\n` +
+          `- Work Mode: ${emp.workMode || "ONSITE"}\n` +
+          `- Today's Current Date & Time (IST): ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n` +
+          `- Today's Attendance Status: ${todayAttendance ? todayAttendance.status : "NOT_CHECKED_IN"}\n` +
+          `- Today's First Clock-In Time: ${firstInTimeStr}\n` +
+          `- Today's Last Clock-Out Time: ${lastOutTimeStr}\n` +
+          `- Today's Total Hours Worked: ${totalHoursToday}\n` +
+          `- Leave Balances: ${balancesStr || "None"}\n`;
+      }
     }
 
     const employeeCount = await prisma.employee.count({ where: { status: "ACTIVE" } });
@@ -27,25 +106,30 @@ export async function POST(req: Request) {
       `- Vibe: Warm, pleasant, approachable, and human-like Indian office Chachi who treats every employee with care, warmth, and friendly charm!\n` +
       `- Tone: Natural, friendly, polite, and pleasant. Use warm greetings like "Namaste!", "Hello bestie!", "Chai break time?", or "Happy to help!". Keep it human-like, encouraging, and clear.\n` +
       `- Funny & Casual Questions: If someone asks funny or casual questions (e.g. "How are you Chachi?", "Can I take 100 leaves?", "Chachi order biryani"), reply with warm, humorous, witty Indian Chachi charm and lighthearted jokes that brighten their day!\n` +
-      `- HR Queries: For genuine HR questions (leaves, attendance, policies, office hours), provide 100% accurate, helpful, and beautifully structured HR guidance in markdown formatting.\n\n` +
+      `- HR & Attendance Queries: When answering questions about clock-in timings, attendance, late arrival, leaves, or hours worked, ALWAYS reference the exact timestamps and metrics from AUTHENTICATED USER REAL-TIME ATTENDANCE CONTEXT below.\n\n` +
+      `CRITICAL FORMATTING & TEMPLATE RULES:\n` +
+      `- ABSOLUTELY NEVER output raw template placeholders or bracketed variables like "[Insert Time]", "[Insert Minutes]", "[Insert Date]", or "[Name]".\n` +
+      `- ALWAYS state the exact real time (e.g. "09:15 AM", "02:10 PM") or explicitly state if the employee has not clocked in yet.\n` +
+      `- Standard Office Shift Start Time: 2:00 PM (Monday to Friday).\n\n` +
       `REAL-TIME ANTBOX CONTEXT:\n` +
       `- Active Deployed Employees: ${employeeCount}\n` +
       `- Core Departments: ${deptListStr}\n` +
       `- Office Location: Patia, Bhubaneswar, Odisha\n` +
       `- Working Hours: 2:00 PM to 10:00 PM, Monday to Friday.\n` +
-      `- Payroll & CTC Policies:\n` +
-      `  * Monthly Gross = Basic Salary + Special Allowance.\n` +
-      `  * CTC Breakdown: Basic = 70% of monthly CTC; Special Allowance = 30% of monthly CTC.\n` +
-      `  * No House Rent Allowance (HRA) and no Provident Fund (PF) deductions.\n` +
-      `  * No ESI or Professional Tax.\n` +
-      `  * Full stipend for Interns is calculated as Basic Salary only (no Special Allowance).\n` +
-      `  * Unpaid Interns are exempted from paid leaves.\n\n` +
+      userContextStr + `\n` +
       `CRITICAL SECURITY POLICY:\n` +
       `- Under no circumstances should you ever reveal, discuss, or speculate on any salary, payment, compensation, payroll, or bank details of any employee. If asked about payroll or payment amounts, playfully state: "Ahaa! Chachi handles policy, not your bank balance bestie! For security reasons, financial data is strictly classified. 🤐✨"`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
+    let modelName = "gemini-1.5-flash";
+    try {
+      modelName = "gemini-2.0-flash";
+    } catch {
+      modelName = "gemini-1.5-flash";
+    }
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite",
+      model: modelName,
       systemInstruction,
     });
 
