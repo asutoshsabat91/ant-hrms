@@ -216,6 +216,7 @@ model Employee {
   manager          Employee?      @relation("Reports", fields: [managerId], references: [id])
   reportees        Employee[]     @relation("Reports")
   employmentType   EmploymentType @default(INTERN)
+  workMode         String         @default("ONSITE")
   status           EmployeeStatus @default(ONBOARDING)
   joiningDate      DateTime
   lastWorkingDate  DateTime?

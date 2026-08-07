@@ -59,11 +59,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Checks for Ritesh (Founder's Office): No Onboarding, Offboarding, or POSH (but allow Leave, Separation, Policy, Documents, Calendar, and Reimbursements)
+  // 2. Checks for Ritesh: Allow Payroll & Employees + regular employee tabs, restrict Onboarding, Offboarding, POSH, Separation
   if (email === "ritesh@theantbox.com") {
     const isRestrictedForRitesh = [
-      "/onboarding", "/offboarding", "/posh",
-      "/api/onboarding", "/api/offboarding", "/api/posh"
+      "/onboarding", "/offboarding", "/posh", "/separation",
+      "/api/onboarding", "/api/offboarding", "/api/posh", "/api/separation"
     ].some((route) => pathname.startsWith(route));
 
     if (isRestrictedForRitesh) {

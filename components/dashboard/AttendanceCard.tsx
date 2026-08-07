@@ -31,15 +31,44 @@ interface Props {
   initialPunches: Punch[];
   onPunchSuccess?: () => void;
   isWFH?: boolean;
+  workMode?: string;
 }
 
-export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH }: Props) {
+async function getFastLocation(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    // Attempt 1: High Accuracy with 4s timeout
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (err) => {
+        if (err.code === GeolocationPositionError.TIMEOUT) {
+          // Attempt 2: Standard Accuracy with 4s timeout fallback
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 4000,
+            enableHighAccuracy: false,
+            maximumAge: 10000,
+          });
+        } else {
+          reject(err);
+        }
+      },
+      {
+        timeout: 4000,
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+      }
+    );
+  });
+}
+
+export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH, workMode }: Props) {
   const [time, setTime] = useState(new Date());
   const [punches, setPunches] = useState<Punch[]>(initialPunches);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [officeConfig, setOfficeConfig] = useState<OfficeConfig>({ lat: 20.2961, lon: 85.8245, radiusM: 200 });
+
+  const isRemote = isWFH || workMode?.toUpperCase() === "REMOTE";
 
   useEffect(() => {
     setPunches(initialPunches);
@@ -66,14 +95,8 @@ export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH }: Props)
       let latitude: number | null = null;
       let longitude: number | null = null;
 
-      if (!isWFH) {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 15000,
-            enableHighAccuracy: true,
-            maximumAge: 0,
-          })
-        );
+      if (!isRemote) {
+        const position = await getFastLocation();
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
         const accuracy = position.coords.accuracy;
@@ -107,7 +130,7 @@ export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH }: Props)
         if (err.code === GeolocationPositionError.PERMISSION_DENIED) {
           setError("Location permission denied. Please allow location access in your browser settings.");
         } else if (err.code === GeolocationPositionError.TIMEOUT) {
-          setError("Location request timed out. Please ensure GPS is enabled and try again.");
+          setError("Location request timed out. Please ensure GPS/Wi-Fi is enabled and try again.");
         } else {
           setError("Unable to get your location. Please check GPS settings.");
         }
@@ -117,17 +140,17 @@ export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH }: Props)
     } finally {
       setLoading(false);
     }
-  }, [nextType, officeConfig, onPunchSuccess, isWFH]);
+  }, [nextType, officeConfig, onPunchSuccess, isRemote]);
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4 h-full w-full">
       {/* Header + clock */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-[var(--purple)]" />
+          <Clock className="h-4 w-4 text-[var(--purple)] shrink-0" />
           <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Attendance</span>
         </div>
-        <span className="text-2xl font-mono font-bold text-zinc-900 tabular-nums">
+        <span className="text-2xl font-mono font-bold text-zinc-900 tabular-nums shrink-0">
           {format(time, "HH:mm:ss")}
         </span>
       </div>
@@ -147,10 +170,10 @@ export function AttendanceCard({ initialPunches, onPunchSuccess, isWFH }: Props)
       </button>
 
       {/* Location note */}
-      {isWFH ? (
+      {isRemote ? (
         <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 bg-emerald-50 p-2 rounded-lg border border-emerald-100">
           <CheckCircle2 className="h-3 w-3 shrink-0" />
-          <span>Work From Home Active: Geolocation bypassed</span>
+          <span>Remote Mode Active: Geolocation bypassed</span>
         </div>
       ) : (
         <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">

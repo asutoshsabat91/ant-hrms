@@ -19,8 +19,9 @@ const leaveTypeSchema = z.object({
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (session?.user?.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized. Super Admin only." }, { status: 403 });
+    const isHR = ["chandrita@theantbox.com", "ritesh@theantbox.com"].includes(session?.user?.email?.toLowerCase() || "");
+    if (session?.user?.role !== "ADMIN" && !isHR) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 403 });
     }
 
     const body = await req.json();
@@ -60,8 +61,9 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const session = await auth();
-    if (session?.user?.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized. Super Admin only." }, { status: 403 });
+    const isHR = ["chandrita@theantbox.com", "ritesh@theantbox.com"].includes(session?.user?.email?.toLowerCase() || "");
+    if (session?.user?.role !== "ADMIN" && !isHR) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 403 });
     }
 
     const body = await req.json();
@@ -110,8 +112,9 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const session = await auth();
-    if (session?.user?.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized. Super Admin only." }, { status: 403 });
+    const isHR = ["chandrita@theantbox.com", "ritesh@theantbox.com"].includes(session?.user?.email?.toLowerCase() || "");
+    if (session?.user?.role !== "ADMIN" && !isHR) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -120,22 +123,23 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing leave type ID parameter" }, { status: 400 });
     }
 
-    // Check if referenced by leave requests or balances
-    const [requestCount, balanceCount] = await Promise.all([
-      prisma.leaveRequest.count({ where: { leaveTypeId: id } }),
-      prisma.leaveBalance.count({ where: { leaveTypeId: id } }),
-    ]);
-
-    if (requestCount > 0 || balanceCount > 0) {
+    // Check if referenced by active leave requests
+    const requestCount = await prisma.leaveRequest.count({ where: { leaveTypeId: id } });
+    if (requestCount > 0) {
       return NextResponse.json({
-        error: "Cannot delete this leave type because it is already associated with existing employee leave requests or balances. Please update its applicability instead.",
+        error: `Cannot delete this leave policy because ${requestCount} employee leave request(s) are actively linked to it. Please reject or reassign those requests first.`,
       }, { status: 400 });
     }
 
-    await prisma.leaveType.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+    // Clean up associated balances and delete leave policy
+    await prisma.$transaction([
+      prisma.leaveBalance.deleteMany({ where: { leaveTypeId: id } }),
+      prisma.leaveType.delete({ where: { id } }),
+    ]);
+
+    return NextResponse.json({ success: true, message: "Leave policy deleted successfully." });
   } catch (e: unknown) {
     console.error("[LEAVE_POLICY_DELETE]", e);
-    return NextResponse.json({ error: "Failed to delete leave type" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete leave policy" }, { status: 500 });
   }
 }

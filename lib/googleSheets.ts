@@ -420,8 +420,9 @@ export async function syncGoogleSheetsWithDb() {
         const joiningDateStr = getColVal(row, ["Joining Date", "joiningdate"]);
         const dobStr = getColVal(row, ["Date of Birth", "dob", "dateofbirth"]);
 
-        const statusStr = getColVal(row, ["Status", "status"]).toUpperCase();
-        const empTypeStr = getColVal(row, ["Employment Type", "employmenttype", "type"]).toUpperCase().replace(" ", "_");
+        const statusStr = getColVal(row, ["Status", "status"]).trim().toUpperCase();
+        const empTypeStr = getColVal(row, ["Employment Type", "employmenttype", "type"]).trim().toUpperCase().replace(/\s+/g, "_");
+        const workModeStr = getColVal(row, ["Work Mode", "workmode", "work_mode"]).trim().toUpperCase();
 
         const deptCode = getColVal(row, ["Department Code", "departmentcode", "department"]);
         let departmentId: string | undefined = undefined;
@@ -535,6 +536,10 @@ export async function syncGoogleSheetsWithDb() {
 
           if (empTypeStr && ["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr)) {
             updatePayload.employmentType = empTypeStr as EmploymentType;
+          }
+
+          if (workModeStr && ["ONSITE", "REMOTE"].includes(workModeStr)) {
+            updatePayload.workMode = workModeStr;
           }
 
           if (departmentId) {
@@ -1136,7 +1141,7 @@ export async function exportDbToGoogleSheetsOnly() {
         "Employee ID", "First Name", "Last Name", "Official Email", "Personal Email", "Phone",
         "Date of Birth", "Gender", "Blood Group", "Permanent Address", "City", "State", "Pincode",
         "Emergency Contact Name", "Emergency Contact Phone", "Job Role", "Reporting Manager", "Department", "Deployed Company",
-        "Employment Type", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
+        "Employment Type", "Work Mode", "Status", "Joining Date", "CTC", "Basic Salary", "HRA",
         "Special Allowance", "PF", "Professional Tax", "Bank Name", "Bank Account Number",
         "IFSC Code", "PAN", "UAN", "Password (Bcrypt Hash)"
       ]
@@ -1199,6 +1204,7 @@ export async function exportDbToGoogleSheetsOnly() {
         emp.department?.name ?? "—",
         clientName,
         emp.employmentType,
+        emp.workMode || "ONSITE",
         emp.status,
         joiningDate,
         ctc,

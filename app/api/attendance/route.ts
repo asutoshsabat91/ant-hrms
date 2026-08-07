@@ -126,9 +126,15 @@ export async function GET() {
     }
   });
 
-  const isWFH = !!wfhLeave || !!remoteReg;
+  const isWFH = !!wfhLeave || !!remoteReg || user.employee.workMode === "REMOTE";
 
-  return apiResponse(true, { ...serialize(record), isWFH }, "Attendance loaded");
+  const data = {
+    ...serialize(record),
+    isWFH,
+    workMode: user.employee.workMode,
+  };
+
+  return apiResponse(true, data, "Attendance loaded");
 }
 
 export async function POST(req: Request) {

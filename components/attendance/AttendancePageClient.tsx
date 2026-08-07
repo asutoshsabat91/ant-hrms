@@ -248,6 +248,7 @@ export function AttendancePageClient() {
             initialPunches={payload?.punches || []} 
             onPunchSuccess={loadData} 
             isWFH={payload?.isWFH || false}
+            workMode={(payload as { workMode?: string })?.workMode}
           />
         </div>
 
