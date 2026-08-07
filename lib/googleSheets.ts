@@ -609,11 +609,12 @@ export async function syncGoogleSheetsWithDb() {
           const tempPassword = sheetPassword || "AntBox@2025";
           const passwordHash = newPasswordHash || await bcrypt.hash(tempPassword, 12);
 
+          const isSpecialAdmin = ["rohit@theantbox.com", "hive@theantbox.com", "chandrita@theantbox.com", "ritesh@theantbox.com"].includes(finalEmail.toLowerCase());
           const newEmpUser = await prisma.user.create({
             data: {
               email: finalEmail,
               passwordHash,
-              role: "EMPLOYEE",
+              role: isSpecialAdmin ? "ADMIN" : "EMPLOYEE",
               isActive: statusVal !== "INACTIVE" && statusVal !== "ALUMNI",
               employee: {
                 create: {
