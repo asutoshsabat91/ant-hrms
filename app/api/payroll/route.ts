@@ -65,7 +65,7 @@ function overlapDays(start: Date, end: Date, periodStart: Date, periodEnd: Date)
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session?.user || !["ADMIN", "COMPANY_ADMIN"].includes(session.user.role)) {
+  if (!session?.user || !["ADMIN", "COMPANY_ADMIN"].includes(session.user.role) || session.user.email?.toLowerCase() === "chandrita@theantbox.com") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
