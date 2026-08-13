@@ -66,7 +66,7 @@ export function LoginForm() {
     const authError = searchParams.get("error");
     if (authError) {
       if (authError === "AccessDenied") {
-        setError("Access Denied: Only corporate email accounts ending with @theantbox.com are allowed to sign in.");
+        setError("Access Denied: Your account is either not registered, inactive, or pending Admin approval.");
       } else {
         setError(`Authentication failed: ${authError}`);
       }

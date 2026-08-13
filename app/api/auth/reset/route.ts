@@ -65,7 +65,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Password updated successfully" }, { status: 200 });
   } catch (err: unknown) {
     console.error("[RESET POST]", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    let msg = "An error occurred while resetting password. Please try again.";
+    if (err instanceof Error) {
+      if (err.message.includes("Can't reach database server") || err.message.includes("data transfer quota") || err.message.includes("PrismaClient")) {
+        msg = "Database connection limit reached. Please wait a moment or notify Admin.";
+      } else {
+        msg = err.message;
+      }
+    }
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
