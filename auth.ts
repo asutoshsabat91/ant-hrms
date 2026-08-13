@@ -38,6 +38,7 @@ const providers: any[] = [
           ? `${user.employee.firstName} ${user.employee.lastName}`
           : user.email,
         role: user.role,
+        managedCompany: user.employee?.managedCompany ?? null,
       };
     },
   }),
@@ -99,32 +100,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
-        const email = (user.email ?? token.email) as string;
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.managedCompany = (user as any).managedCompany ?? null;
+      }
+      if (!token.role && token.email) {
+        const email = (token.email as string).toLowerCase();
         const dbUser = await prisma.user.findFirst({
           where: {
             OR: [
-              { email: email.toLowerCase() },
-              { employee: { personalEmail: email.toLowerCase() } }
+              { email },
+              { employee: { personalEmail: email } }
             ]
           },
-          include: { employee: { select: { managedCompany: true } } },
-        });
-        if (dbUser) {
-          token.id = dbUser.id;
-          token.role = dbUser.role;
-          token.email = dbUser.email;
-          token.managedCompany = dbUser.employee?.managedCompany ?? null;
-        }
-      } else if (token.email) {
-        const email = token.email as string;
-        const dbUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { email: email.toLowerCase() },
-              { employee: { personalEmail: email.toLowerCase() } }
-            ]
-          },
-          include: { employee: { select: { managedCompany: true } } },
+          select: { id: true, role: true, email: true, employee: { select: { managedCompany: true } } },
         });
         if (dbUser) {
           token.id = dbUser.id;
