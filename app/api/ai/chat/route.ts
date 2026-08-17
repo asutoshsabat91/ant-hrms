@@ -121,17 +121,7 @@ export async function POST(req: Request) {
       `- Under no circumstances should you ever reveal, discuss, or speculate on any salary, payment, compensation, payroll, or bank details of any employee. If asked about payroll or payment amounts, playfully state: "Ahaa! Chachi handles policy, not your bank balance bestie! For security reasons, financial data is strictly classified. 🤐✨"`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    let modelName = "gemini-1.5-flash";
-    try {
-      modelName = "gemini-2.0-flash";
-    } catch {
-      modelName = "gemini-1.5-flash";
-    }
-
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction,
-    });
+    const candidateModels = ["gemini-3.6-flash", "gemini-2.5-flash"];
 
     let geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
       role: msg.role === "user" ? "user" : "model",
@@ -147,12 +137,25 @@ export async function POST(req: Request) {
 
     const lastMessage = messages[messages.length - 1]?.content || "";
 
-    const chat = model.startChat({
-      history: geminiHistory,
-    });
+    let replyText = "";
+    let lastError: unknown = null;
 
-    const result = await chat.sendMessage(lastMessage);
-    const replyText = result.response.text();
+    for (const mName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({ model: mName, systemInstruction });
+        const chat = model.startChat({ history: geminiHistory });
+        const result = await chat.sendMessage(lastMessage);
+        replyText = result.response.text();
+        if (replyText) break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[Gemini AI] Model ${mName} failed, trying next candidate...`, err);
+      }
+    }
+
+    if (!replyText) {
+      throw lastError || new Error("All Gemini models failed to generate response.");
+    }
 
     return NextResponse.json({ reply: replyText });
   } catch (error) {
