@@ -83,18 +83,29 @@ export function LoginForm() {
   async function onLogin(data: LoginData) {
     setLoading(true);
     setError(null);
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
-    setLoading(false);
-    if (result?.error) {
-      setError("Invalid email or password");
-      return;
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setLoading(false);
+        setError("Invalid email or password");
+        return;
+      }
+
+      if (result?.ok) {
+        window.location.href = callbackUrl;
+        return;
+      }
+
+      setLoading(false);
+    } catch {
+      setLoading(false);
+      setError("Sign in failed. Please check your network connection.");
     }
-    router.push(callbackUrl);
-    router.refresh();
   }
 
   async function sendRegisterOtp() {
