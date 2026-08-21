@@ -371,6 +371,9 @@ export async function syncGoogleSheetsWithDb() {
         deptMap.set(d.name.toLowerCase(), d.id);
       });
 
+      const validSheetEmails = new Set<string>();
+      const validSheetEmpIds = new Set<string>();
+
       for (const row of employeeDataRows) {
         const email = getColVal(row, ["Official Email", "company email", "email", "OfficialEmail"]);
         const empId = getColVal(row, ["Employee ID", "employeeid", "Emp ID", "EmployeeID"]);
@@ -378,6 +381,13 @@ export async function syncGoogleSheetsWithDb() {
         const lastName = getColVal(row, ["Last Name", "lastname"]);
 
         if (!email && !empId && !firstName) continue;
+
+        if (email) validSheetEmails.add(email.toLowerCase());
+        if (empId) {
+          validSheetEmpIds.add(empId.toLowerCase());
+          const norm = normalizeEmpId(empId);
+          if (norm) validSheetEmpIds.add(norm);
+        }
 
         const normEmpId = normalizeEmpId(empId);
         const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
@@ -665,6 +675,57 @@ export async function syncGoogleSheetsWithDb() {
 
         if (targetEmpId) {
           pendingManagerMap.set(targetEmpId, reportingManagerVal || "");
+        }
+      }
+
+      // Pass 1.5: Sync deletions (purge DB employees removed from Google Sheet)
+      if (validSheetEmails.size > 0 || validSheetEmpIds.size > 0) {
+        const PRESERVED_SYSTEM_EMAILS = new Set([
+          "rohit@theantbox.com",
+          "chandrita@theantbox.com",
+          "hive@theantbox.com",
+          "asutoshsabat91@gmail.com",
+          "asutosh@theantbox.com"
+        ]);
+
+        const currentDbEmps = await prisma.employee.findMany({
+          select: { id: true, email: true, employeeId: true, userId: true, firstName: true, lastName: true }
+        });
+
+        for (const dbEmp of currentDbEmps) {
+          const empEmail = dbEmp.email ? dbEmp.email.toLowerCase() : "";
+          const empIdLower = dbEmp.employeeId ? dbEmp.employeeId.toLowerCase() : "";
+          const normEmpId = normalizeEmpId(dbEmp.employeeId);
+
+          if (PRESERVED_SYSTEM_EMAILS.has(empEmail)) continue;
+
+          const inSheetByEmail = empEmail && validSheetEmails.has(empEmail);
+          const inSheetById = (empIdLower && validSheetEmpIds.has(empIdLower)) || (normEmpId && validSheetEmpIds.has(normEmpId));
+
+          if (!inSheetByEmail && !inSheetById) {
+            console.log(`[Google Sheets Sync] Row for ${dbEmp.firstName} ${dbEmp.lastName} (${dbEmp.email} / ${dbEmp.employeeId}) was removed from Google Sheet. Deleting from DB...`);
+            try {
+              await prisma.employee.updateMany({ where: { managerId: dbEmp.id }, data: { managerId: null } });
+              await prisma.attendanceRecord.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.attendancePunch.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.leaveRequest.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.leaveBalance.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.payrollLine.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.reimbursement.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.separation.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.hRDocument.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.onboardingTask.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.regularizationRequest.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              await prisma.documentRequest.deleteMany({ where: { employeeId: dbEmp.id } }).catch(() => {});
+              
+              await prisma.employee.delete({ where: { id: dbEmp.id } });
+              if (dbEmp.userId) {
+                await prisma.user.delete({ where: { id: dbEmp.userId } }).catch(() => {});
+              }
+            } catch (deleteErr) {
+              console.error(`[Google Sheets Sync] Failed to delete removed employee ${dbEmp.email}:`, deleteErr);
+            }
+          }
         }
       }
 
