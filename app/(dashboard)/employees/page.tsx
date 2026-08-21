@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { EmployeeDirectoryClient } from "@/components/employees/EmployeeDirectoryClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import type { Employee, Department } from "@prisma/client";
 
 type EmployeeRow = Employee & { department: Department };

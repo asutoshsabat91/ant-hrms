@@ -3,6 +3,9 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { auth } from "@/auth";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";

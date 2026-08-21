@@ -3,6 +3,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { OrgChartClient } from "@/components/org-chart/OrgChartClient";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function OrgChartPage() {
   const session = await auth();
   if (!session?.user) {

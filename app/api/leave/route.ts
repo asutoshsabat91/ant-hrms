@@ -397,19 +397,35 @@ export async function POST(req: Request) {
         });
       });
     } else {
-      if (employee.managerId) {
-        const manager = await tx.employee.findUnique({
-          where: { id: employee.managerId },
+      // Collect all ancestor managers (direct manager + superior managers up the tree)
+      const allAncestorManagerIds: string[] = [];
+      let currMgrId = employee.managerId;
+      const visitedMgrs = new Set<string>();
+      while (currMgrId && !visitedMgrs.has(currMgrId)) {
+        visitedMgrs.add(currMgrId);
+        allAncestorManagerIds.push(currMgrId);
+        const mgrEmp = await tx.employee.findUnique({
+          where: { id: currMgrId },
+          select: { managerId: true },
+        });
+        currMgrId = mgrEmp?.managerId ?? null;
+      }
+
+      if (allAncestorManagerIds.length > 0) {
+        const managers = await tx.employee.findMany({
+          where: { id: { in: allAncestorManagerIds } },
           include: { user: true },
         });
-        if (manager?.user) {
-          recipients.push({
-            userId: manager.user.id,
-            title: "Leave request pending approval",
-            body: notificationMessage,
-            link: "/leave",
-          });
-        }
+        managers.forEach((mgr) => {
+          if (mgr.user) {
+            recipients.push({
+              userId: mgr.user.id,
+              title: "Leave request pending approval",
+              body: notificationMessage,
+              link: "/leave",
+            });
+          }
+        });
       }
 
       const hrUsers = await tx.user.findMany({
@@ -446,17 +462,22 @@ export async function POST(req: Request) {
   try {
     const employeeName = `${employee.firstName} ${employee.lastName}`;
     
-    // Route email to Reporting Manager and Super Admins
+    // Route email to Reporting Manager (direct & superior managers up the tree ladder) and Super Admins
     let emailRecipients = ["chandrita@theantbox.com", "hive@theantbox.com", "rohit@theantbox.com"];
     
-    if (employee.managerId) {
+    // Collect emails for direct manager and all superior managers up the reporting chain
+    let currMgrIdForEmail = employee.managerId;
+    const visitedMgrsForEmail = new Set<string>();
+    while (currMgrIdForEmail && !visitedMgrsForEmail.has(currMgrIdForEmail)) {
+      visitedMgrsForEmail.add(currMgrIdForEmail);
       const managerEmp = await prisma.employee.findUnique({
-        where: { id: employee.managerId },
-        select: { email: true },
+        where: { id: currMgrIdForEmail },
+        select: { email: true, managerId: true },
       });
       if (managerEmp?.email) {
         emailRecipients.unshift(managerEmp.email);
       }
+      currMgrIdForEmail = managerEmp?.managerId ?? null;
     }
 
     if (employee.email?.toLowerCase() === "chandrita@theantbox.com") {

@@ -421,7 +421,11 @@ export async function syncGoogleSheetsWithDb() {
         const dobStr = getColVal(row, ["Date of Birth", "dob", "dateofbirth"]);
 
         const statusStr = getColVal(row, ["Status", "status"]).trim().toUpperCase();
-        const empTypeStr = getColVal(row, ["Employment Type", "employmenttype", "type"]).trim().toUpperCase().replace(/\s+/g, "_");
+        let rawEmpType = getColVal(row, ["Employment Type", "employmenttype", "type"]).trim().toUpperCase().replace(/[-\s]+/g, "_");
+        if (rawEmpType === "INTERNSHIP" || rawEmpType === "INTERN") rawEmpType = "INTERN";
+        if (rawEmpType === "FULLTIME" || rawEmpType === "FULL_TIME") rawEmpType = "FULL_TIME";
+        if (rawEmpType === "PARTTIME" || rawEmpType === "PART_TIME") rawEmpType = "PART_TIME";
+        const empTypeStr = rawEmpType;
         const workModeStr = getColVal(row, ["Work Mode", "workmode", "work_mode"]).trim().toUpperCase();
 
         const deptCode = getColVal(row, ["Department Code", "departmentcode", "department"]);
@@ -578,32 +582,29 @@ export async function syncGoogleSheetsWithDb() {
           const statusVal: EmployeeStatus = ["ACTIVE", "ONBOARDING", "OFFBOARDING", "INACTIVE", "ALUMNI"].includes(statusStr) ? (statusStr as EmployeeStatus) : "ACTIVE";
           const empTypeVal: EmploymentType = ["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr) ? (empTypeStr as EmploymentType) : "FULL_TIME";
 
-          const baseEmail = email ? email.toLowerCase() : `${fn.toLowerCase()}.${ln.toLowerCase()}@theantbox.com`;
-          let finalEmail = baseEmail;
-          const userExists = await prisma.user.findUnique({ where: { email: finalEmail } });
-          if (userExists) {
-            const emailCount = await prisma.user.count({ where: { email: { startsWith: finalEmail.split("@")[0] } } });
-            finalEmail = `${finalEmail.split("@")[0]}${emailCount + 1}@theantbox.com`;
+          const baseEmail = email ? email.toLowerCase() : "";
+          if (!baseEmail) {
+            console.warn(`[Google Sheets Sync] Skipping row without email or employeeId for ${fn} ${ln}`);
+            continue;
           }
 
+          const userExists = await prisma.user.findUnique({ where: { email: baseEmail } });
+          if (userExists) {
+            console.warn(`[Google Sheets Sync] Skipping creation for ${baseEmail} — user already exists in DB.`);
+            continue;
+          }
+
+          let finalEmail = baseEmail;
           let finalEmpId = empId && empId !== "—" ? empId : "";
           if (finalEmpId) {
             const existingWithId = await prisma.employee.findFirst({ where: { employeeId: finalEmpId } });
             if (existingWithId) {
-              const empTotal = await prisma.employee.count();
-              finalEmpId = `${finalEmpId}-${empTotal + 1}`;
+              console.warn(`[Google Sheets Sync] Skipping creation for ${finalEmpId} — employeeId already exists.`);
+              continue;
             }
           } else {
             const empTotal = await prisma.employee.count();
-            let candidateId = String(empTotal + 1).padStart(2, "0");
-            let idCheck = await prisma.employee.findFirst({ where: { employeeId: candidateId } });
-            let count = 1;
-            while (idCheck) {
-              candidateId = String(empTotal + 1 + count).padStart(2, "0");
-              idCheck = await prisma.employee.findFirst({ where: { employeeId: candidateId } });
-              count++;
-            }
-            finalEmpId = candidateId;
+            finalEmpId = `ANT-${String(empTotal + 1).padStart(3, "0")}`;
           }
 
           const tempPassword = sheetPassword || "AntBox@2025";
@@ -667,49 +668,64 @@ export async function syncGoogleSheetsWithDb() {
         }
       }
 
-      // Pass 2: Resolve Reporting Manager relationships
+      // Pass 2: Resolve Reporting Manager relationships in parallel
       if (pendingManagerMap.size > 0) {
-        const allDbEmployees = await prisma.employee.findMany({
-          select: { id: true, email: true, employeeId: true, firstName: true, lastName: true }
-        });
+        const managerUpdatePromises: Promise<any>[] = [];
+        const refreshedDbEmps = await prisma.employee.findMany({ select: { id: true, employeeId: true, email: true, firstName: true, lastName: true, managerId: true } });
 
-        for (const [empDbId, rawManagerVal] of Array.from(pendingManagerMap.entries())) {
-          if (!rawManagerVal || rawManagerVal === "—" || rawManagerVal.toLowerCase() === "none" || rawManagerVal.toLowerCase() === "unassigned") {
-            await prisma.employee.update({ where: { id: empDbId }, data: { managerId: null } });
-            continue;
+      for (const [empDbId, rawManagerVal] of Array.from(pendingManagerMap.entries())) {
+        const currentEmp = refreshedDbEmps.find(e => e.id === empDbId);
+        if (!currentEmp) continue;
+
+        if (!rawManagerVal || rawManagerVal === "—" || rawManagerVal.toLowerCase() === "none" || rawManagerVal.toLowerCase() === "unassigned") {
+          if (currentEmp.managerId !== null) {
+            managerUpdatePromises.push(
+              prisma.employee.update({ where: { id: empDbId }, data: { managerId: null } })
+            );
           }
+          continue;
+        }
 
-          const cleanVal = rawManagerVal.trim().toLowerCase();
-          const normManagerId = normalizeEmpId(cleanVal);
+        const cleanVal = rawManagerVal.trim().toLowerCase();
+        const normManagerId = normalizeEmpId(cleanVal);
 
-          const matchedManager = allDbEmployees.find((e) =>
-            e.id !== empDbId && (
-              (e.email && e.email.toLowerCase() === cleanVal) ||
-              (e.employeeId && e.employeeId.toLowerCase() === cleanVal) ||
-              (e.employeeId && normalizeEmpId(e.employeeId) === normManagerId) ||
-              (`${e.firstName} ${e.lastName}`.toLowerCase() === cleanVal) ||
-              (e.firstName.toLowerCase() === cleanVal)
-            )
+        const matchedManager = refreshedDbEmps.find((e) =>
+          e.id !== empDbId && (
+            (e.email && e.email.toLowerCase() === cleanVal) ||
+            (e.employeeId && e.employeeId.toLowerCase() === cleanVal) ||
+            (e.employeeId && normalizeEmpId(e.employeeId) === normManagerId) ||
+            (`${e.firstName} ${e.lastName}`.toLowerCase() === cleanVal) ||
+            (e.firstName.toLowerCase() === cleanVal)
+          )
+        );
+
+        const targetManagerId = matchedManager ? matchedManager.id : null;
+        if (currentEmp.managerId !== targetManagerId) {
+          managerUpdatePromises.push(
+            prisma.employee.update({ where: { id: empDbId }, data: { managerId: targetManagerId } })
           );
-
-          await prisma.employee.update({
-            where: { id: empDbId },
-            data: { managerId: matchedManager ? matchedManager.id : null }
-          });
         }
       }
 
-      // Employees are imported/updated into DB without deleting existing DB employees.
+      if (managerUpdatePromises.length > 0) {
+        await Promise.all(managerUpdatePromises);
+      }
     }
+  }
 
     // 1b. Pull Leave Requests tab from Google Sheet and sync to DB
     try {
-      const leaveRes = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: "'Leave Requests'!A:Z",
-      });
-      const leaveRowsFromSheet = leaveRes.data.values || [];
-      if (leaveRowsFromSheet.length >= 0) {
+      let leaveRowsFromSheet: any[] = [];
+      try {
+        const leaveRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: "'Leave Requests'!A:Z" });
+        leaveRowsFromSheet = leaveRes.data.values || [];
+      } catch {
+        try {
+          const leaveRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: "'Leaves'!A:Z" });
+          leaveRowsFromSheet = leaveRes.data.values || [];
+        } catch {}
+      }
+      if (leaveRowsFromSheet.length > 0) {
         const leaveHeaders = (leaveRowsFromSheet[0] || []).map((h: unknown) => String(h).trim().toLowerCase());
         
         const getLeaveColVal = (row: string[], possibleHeaders: string[]) => {

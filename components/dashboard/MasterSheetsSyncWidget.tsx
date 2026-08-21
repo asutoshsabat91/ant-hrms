@@ -61,6 +61,9 @@ export function MasterSheetsSyncWidget({
           createdCount: data.createdCount,
           message: data.message,
         });
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
       } else {
         const diagnosticsStr = data.diagnostics ? ` | Diagnostics: ${JSON.stringify(data.diagnostics)}` : "";
         setSyncResult({

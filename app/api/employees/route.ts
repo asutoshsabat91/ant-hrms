@@ -6,6 +6,9 @@ import { z } from "zod";
 import { breakdownFromCTC } from "@/lib/utils/payrollEngine";
 import { addMonths } from "date-fns";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const createSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
