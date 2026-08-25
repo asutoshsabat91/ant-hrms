@@ -1407,8 +1407,6 @@ export async function exportDbToGoogleSheetsOnly() {
         const inPunch = att.punches?.find(p => p.punchType === "IN");
         if (inPunch) {
           checkInStr = new Date(inPunch.punchedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
-        } else if (att.status === "PRESENT") {
-          checkInStr = "09:30 AM";
         }
       }
 
@@ -1419,15 +1417,10 @@ export async function exportDbToGoogleSheetsOnly() {
         const outPunches = att.punches?.filter(p => p.punchType === "OUT");
         if (outPunches && outPunches.length > 0) {
           checkOutStr = new Date(outPunches[outPunches.length - 1].punchedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
-        } else if (att.status === "PRESENT") {
-          checkOutStr = "06:30 PM";
         }
       }
 
       let totalHours = att.totalHours ?? 0;
-      if ((!totalHours || totalHours === 0) && att.status === "PRESENT") {
-        totalHours = 9.0;
-      }
       totalHours = Math.round(totalHours * 100) / 100;
 
       attendanceRows.push([
