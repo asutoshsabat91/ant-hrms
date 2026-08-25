@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { sendGoogleChatNotification } from "@/lib/googleChat";
 
 const createSchema = z.object({
   title: z.string().min(3),
@@ -92,6 +93,18 @@ export async function POST(req: Request) {
           link: "/portal/reimbursements",
         })),
       });
+    }
+
+    try {
+      await sendGoogleChatNotification(
+        `💳 *New ${type === "PROCUREMENT" ? "Procurement" : "Reimbursement"} Request*\n` +
+        `• *Employee:* ${currentUser.employee.firstName} ${currentUser.employee.lastName} (${currentUser.employee.employeeId})\n` +
+        `• *Title:* ${parsed.data.title}\n` +
+        `• *Amount:* ₹${parsed.data.amount}\n` +
+        `• *Category:* ${parsed.data.category}`
+      );
+    } catch (chatErr) {
+      console.error("[Google Chat] Reimbursement notification failed", chatErr);
     }
 
     // Export updated DB state to Google Master Sheet
