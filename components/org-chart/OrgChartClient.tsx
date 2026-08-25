@@ -44,6 +44,14 @@ interface TreeNode {
   children: TreeNode[];
 }
 
+function getAvatarUrl(emp: { firstName: string; lastName: string; profilePhoto?: string | null }) {
+  if (emp.profilePhoto && emp.profilePhoto.trim() !== "") {
+    return emp.profilePhoto;
+  }
+  const name = encodeURIComponent(`${emp.firstName} ${emp.lastName}`);
+  return `https://ui-avatars.com/api/?name=${name}&background=18181b&color=ffffff&bold=true&size=128`;
+}
+
 export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,16 +115,12 @@ export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
       }
     });
 
-    // FIND FOCUSED ROOT NODE if in FOCUSED mode
+    // FIND FOCUSED ROOT NODE if in FOCUSED mode ("My Team Branch")
     if (viewMode === "FOCUSED" && userEmail) {
       const currentEmp = employees.find(e => e.email.toLowerCase() === userEmail.toLowerCase());
       if (currentEmp) {
-        // Start from employee's manager if available, else employee themselves
-        const focusRootId = currentEmp.managerId && nodeMap[currentEmp.managerId] 
-          ? currentEmp.managerId 
-          : currentEmp.id;
-        
-        const focusNode = nodeMap[focusRootId];
+        // Anchor directly on the current employee's team branch
+        const focusNode = nodeMap[currentEmp.id];
         if (focusNode) {
           const connectedIds = new Set<string>();
           const traverse = (node: TreeNode) => {
@@ -297,10 +301,12 @@ export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
             className={`nocanvasdrag cursor-pointer relative z-10 bg-white rounded-2xl border p-3.5 w-48 shadow-sm hover:shadow-md transition-all duration-300 select-none group ${cardBorderColor}`}
           >
             <div className="flex items-start gap-2.5 w-full">
-            <Avatar className="h-9 w-9 border border-zinc-100 shrink-0">
-              <AvatarFallback className="bg-zinc-950 text-white text-xs font-bold">
-                {initials}
-              </AvatarFallback>
+            <Avatar className="h-9 w-9 border border-zinc-100 shrink-0 overflow-hidden rounded-full">
+              <img
+                src={getAvatarUrl(employee)}
+                alt={`${employee.firstName} ${employee.lastName}`}
+                className="h-full w-full object-cover"
+              />
             </Avatar>
             <div className="min-w-0 flex-1">
               <h5 className="text-[11px] font-bold text-zinc-950 leading-tight flex flex-wrap items-center gap-1">
@@ -405,17 +411,11 @@ export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
               <div className="px-5 pb-4 relative z-10">
                 <div className="-mt-7 mb-3 flex items-end justify-between">
                   <div className="h-14 w-14 rounded-xl border-2 border-white bg-zinc-950 flex items-center justify-center shadow-md overflow-hidden bg-clip-padding relative z-10">
-                    {selectedEmployee.profilePhoto ? (
-                      <img
-                        src={selectedEmployee.profilePhoto}
-                        alt={selectedEmployee.firstName}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-white text-base font-extrabold">
-                        {`${selectedEmployee.firstName[0] || ""}${selectedEmployee.lastName[0] || ""}`.toUpperCase()}
-                      </span>
-                    )}
+                    <img
+                      src={getAvatarUrl(selectedEmployee)}
+                      alt={selectedEmployee.firstName}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <span className="text-[9px] font-extrabold uppercase tracking-widest text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full mb-1">
                     {selectedEmployee.department.name}
@@ -579,10 +579,12 @@ export function OrgChartClient({ isAdmin, userEmail }: OrgChartClientProps) {
                     className="flex items-center justify-between gap-3 p-3 rounded-xl border border-zinc-100 hover:border-zinc-200 bg-zinc-50/30 transition-all group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <Avatar className="h-8 w-8 border border-zinc-100 shrink-0">
-                        <AvatarFallback className="bg-zinc-900 text-white text-[10px] font-bold">
-                          {initials}
-                        </AvatarFallback>
+                      <Avatar className="h-8 w-8 border border-zinc-100 shrink-0 overflow-hidden rounded-full">
+                        <img
+                          src={getAvatarUrl(emp)}
+                          alt={`${emp.firstName} ${emp.lastName}`}
+                          className="h-full w-full object-cover"
+                        />
                       </Avatar>
                       <div className="min-w-0">
                         <h5 className="text-[11px] font-bold text-zinc-950 truncate leading-tight">
