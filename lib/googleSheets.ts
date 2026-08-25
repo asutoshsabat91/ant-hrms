@@ -1502,11 +1502,122 @@ export async function exportDbToGoogleSheetsOnly() {
       requestBody: { values: attendanceRows }
     });
 
+    // Apply dynamic table formatting across all rows & columns (A to K)
+    await applyDynamicSheetTableFormatting(
+      sheets,
+      spreadsheetId,
+      "Attendance Logs",
+      attendanceRows.length,
+      attendanceRows[0].length
+    );
+
     console.log(`[Google Sheets] DB Export completed successfully.`);
     return { success: true, simulated: false, updatedCount: allEmployees.length, createdCount: 0, message: "Sync completed successfully." };
   } catch (error) {
     console.error("[Google Sheets] DB Export failed:", error);
     return { success: false, simulated: false, updatedCount: 0, createdCount: 0, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function applyDynamicSheetTableFormatting(
+  sheets: any,
+  spreadsheetId: string,
+  sheetTitle: string,
+  totalRows: number,
+  totalCols: number
+) {
+  try {
+    const res = await sheets.spreadsheets.get({ spreadsheetId });
+    const targetSheet = res.data.sheets?.find((s: any) => s.properties?.title === sheetTitle);
+    if (!targetSheet) return;
+
+    const sheetId = targetSheet.properties?.sheetId;
+    const requests: any[] = [];
+
+    // Delete existing tables
+    if (targetSheet.tables && targetSheet.tables.length > 0) {
+      for (const table of targetSheet.tables) {
+        if (table.tableId) {
+          requests.push({ deleteTable: { tableId: table.tableId } });
+        }
+      }
+    }
+
+    // Delete existing banded ranges
+    if (targetSheet.bandedRanges && targetSheet.bandedRanges.length > 0) {
+      for (const band of targetSheet.bandedRanges) {
+        if (band.bandedRangeId) {
+          requests.push({ deleteBanding: { bandedRangeId: band.bandedRangeId } });
+        }
+      }
+    }
+
+    // Clear data validations
+    requests.push({
+      setDataValidation: {
+        range: {
+          sheetId,
+          startRowIndex: 0,
+          endRowIndex: 50000,
+          startColumnIndex: 0,
+          endColumnIndex: 50,
+        },
+        rule: null,
+      },
+    });
+
+    // Add new dynamic banded range matching EXACT row and col count
+    if (totalRows > 1 && totalCols > 0) {
+      requests.push({
+        addBanding: {
+          bandedRange: {
+            range: {
+              sheetId,
+              startRowIndex: 0,
+              endRowIndex: totalRows,
+              startColumnIndex: 0,
+              endColumnIndex: totalCols,
+            },
+            rowProperties: {
+              headerColor: { red: 0.114, green: 0.365, blue: 0.263 },
+              firstBandColor: { red: 1.0, green: 1.0, blue: 1.0 },
+              secondBandColor: { red: 0.957, green: 0.973, blue: 0.965 },
+            },
+          },
+        },
+      });
+
+      // Style header row text to Bold & White
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId,
+            startRowIndex: 0,
+            endRowIndex: 1,
+            startColumnIndex: 0,
+            endColumnIndex: totalCols,
+          },
+          cell: {
+            userEnteredFormat: {
+              textFormat: {
+                bold: true,
+                foregroundColor: { red: 1.0, green: 1.0, blue: 1.0 },
+              },
+            },
+          },
+          fields: "userEnteredFormat.textFormat",
+        },
+      });
+    }
+
+    if (requests.length > 0) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests },
+      });
+    }
+  } catch (err) {
+    console.error(`[Google Sheets] Failed to apply table formatting for ${sheetTitle}:`, err);
   }
 }
 
