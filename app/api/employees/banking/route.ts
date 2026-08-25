@@ -6,7 +6,7 @@ export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { bankName, bankAccountNo, ifscCode, pan, uan, targetEmployeeId } = await req.json();
+  const { bankName, bankAccountNo, ifscCode, pan, uan, profilePhoto, targetEmployeeId } = await req.json();
 
   const isAdmin = session.user.role === "ADMIN";
 
@@ -29,8 +29,9 @@ export async function PATCH(req: Request) {
       ifscCode: ifscCode ?? undefined,
       pan: pan ?? undefined,
       uan: uan ?? undefined,
+      profilePhoto: profilePhoto ?? undefined,
     },
-    select: { id: true, bankName: true, bankAccountNo: true, ifscCode: true, pan: true, uan: true },
+    select: { id: true, bankName: true, bankAccountNo: true, ifscCode: true, pan: true, uan: true, profilePhoto: true },
   });
 
   return NextResponse.json({ employee: updated });

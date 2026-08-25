@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { useState } from "react";
-import { X, User, Building2, CreditCard, Pencil, CheckCircle2, AlertCircle, Save } from "lucide-react";
+import { X, User, Building2, CreditCard, Pencil, CheckCircle2, AlertCircle, Save, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -85,8 +85,36 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
   const [bankSaving, setBankSaving] = useState(false);
   const [bankError, setBankError] = useState<string | null>(null);
   const [bankSuccess, setBankSuccess] = useState(false);
+  const [currentPhoto, setCurrentPhoto] = useState<string | null>(employee.profilePhoto || null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   if (!open) return null;
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("Please select a valid image file (JPG or PNG)."); return; }
+    if (file.size > 3 * 1024 * 1024) { alert("File size must be under 3MB."); return; }
+
+    setPhotoUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setCurrentPhoto(base64);
+      try {
+        await fetch("/api/employees/banking", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profilePhoto: base64, targetEmployeeId: employee.id }),
+        });
+      } catch (err) {
+        console.error("Failed to upload profile photo:", err);
+      } finally {
+        setPhotoUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   async function saveBank() {
     setBankSaving(true);
@@ -116,12 +144,17 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 bg-zinc-950">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white font-bold text-sm border border-white/20 overflow-hidden shrink-0 shadow-inner">
-              {employee.profilePhoto ? (
-                <img src={employee.profilePhoto} alt={employee.firstName} className="h-full w-full object-cover" />
+            <div className="relative group flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white font-bold text-base border-2 border-white/20 overflow-hidden shrink-0 shadow-inner">
+              {currentPhoto ? (
+                <img src={currentPhoto} alt={employee.firstName} className="h-full w-full object-cover" />
               ) : (
                 <span>{employee.firstName[0]}{employee.lastName[0]}</span>
               )}
+              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity text-[8px] font-bold text-white gap-0.5 backdrop-blur-[1px]">
+                <Camera className="h-4 w-4 text-white" />
+                <span>{photoUploading ? "Saving..." : "Upload"}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={photoUploading} />
+              </label>
             </div>
             <div>
               <p className="font-semibold text-white text-sm">
