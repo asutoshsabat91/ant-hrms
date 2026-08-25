@@ -101,17 +101,6 @@ export async function POST(req: Request) {
         reason,
         noticeDays
       );
-
-      try {
-        await sendGoogleChatNotification(
-          `⚠️ *Resignation Initiated*\n\n` +
-          `• *Employee:* ${employeeName}\n` +
-          `• *Notice Period:* ${noticeDays} Days\n` +
-          `• *Reason:* ${reason}`
-        );
-      } catch (chatErr) {
-        console.error("[Google Chat] Separation request notification failed", chatErr);
-      }
     } catch (mailErr) {
       console.error("Failed to send separation request email", mailErr);
     }

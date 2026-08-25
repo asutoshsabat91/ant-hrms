@@ -95,18 +95,6 @@ export async function POST(req: Request) {
       });
     }
 
-    try {
-      await sendGoogleChatNotification(
-        `💳 *New ${type === "PROCUREMENT" ? "Procurement" : "Reimbursement"} Request*\n` +
-        `• *Employee:* ${currentUser.employee.firstName} ${currentUser.employee.lastName} (${currentUser.employee.employeeId})\n` +
-        `• *Title:* ${parsed.data.title}\n` +
-        `• *Amount:* ₹${parsed.data.amount}\n` +
-        `• *Category:* ${parsed.data.category}`
-      );
-    } catch (chatErr) {
-      console.error("[Google Chat] Reimbursement notification failed", chatErr);
-    }
-
     // Export updated DB state to Google Master Sheet
     try {
       const { exportDbToGoogleSheetsOnly } = await import("@/lib/googleSheets");

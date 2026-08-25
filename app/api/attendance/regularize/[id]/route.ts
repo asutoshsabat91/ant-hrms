@@ -204,17 +204,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       // Sync payroll line for this employee date to update LOP
       await syncEmployeePayrollForDate(request.employeeId, new Date(request.date));
 
-      try {
-        await sendGoogleChatNotification(
-          `⏱️ *Attendance Regularized* ⏱️\n\n` +
-          `*${request.employee.firstName} ${request.employee.lastName}*'s attendance regularization request has been approved. \n` +
-          `• *Date:* ${new Date(request.date).toDateString()}\n` +
-          `• *Adjustment:* ${request.type}`
-        );
-      } catch (chatErr) {
-        console.error("[Google Chat] Regularization notification failed", chatErr);
-      }
-
       return NextResponse.json({ success: true, request: result });
     }
 

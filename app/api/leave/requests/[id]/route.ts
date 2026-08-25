@@ -212,17 +212,6 @@ export async function PATCH(
         endDate: result.endDate,
         allDay: true,
       });
-
-      try {
-        await sendGoogleChatNotification(
-          `🌴 *Out of Office Announcement* 🌴\n\n` +
-          `*${employeeName}* is on approved *${result.leaveType.name}* leave. \n` +
-          `• *Duration:* ${result.days} day${result.days === 1 ? "" : "s"} \n` +
-          `• *Dates:* ${result.startDate.toISOString().split("T")[0]} to ${result.endDate.toISOString().split("T")[0]}`
-        );
-      } catch (chatErr) {
-        console.error("[Google Chat] Leave approved notification failed", chatErr);
-      }
     }
   } catch (err) {
     console.error("Failed post-leave decision integrations (email/calendar)", err);

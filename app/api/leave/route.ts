@@ -509,18 +509,6 @@ export async function POST(req: Request) {
       );
     }
 
-    try {
-      await sendGoogleChatNotification(
-        `📝 *New Leave Request Submitted*\n\n` +
-        `• *Employee:* ${employeeName}\n` +
-        `• *Leave Type:* ${leaveType.name}\n` +
-        `• *Duration:* ${days} Day(s) (${format(start, "dd MMM yyyy")} to ${format(end, "dd MMM yyyy")})\n` +
-        `• *Reason:* ${reason}`
-      );
-    } catch (chatErr) {
-      console.error("[Google Chat] Leave request notification failed", chatErr);
-    }
-
     // Export updated DB state to Google Master Sheet
     const { exportDbToGoogleSheetsOnly } = await import("@/lib/googleSheets");
     exportDbToGoogleSheetsOnly().catch(err => console.error("[Google Sheets Export]", err));
