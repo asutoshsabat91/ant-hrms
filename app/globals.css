@@ -35,9 +35,15 @@
     --font-sans: var(--font-sans);
   }
   :root {
-    --brand-primary: #8e43ac;
-    --brand-secondary: #703387;
-    --brand-accent: #d882ff;
+    /* Official AntBox Brand Guidelines Palette */
+    --brand-primary: #BB62DE;
+    --brand-secondary: #9448b2;
+    --brand-accent: #eab6ff;
+    --brand-dark-purple: #2b0c37;
+    --brand-cream: #F7F5EE;
+    --brand-dark-grey: #545454;
+    --brand-grey: #838383;
+    
     --neutral-50: #fafafa;
     --neutral-100: #f4f4f5;
     --neutral-200: #e4e4e7;
@@ -50,9 +56,9 @@
     --info: #06b6d4;
     
     /* AntBox Brand Purple */
-    --purple: #8e43ac;
-    --purple-light: rgba(142, 67, 172, 0.08);
-    --purple-mid: rgba(142, 67, 172, 0.15);
+    --purple: #BB62DE;
+    --purple-light: rgba(187, 98, 222, 0.08);
+    --purple-mid: rgba(187, 98, 222, 0.15);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     
     --sidebar-bg: #09090b;
@@ -70,7 +76,7 @@
     --card-foreground: #09090b;
     --popover: #ffffff;
     --popover-foreground: #09090b;
-    --primary: #8e43ac;
+    --primary: #BB62DE;
     --primary-foreground: #ffffff;
     --secondary: #f4f4f5;
     --secondary-foreground: #18181b;
@@ -81,7 +87,7 @@
     --destructive: #ef4444;
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #8e43ac;
+    --ring: #BB62DE;
     --radius: 0.75rem;
     
     --sidebar: #09090b;
