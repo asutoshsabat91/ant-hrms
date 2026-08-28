@@ -1559,6 +1559,88 @@ async function applyDynamicSheetTableFormatting(
       },
     });
 
+    // Add dropdown data validations for Employees tab
+    if (sheetTitle === "Employees") {
+      const endRow = Math.max(totalRows, 500);
+
+      // Employment Type Dropdown (Col index 19 = Column T)
+      requests.push({
+        setDataValidation: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            endRowIndex: endRow,
+            startColumnIndex: 19,
+            endColumnIndex: 20,
+          },
+          rule: {
+            condition: {
+              type: "ONE_OF_LIST",
+              values: [
+                { userEnteredValue: "FULL_TIME" },
+                { userEnteredValue: "PART_TIME" },
+                { userEnteredValue: "INTERN" },
+                { userEnteredValue: "CONTRACT" },
+              ],
+            },
+            showCustomUi: true,
+            strict: true,
+          },
+        },
+      });
+
+      // Work Mode Dropdown (Col index 20 = Column U) - Strictly ONSITE and REMOTE
+      requests.push({
+        setDataValidation: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            endRowIndex: endRow,
+            startColumnIndex: 20,
+            endColumnIndex: 21,
+          },
+          rule: {
+            condition: {
+              type: "ONE_OF_LIST",
+              values: [
+                { userEnteredValue: "ONSITE" },
+                { userEnteredValue: "REMOTE" },
+              ],
+            },
+            showCustomUi: true,
+            strict: true,
+          },
+        },
+      });
+
+      // Status Dropdown (Col index 21 = Column V)
+      requests.push({
+        setDataValidation: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            endRowIndex: endRow,
+            startColumnIndex: 21,
+            endColumnIndex: 22,
+          },
+          rule: {
+            condition: {
+              type: "ONE_OF_LIST",
+              values: [
+                { userEnteredValue: "ACTIVE" },
+                { userEnteredValue: "ONBOARDING" },
+                { userEnteredValue: "OFFBOARDING" },
+                { userEnteredValue: "INACTIVE" },
+                { userEnteredValue: "ALUMNI" },
+              ],
+            },
+            showCustomUi: true,
+            strict: true,
+          },
+        },
+      });
+    }
+
     // Add new dynamic banded range matching EXACT row and col count
     if (totalRows > 1 && totalCols > 0) {
       requests.push({
