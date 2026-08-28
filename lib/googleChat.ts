@@ -23,3 +23,13 @@ export async function sendGoogleChatNotification(text: string) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
+
+export async function sendChachiAnnouncementToGoogleChat(customMessage?: string) {
+  const text = customMessage || 
+    `💅✨ *Namaste AntBox Team! AntBox Chachi is now live in this Google Chat Space!* 💅✨\n\n` +
+    `Hello besties! I am *AntBox Chachi*, your friendly HR AI Companion! ☕\n\n` +
+    `Need help with leaves, office policies, working hours, or attendance? Or just want a quick chai break conversation? Chachi is right here for you!\n\n` +
+    `👉 *Visit AntBox HRMS to chat with Chachi anytime:* https://antbox-hrms-one.vercel.app`;
+
+  return sendGoogleChatNotification(text);
+}

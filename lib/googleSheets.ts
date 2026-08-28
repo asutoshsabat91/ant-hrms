@@ -1495,7 +1495,15 @@ export async function exportDbToGoogleSheetsOnly() {
       requestBody: { values: attendanceRows }
     });
 
-    // Apply dynamic table formatting across all rows & columns (A to K)
+    // Apply dynamic table formatting across all rows & columns for Employees & Attendance Logs
+    await applyDynamicSheetTableFormatting(
+      sheets,
+      spreadsheetId,
+      "Employees",
+      employeeRows.length,
+      employeeRows[0].length
+    );
+
     await applyDynamicSheetTableFormatting(
       sheets,
       spreadsheetId,

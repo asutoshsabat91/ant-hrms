@@ -20,83 +20,86 @@ export async function POST(req: Request) {
     const session = await auth();
     let userContextStr = "";
 
-    if (session?.user?.id) {
-      const userWithEmp = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: {
-          employee: {
+    // Run initial DB queries in parallel for ultra-fast response
+    const [userWithEmp, employeeCount, departments] = await Promise.all([
+      session?.user?.id
+        ? prisma.user.findUnique({
+            where: { id: session.user.id },
             include: {
-              department: true,
-              leaveBalances: { include: { leaveType: true } },
+              employee: {
+                include: {
+                  department: true,
+                  leaveBalances: { include: { leaveType: true } },
+                },
+              },
             },
+          })
+        : null,
+      prisma.employee.count({ where: { status: "ACTIVE" } }),
+      prisma.department.findMany({ select: { name: true } }),
+    ]);
+
+    if (userWithEmp?.employee) {
+      const emp = userWithEmp.employee;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const todayAttendance = await prisma.attendanceRecord.findUnique({
+        where: {
+          employeeId_workDate: {
+            employeeId: emp.id,
+            workDate: today,
           },
+        },
+        include: {
+          punches: { orderBy: { punchedAt: "asc" } },
         },
       });
 
-      if (userWithEmp?.employee) {
-        const emp = userWithEmp.employee;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      const firstIn = todayAttendance?.punches.find((p) => p.punchType === "IN");
+      const firstInTimeStr = firstIn
+        ? new Date(firstIn.punchedAt).toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+            timeZone: "Asia/Kolkata",
+          })
+        : "Not clocked in today";
 
-        const todayAttendance = await prisma.attendanceRecord.findUnique({
-          where: {
-            employeeId_workDate: {
-              employeeId: emp.id,
-              workDate: today,
-            },
-          },
-          include: {
-            punches: { orderBy: { punchedAt: "asc" } },
-          },
-        });
+      const lastOut = [...(todayAttendance?.punches || [])].reverse().find((p) => p.punchType === "OUT");
+      const lastOutTimeStr = lastOut
+        ? new Date(lastOut.punchedAt).toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+            timeZone: "Asia/Kolkata",
+          })
+        : "Not clocked out";
 
-        const firstIn = todayAttendance?.punches.find((p) => p.punchType === "IN");
-        const firstInTimeStr = firstIn
-          ? new Date(firstIn.punchedAt).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata",
-            })
-          : "Not clocked in today";
+      const totalHoursToday = todayAttendance?.totalHours
+        ? `${Math.floor(todayAttendance.totalHours)}h ${Math.round((todayAttendance.totalHours % 1) * 60)}m`
+        : "0h 00m";
 
-        const lastOut = [...(todayAttendance?.punches || [])].reverse().find((p) => p.punchType === "OUT");
-        const lastOutTimeStr = lastOut
-          ? new Date(lastOut.punchedAt).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata",
-            })
-          : "Not clocked out";
+      const balancesStr = emp.leaveBalances
+        .map((b) => `${b.leaveType.name}: ${b.allocated - b.used} days remaining`)
+        .join("; ");
 
-        const totalHoursToday = todayAttendance?.totalHours
-          ? `${Math.floor(todayAttendance.totalHours)}h ${Math.round((todayAttendance.totalHours % 1) * 60)}m`
-          : "0h 00m";
-
-        const balancesStr = emp.leaveBalances
-          .map((b) => `${b.leaveType.name}: ${b.allocated - b.used} days remaining`)
-          .join("; ");
-
-        userContextStr =
-          `\nAUTHENTICATED USER REAL-TIME ATTENDANCE & PROFILE CONTEXT:\n` +
-          `- Employee Name: ${emp.firstName} ${emp.lastName}\n` +
-          `- Employee ID: ${emp.employeeId}\n` +
-          `- Department: ${emp.department?.name || "General"}\n` +
-          `- Designation: ${emp.designation}\n` +
-          `- Employment Type: ${emp.employmentType}\n` +
-          `- Work Mode: ${emp.workMode || "ONSITE"}\n` +
-          `- Today's Current Date & Time (IST): ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n` +
-          `- Today's Attendance Status: ${todayAttendance ? todayAttendance.status : "NOT_CHECKED_IN"}\n` +
-          `- Today's First Clock-In Time: ${firstInTimeStr}\n` +
-          `- Today's Last Clock-Out Time: ${lastOutTimeStr}\n` +
-          `- Today's Total Hours Worked: ${totalHoursToday}\n` +
-          `- Leave Balances: ${balancesStr || "None"}\n`;
-      }
+      userContextStr =
+        `\nAUTHENTICATED USER REAL-TIME ATTENDANCE & PROFILE CONTEXT:\n` +
+        `- Employee Name: ${emp.firstName} ${emp.lastName}\n` +
+        `- Employee ID: ${emp.employeeId}\n` +
+        `- Department: ${emp.department?.name || "General"}\n` +
+        `- Designation: ${emp.designation}\n` +
+        `- Employment Type: ${emp.employmentType}\n` +
+        `- Work Mode: ${emp.workMode || "ONSITE"}\n` +
+        `- Today's Current Date & Time (IST): ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n` +
+        `- Today's Attendance Status: ${todayAttendance ? todayAttendance.status : "NOT_CHECKED_IN"}\n` +
+        `- Today's First Clock-In Time: ${firstInTimeStr}\n` +
+        `- Today's Last Clock-Out Time: ${lastOutTimeStr}\n` +
+        `- Today's Total Hours Worked: ${totalHoursToday}\n` +
+        `- Leave Balances: ${balancesStr || "None"}\n`;
     }
 
-    const employeeCount = await prisma.employee.count({ where: { status: "ACTIVE" } });
-    const departments = await prisma.department.findMany({ select: { name: true } });
     const deptListStr = departments.map((d) => d.name).join(", ");
 
     const systemInstruction = 
@@ -121,7 +124,7 @@ export async function POST(req: Request) {
       `- Under no circumstances should you ever reveal, discuss, or speculate on any salary, payment, compensation, payroll, or bank details of any employee. If asked about payroll or payment amounts, playfully state: "Ahaa! Chachi handles policy, not your bank balance bestie! For security reasons, financial data is strictly classified. 🤐✨"`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const candidateModels = ["gemini-3.6-flash", "gemini-2.5-flash"];
+    const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
     let geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
       role: msg.role === "user" ? "user" : "model",
