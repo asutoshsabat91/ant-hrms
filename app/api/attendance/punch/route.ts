@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +27,41 @@ export async function POST(req: Request) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const locationStr = latitude && longitude ? `${latitude.toFixed(5)},${longitude.toFixed(5)}` : null;
+  // Check if employee is REMOTE or has approved WFH leave for today
+  const wfhLeave = await prisma.leaveRequest.findFirst({
+    where: {
+      employeeId: employee.id,
+      status: "APPROVED",
+      leaveType: { code: "WFH" },
+      startDate: { lte: today },
+      endDate: { gte: today },
+    },
+  });
+
+  const isRemote = employee.workMode === "REMOTE" || !!wfhLeave;
+
+  if (!isRemote) {
+    if (typeof latitude !== "number" || typeof longitude !== "number") {
+      return NextResponse.json(
+        { error: "Onsite employees must allow GPS location access to clock in/out." },
+        { status: 400 }
+      );
+    }
+
+    const officeLat = parseFloat(process.env.OFFICE_LAT || "20.352346");
+    const officeLon = parseFloat(process.env.OFFICE_LON || "85.816088");
+    const radiusM = parseFloat(process.env.OFFICE_RADIUS_M || "200");
+
+    const dist = haversineDistance(latitude, longitude, officeLat, officeLon);
+    if (dist > radiusM + 150) {
+      return NextResponse.json(
+        { error: `You must be within ${radiusM}m of the office to clock ${punchType.toLowerCase()}. (You are ~${Math.round(dist)}m away)` },
+        { status: 400 }
+      );
+    }
+  }
+
+  const locationStr = latitude && longitude ? `${latitude.toFixed(5)},${longitude.toFixed(5)}` : (isRemote ? "REMOTE" : null);
   const now = new Date();
 
   let punch;

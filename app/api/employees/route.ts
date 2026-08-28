@@ -148,6 +148,7 @@ const updateSchema = z.object({
   uan: z.string().nullable().optional(),
   ctc: z.number().nullable().optional(),
   profilePhoto: z.string().nullable().optional(),
+  workMode: z.enum(["ONSITE", "REMOTE"]).optional(),
 });
 
 export async function PUT(req: Request) {

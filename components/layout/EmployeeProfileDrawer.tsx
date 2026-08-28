@@ -32,6 +32,7 @@ interface EmployeeProfile {
   ifscCode?: string | null;
   pan?: string | null;
   profilePhoto?: string | null;
+  workMode?: string | null;
 }
 
 interface Props {
@@ -212,6 +213,7 @@ export function EmployeeProfileDrawer({ open, onClose, employee }: Props) {
             <Field label="Department" value={employee.department.name} />
             <Field label="Job Role" value={employee.jobRole || employee.designation} />
             <Field label="Employment Type" value={employee.employmentType.replace("_", " ")} />
+            <Field label="Work Mode" value={employee.workMode || "ONSITE"} />
             <Field label="Status" value={employee.status} />
             <Field label="Joining Date" value={format(new Date(employee.joiningDate), "dd MMM yyyy")} />
           </Section>

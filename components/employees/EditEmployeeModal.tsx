@@ -28,6 +28,7 @@ interface EmployeeData {
   uan: string | null;
   ctc: number | null;
   profilePhoto: string | null;
+  workMode?: string | null;
 }
 
 interface EditEmployeeModalProps {
@@ -62,6 +63,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
   const [uan, setUan] = useState(employee.uan ?? "");
   const [ctc, setCtc] = useState(employee.ctc ? String(employee.ctc) : "");
   const [profilePhoto, setProfilePhoto] = useState(employee.profilePhoto ?? null);
+  const [workMode, setWorkMode] = useState(employee.workMode || "ONSITE");
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,6 +109,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
       pan: pan.trim() || null,
       uan: uan.trim() || null,
       profilePhoto,
+      workMode,
       ...(isChandrita ? {} : { ctc: ctc ? parseFloat(ctc) : null }),
     };
 
@@ -227,6 +230,17 @@ export function EditEmployeeModal({ isOpen, onClose, employee, isChandrita }: Ed
               <div>
                 <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Deployed Company</label>
                 <Input value={deployedCompany} onChange={(e) => setDeployedCompany(e.target.value)} placeholder="e.g. Qapita, AntBox" className="mt-1" />
+              </div>
+              <div>
+                <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Work Mode</label>
+                <select
+                  value={workMode}
+                  onChange={(e) => setWorkMode(e.target.value)}
+                  className="mt-1 flex h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-1 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 font-semibold"
+                >
+                  <option value="ONSITE">ONSITE (Requires GPS Location)</option>
+                  <option value="REMOTE">REMOTE (Location-Free Clock In/Out)</option>
+                </select>
               </div>
               <div>
                 <label className="text-[9px] font-extrabold text-zinc-500 uppercase">Personal Email</label>
