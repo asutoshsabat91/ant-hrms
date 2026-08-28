@@ -59,25 +59,25 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 bg-[radial-gradient(#e4e4e7_1.5px,transparent_1.5px)] [background-size:24px_24px] bg-zinc-50/70 border-l border-zinc-100 flex-col justify-center items-center p-6 xl:p-10 relative overflow-hidden select-none">
         
         {/* Peeking Ants in the bottom right corner */}
-        <div className="absolute bottom-0 right-0 w-44 h-80 pointer-events-none select-none z-20 transition-transform duration-500 hover:translate-x-1 hover:translate-y-1">
+        <div className="absolute bottom-0 right-0 w-48 h-80 pointer-events-none select-none z-20 transition-transform duration-500 hover:translate-x-1 hover:translate-y-1">
           <Image 
             src="/ants/peeking-ants.png" 
             alt="Peeking Ants Mascot" 
-            width={176}
-            height={320}
-            className="object-contain object-bottom object-right"
+            width={400}
+            height={400}
+            className="object-contain object-bottom object-right drop-shadow-sm"
             priority
           />
         </div>
 
         {/* Sketched delicate stars and dots in the background */}
         <div className="absolute top-10 left-10 opacity-20 pointer-events-none select-none">
-          <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#BB62DE]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M50 15 C50 35, 35 50, 15 50 C35 50, 50 65, 50 85 C50 65, 65 50, 85 50 C65 50, 50 35, 50 15 Z" />
           </svg>
         </div>
         <div className="absolute top-12 right-12 opacity-15 pointer-events-none select-none">
-          <svg viewBox="0 0 100 100" className="w-6 h-6 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <svg viewBox="0 0 100 100" className="w-6 h-6 text-[#BB62DE]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M50 20 C50 35, 35 50, 20 50 C35 50, 50 65, 50 80 C50 65, 65 50, 80 50 C65 50, 50 35, 50 20 Z" />
           </svg>
         </div>
@@ -87,12 +87,12 @@ export default function LoginPage() {
           <div className="space-y-2 relative">
             <div className="inline-block relative px-4 py-1">
               {/* Hand drawn oval circling the workspace directory label */}
-              <div className="absolute inset-0 text-[#8e43ac]/30 w-full h-full pointer-events-none scale-110">
+              <div className="absolute inset-0 text-[#BB62DE]/30 w-full h-full pointer-events-none scale-110">
                 <svg viewBox="0 0 200 60" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M185 30 C 185 45, 145 55, 100 55 C 55 55, 15 45, 15 30 C 15 15, 55 5, 100 5 C 155 5, 190 20, 180 35" />
                 </svg>
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#8e43ac] relative z-10">Workspace Directory</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#BB62DE] relative z-10">Workspace Directory</p>
             </div>
             
             <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 max-w-md mx-auto leading-tight">
@@ -101,7 +101,7 @@ export default function LoginPage() {
             
             {/* Hand-drawn double underline brush effect under the heading */}
             <div className="flex justify-center pt-0.5 opacity-50">
-              <svg viewBox="0 0 300 20" className="w-56 h-3 text-[#8e43ac]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg viewBox="0 0 300 20" className="w-56 h-3 text-[#BB62DE]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M15 8 C 100 6, 200 10, 285 8" />
                 <path d="M45 13 C 120 12, 195 14, 255 12" strokeWidth="1.5" />
               </svg>
@@ -116,9 +116,9 @@ export default function LoginPage() {
               <Image 
                 src="/ants/running-race-ants.png" 
                 alt="Running Race Ants" 
-                width={110} 
-                height={35} 
-                className="object-contain"
+                width={220} 
+                height={110} 
+                className="object-contain max-h-16 drop-shadow-sm"
                 priority
               />
             </div>
@@ -129,19 +129,19 @@ export default function LoginPage() {
             
             {/* Card 1: Office Sleep */}
             <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] -rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
-              <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
+              <div className="absolute -top-3 -right-1 text-[#BB62DE] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
                 <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 70 L15 15 C 15 8, 25 8, 25 15 L25 50 C 25 57, 10 57, 10 50 L10 25 C 10 20, 18 20, 18 25 L18 40" />
                 </svg>
               </div>
-              <div className="flex-1 flex items-center justify-center min-h-[80px] relative w-full">
-                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-indigo-50/70 blur-[1px] -z-10 group-hover:bg-indigo-100 transition-all duration-300" />
+              <div className="flex-1 flex items-center justify-center min-h-[90px] relative w-full">
+                <div className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-indigo-50/70 blur-[1px] -z-10 group-hover:bg-indigo-100 transition-all duration-300" />
                 <Image 
                   src="/ants/office-chair-sleep-ant.png" 
                   alt="Deep Work Sleep Ant" 
-                  width={68} 
-                  height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
+                  width={120} 
+                  height={110} 
+                  className="object-contain max-h-20 transition-transform duration-300 group-hover:scale-105 drop-shadow-sm" 
                   priority
                 />
               </div>
@@ -153,14 +153,14 @@ export default function LoginPage() {
 
             {/* Card 2: Coffee Cup */}
             <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
-              <div className="flex-1 flex items-center justify-center min-h-[80px] relative w-full">
-                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-amber-50/70 blur-[1px] -z-10 group-hover:bg-amber-100 transition-all duration-300" />
+              <div className="flex-1 flex items-center justify-center min-h-[90px] relative w-full">
+                <div className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-amber-50/70 blur-[1px] -z-10 group-hover:bg-amber-100 transition-all duration-300" />
                 <Image 
                   src="/ants/coffee-cup-ant.png" 
                   alt="Daily Energy Coffee Ant" 
-                  width={54} 
-                  height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
+                  width={90} 
+                  height={100} 
+                  className="object-contain max-h-20 transition-transform duration-300 group-hover:scale-105 drop-shadow-sm" 
                   priority
                 />
               </div>
@@ -172,14 +172,14 @@ export default function LoginPage() {
 
             {/* Card 3: Microscope Science */}
             <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
-              <div className="flex-1 flex items-center justify-center min-h-[80px] relative w-full">
-                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-emerald-50/70 blur-[1px] -z-10 group-hover:bg-emerald-100 transition-all duration-300" />
+              <div className="flex-1 flex items-center justify-center min-h-[90px] relative w-full">
+                <div className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-emerald-50/70 blur-[1px] -z-10 group-hover:bg-emerald-100 transition-all duration-300" />
                 <Image 
                   src="/ants/microscope-science-ant.png" 
                   alt="Precision Science Ant" 
-                  width={58} 
-                  height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
+                  width={110} 
+                  height={100} 
+                  className="object-contain max-h-20 transition-transform duration-300 group-hover:scale-105 drop-shadow-sm" 
                   priority
                 />
               </div>
@@ -191,19 +191,19 @@ export default function LoginPage() {
 
             {/* Card 4: Blueprint Planning */}
             <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 flex flex-col items-center justify-between relative shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06)] -rotate-1 hover:rotate-0 hover:scale-[1.03] hover:shadow-md hover:border-purple-500/30 transition-all duration-300 group">
-              <div className="absolute -top-3 -right-1 text-[#8e43ac] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
+              <div className="absolute -top-3 -right-1 text-[#BB62DE] opacity-50 w-5 h-10 pointer-events-none select-none z-10">
                 <svg viewBox="0 0 30 80" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 70 L15 15 C 15 8, 25 8, 25 15 L25 50 C 25 57, 10 57, 10 50 L10 25 C 10 20, 18 20, 18 25 L18 40" />
                 </svg>
               </div>
-              <div className="flex-1 flex items-center justify-center min-h-[80px] relative w-full">
-                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-rose-50/70 blur-[1px] -z-10 group-hover:bg-rose-100 transition-all duration-300" />
+              <div className="flex-1 flex items-center justify-center min-h-[90px] relative w-full">
+                <div className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-rose-50/70 blur-[1px] -z-10 group-hover:bg-rose-100 transition-all duration-300" />
                 <Image 
                   src="/ants/blueprints-walking-ant.png" 
                   alt="Sprint Blueprints Ant" 
-                  width={64} 
-                  height={58} 
-                  className="object-contain transition-transform duration-300 group-hover:scale-105" 
+                  width={110} 
+                  height={100} 
+                  className="object-contain max-h-20 transition-transform duration-300 group-hover:scale-105 drop-shadow-sm" 
                   priority
                 />
               </div>
