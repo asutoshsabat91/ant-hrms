@@ -3,6 +3,8 @@ import type { EmployeeStatus, EmploymentType, PunchType, LeaveStatus, Reimbursem
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { getDynamicBalances } from "@/lib/leave";
+
 
 function getSheetsClient() {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
@@ -1330,14 +1332,50 @@ export async function exportDbToGoogleSheetsOnly() {
       clientRows.push([clientName, count]);
     });
 
+    // Pre-calculate employee balances & LOP stats for Leave Requests tab
+    const empLeaveSummaryMap = new Map<string, { paidLeavesPending: number; lopsTaken: number }>();
+    const currentYear = new Date().getFullYear();
+    const employeeMap = new Map(allEmployees.map((e) => [e.id, e]));
+
+    await Promise.all(
+      allEmployees.map(async (emp) => {
+        try {
+          const balances = await getDynamicBalances(emp.id, emp.employmentType, currentYear);
+          const paidLeavesPending = balances
+            .filter((b) => b.leaveType.code !== "LOP" && b.leaveType.code !== "WFH")
+            .reduce((sum, b) => sum + Math.max(0, b.allocated - b.used - b.pending), 0);
+
+          const lopBalance = balances.find((b) => b.leaveType.code === "LOP");
+          const lopsTaken = lopBalance ? lopBalance.used : 0;
+
+          empLeaveSummaryMap.set(emp.id, { paidLeavesPending, lopsTaken });
+        } catch {
+          empLeaveSummaryMap.set(emp.id, { paidLeavesPending: 0, lopsTaken: 0 });
+        }
+      })
+    );
+
     // 4. Leave Requests Tab Data
     const leaveRows: unknown[][] = [
-      ["Employee ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Days", "Reason", "Status"]
+      ["Employee ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Days", "Reason", "Status", "Approved By", "Paid Leaves Pending", "LOPs Taken"]
     ];
     allLeaves.forEach((req) => {
-      const empName = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`;
+      const empName = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
       const startDate = req.startDate ? new Date(req.startDate).toISOString().slice(0, 10) : "—";
       const endDate = req.endDate ? new Date(req.endDate).toISOString().slice(0, 10) : "—";
+
+      let approvedByStr = "—";
+      if (req.approverId && employeeMap.has(req.approverId)) {
+        const approver = employeeMap.get(req.approverId);
+        approvedByStr = `${approver?.firstName ?? ""} ${approver?.lastName ?? ""}`.trim() || approver?.email || "—";
+      } else if (req.status === "APPROVED") {
+        approvedByStr = "Admin / Reporting Manager";
+      }
+
+      const summary = req.employeeId ? empLeaveSummaryMap.get(req.employeeId) : null;
+      const paidLeavesPending = summary ? summary.paidLeavesPending : 0;
+      const lopsTaken = summary ? summary.lopsTaken : 0;
+
       leaveRows.push([
         req.employee?.employeeId ?? "—",
         empName,
@@ -1346,9 +1384,13 @@ export async function exportDbToGoogleSheetsOnly() {
         endDate,
         req.days,
         req.reason || "",
-        req.status
+        req.status,
+        approvedByStr,
+        paidLeavesPending,
+        lopsTaken
       ]);
     });
+
 
     // 5. Reimbursement Claims Tab Data
     const reimbursementRows: unknown[][] = [
