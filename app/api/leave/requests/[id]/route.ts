@@ -68,8 +68,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Leave request not found." }, { status: 404 });
   }
 
-  if (request.status !== "PENDING") {
-    return NextResponse.json({ error: "Only pending requests can be updated." }, { status: 400 });
+  const { action, rejectionReason } = parsed.data;
+
+  // Rule: Once leave is APPROVED by reporting manager, higher authorities cannot decline/cancel it.
+  if (request.status === "APPROVED") {
+    if (action === "REJECT") {
+      return NextResponse.json({ error: "Leave granted by reporting manager cannot be cancelled or declined." }, { status: 400 });
+    }
+    return NextResponse.json({ error: "This leave request has already been approved." }, { status: 400 });
+  }
+
+  if (request.status === "WITHDRAWN" || request.status === "CANCELLED") {
+    return NextResponse.json({ error: "Cannot review a withdrawn or cancelled leave request." }, { status: 400 });
   }
 
   const currentEmployee = user.employee;
@@ -104,10 +114,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden: You do not have permission to review this leave request." }, { status: 403 });
   }
 
-  const { action, rejectionReason } = parsed.data;
   if (action === "REJECT" && (!rejectionReason || !rejectionReason.trim())) {
     return NextResponse.json({ error: "Rejection reason is required." }, { status: 400 });
   }
+
   const year = request.startDate.getFullYear();
   const requestDays = request.days;
 

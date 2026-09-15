@@ -5,7 +5,8 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { getDynamicBalances } from "@/lib/leave";
 import { sendLeaveRequestEmail } from "@/lib/mail";
-import { sendGoogleChatNotification } from "@/lib/googleChat";
+import { sendGoogleChatNotification, sendLeaveGoogleChatNotification } from "@/lib/googleChat";
+
 
 const requestSchema = z.object({
   leaveTypeId: z.string().min(1),
@@ -509,6 +510,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // Send Google Chat notification to reporting managers space
+    try {
+      await sendLeaveGoogleChatNotification(
+        employeeName,
+        leaveType.name,
+        days,
+        format(start, "dd MMM yyyy"),
+        format(end, "dd MMM yyyy"),
+        reason
+      );
+    } catch (gchatErr) {
+      console.error("[Google Chat Leave Notification]", gchatErr);
+    }
+
     // Export updated DB state to Google Master Sheet
     const { exportDbToGoogleSheetsOnly } = await import("@/lib/googleSheets");
     exportDbToGoogleSheetsOnly().catch(err => console.error("[Google Sheets Export]", err));
@@ -517,6 +532,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ request: result }, { status: 201 });
+
   } catch (e: unknown) {
     console.error("[LEAVE POST]", e);
     const errMsg = e instanceof Error ? e.message : "";

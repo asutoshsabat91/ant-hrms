@@ -20,32 +20,7 @@ export default async function LeavePage() {
     rawData = { year: new Date().getFullYear(), leaveBalances: [], counts: {}, recentRequests: [] };
   }
 
-  // Serialize to plain objects — Next.js can't pass Date/Prisma objects to client components
-  const initialData = {
-    year: rawData.year,
-    leaveBalances: rawData.leaveBalances,
-    counts: rawData.counts,
-    recentRequests: (rawData.recentRequests ?? []).map((r: {
-      id: string; days: number; status: string; reason?: string | null;
-      startDate: Date; endDate: Date; paidLeavesLeft?: number;
-      leaveType?: { name: string }; employee?: { firstName: string; lastName: string; employeeId: string };
-    }) => ({
-      id: r.id,
-      days: r.days,
-      status: r.status,
-      reason: r.reason ?? undefined,
-      startDate: r.startDate instanceof Date ? r.startDate.toISOString() : String(r.startDate),
-      endDate: r.endDate instanceof Date ? r.endDate.toISOString() : String(r.endDate),
-      paidLeavesLeft: r.paidLeavesLeft ?? 0,
-      leaveType: { name: r.leaveType?.name ?? "" },
-      employee: {
-        firstName: r.employee?.firstName ?? "",
-        lastName: r.employee?.lastName ?? "",
-        employeeId: r.employee?.employeeId ?? "",
-      },
-    })),
-  };
-
+  let currentEmployeeId = "";
   let leaveTypes: LeaveType[] = [];
   let employmentType = "FULL_TIME";
   let isManager = false;
@@ -57,6 +32,7 @@ export default async function LeavePage() {
         include: { employee: { include: { reportees: true } } },
       });
       if (user?.employee) {
+        currentEmployeeId = user.employee.id;
         employmentType = user.employee.employmentType;
         if (user.employee.reportees.length > 0) {
           isManager = true;
@@ -66,6 +42,34 @@ export default async function LeavePage() {
   } catch {
     // DB offline fallback
   }
+
+  // Serialize to plain objects — Next.js can't pass Date/Prisma objects to client components
+  const initialData = {
+    year: rawData.year,
+    leaveBalances: rawData.leaveBalances,
+    counts: rawData.counts,
+    recentRequests: (rawData.recentRequests ?? []).map((r: {
+      id: string; employeeId: string; days: number; status: string; reason?: string | null;
+      startDate: Date; endDate: Date; paidLeavesLeft?: number;
+      leaveType?: { name: string }; employee?: { id: string; firstName: string; lastName: string; employeeId: string };
+    }) => ({
+      id: r.id,
+      employeeId: r.employeeId,
+      days: r.days,
+      status: r.status,
+      reason: r.reason ?? undefined,
+      startDate: r.startDate instanceof Date ? r.startDate.toISOString() : String(r.startDate),
+      endDate: r.endDate instanceof Date ? r.endDate.toISOString() : String(r.endDate),
+      paidLeavesLeft: r.paidLeavesLeft ?? 0,
+      leaveType: { name: r.leaveType?.name ?? "" },
+      employee: {
+        id: r.employee?.id ?? "",
+        firstName: r.employee?.firstName ?? "",
+        lastName: r.employee?.lastName ?? "",
+        employeeId: r.employee?.employeeId ?? "",
+      },
+    })),
+  };
 
   // Serialize leaveTypes to strip any Date fields
   const safeLeaveTypes = leaveTypes.map((lt) => ({
@@ -82,7 +86,9 @@ export default async function LeavePage() {
       userRole={userRole}
       employmentType={employmentType}
       isManager={isManager}
+      currentEmployeeId={currentEmployeeId}
     />
   );
 }
+
 

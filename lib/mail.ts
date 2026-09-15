@@ -342,6 +342,59 @@ export async function sendLeaveApprovalEmail(
   });
 }
 
+// 3b. Leave Request Withdrawn Email (Sent to Managers)
+export async function sendLeaveWithdrawalEmail(
+  toEmail: string,
+  employeeName: string,
+  leaveType: string,
+  days: number,
+  startDate: string,
+  endDate: string,
+) {
+  const escEmployeeName = escapeHtml(employeeName);
+  const escLeaveType = escapeHtml(leaveType);
+
+  const subject = `Leave Request Withdrawn: ${escEmployeeName}`;
+  const bodyHtml = `
+    <h2>Leave Application Withdrawn</h2>
+    <p>An employee under your reporting chain has withdrawn their leave request.</p>
+    
+    <div class="card">
+      <div class="card-row">
+        <span class="card-label">Employee:</span>&nbsp;
+        <span class="card-value">${escEmployeeName}</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Leave Type:</span>&nbsp;
+        <span class="card-value">${escLeaveType}</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Duration:</span>&nbsp;
+        <span class="card-value">${days} Day(s)</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Dates:</span>&nbsp;
+        <span class="card-value">${startDate} to ${endDate}</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Status:</span>&nbsp;
+        <span class="card-value" style="color: #6b7280; font-weight: 800;">Withdrawn</span>
+      </div>
+    </div>
+
+    <center>
+      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/leave" class="btn">View Leave Dashboard</a>
+    </center>
+  `;
+
+  return sendEmail({
+    to: toEmail,
+    subject,
+    html: generateEmailTemplate(subject, bodyHtml),
+  });
+}
+
+
 // 4. Resignation / Separation Submitted (Sent to Admin and Employee)
 export async function sendSeparationRequestEmail(
   employeeName: string,

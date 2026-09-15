@@ -143,12 +143,37 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
   });
 }
 
+export async function getSubordinateEmployeeIds(managerEmployeeId: string): Promise<string[]> {
+  const allEmployees = await prisma.employee.findMany({
+    select: { id: true, managerId: true },
+  });
+  const map = new Map<string, string[]>();
+  for (const emp of allEmployees) {
+    if (emp.managerId) {
+      if (!map.has(emp.managerId)) map.set(emp.managerId, []);
+      map.get(emp.managerId)!.push(emp.id);
+    }
+  }
+
+  const subordinates: string[] = [];
+  const queue = [...(map.get(managerEmployeeId) || [])];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    subordinates.push(current);
+    if (map.has(current)) {
+      queue.push(...map.get(current)!);
+    }
+  }
+  return subordinates;
+}
+
 export async function getLeaveOverview(userId?: string, userRole?: string) {
   const currentYear = new Date().getFullYear();
-  const isSuperAdmin = userRole === "ADMIN" || userRole === "ADMIN";
+  const isSuperAdmin = userRole === "ADMIN" || userRole === "COMPANY_ADMIN";
 
   let employeeId: string | undefined = undefined;
   let employmentType = "FULL_TIME";
+  let subordinateIds: string[] = [];
   
   if (userId) {
     const user = await prisma.user.findUnique({
@@ -158,11 +183,22 @@ export async function getLeaveOverview(userId?: string, userRole?: string) {
     if (user?.employee) {
       employeeId = user.employee.id;
       employmentType = user.employee.employmentType;
+      subordinateIds = await getSubordinateEmployeeIds(user.employee.id);
     }
   }
 
+  const allowedEmployeeIds = employeeId
+    ? isSuperAdmin
+      ? undefined
+      : subordinateIds.length > 0
+      ? [employeeId, ...subordinateIds]
+      : [employeeId]
+    : undefined;
+
+  const requestFilter = allowedEmployeeIds ? { employeeId: { in: allowedEmployeeIds } } : {};
+
   const statusGroups = await prisma.leaveRequest.groupBy({
-    where: employeeId && !isSuperAdmin ? { employeeId } : {},
+    where: requestFilter,
     by: ["status"],
     _count: {
       status: true,
@@ -175,13 +211,13 @@ export async function getLeaveOverview(userId?: string, userRole?: string) {
     : [];
 
   const recentRequests = await prisma.leaveRequest.findMany({
-    where: employeeId && !isSuperAdmin ? { employeeId } : {},
+    where: requestFilter,
     include: {
       employee: true,
       leaveType: true,
     },
-    orderBy: { updatedAt: "desc" },
-    take: 12,
+    orderBy: { createdAt: "desc" },
+    take: 24,
   });
 
   const recentRequestsWithBalances = await Promise.all(
@@ -215,4 +251,5 @@ export async function getLeaveOverview(userId?: string, userRole?: string) {
     counts,
   };
 }
+
 

@@ -33,3 +33,28 @@ export async function sendChachiAnnouncementToGoogleChat(customMessage?: string)
 
   return sendGoogleChatNotification(text);
 }
+
+export async function sendLeaveGoogleChatNotification(
+  employeeName: string,
+  leaveType: string,
+  days: number,
+  startDate: string,
+  endDate: string,
+  reason: string,
+  isWithdrawal: boolean = false
+) {
+  const portalUrl = process.env.NEXTAUTH_URL || "https://antbox-hrms-one.vercel.app";
+  const icon = isWithdrawal ? "↩️" : "📅";
+  const title = isWithdrawal ? "*Leave Request Withdrawn*" : "*New Leave Application Submitted*";
+  
+  const text =
+    `${icon} ${title}\n` +
+    `👤 *Employee:* ${employeeName}\n` +
+    `📋 *Type:* ${leaveType}\n` +
+    `⏱️ *Duration:* ${days} Day(s) (${startDate} to ${endDate})\n` +
+    `${isWithdrawal ? "" : `💬 *Reason:* ${reason}\n`}` +
+    `👉 *Review in HRMS:* ${portalUrl}/leave`;
+
+  return sendGoogleChatNotification(text);
+}
+

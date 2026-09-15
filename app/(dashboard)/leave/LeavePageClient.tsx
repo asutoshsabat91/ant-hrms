@@ -39,7 +39,9 @@ interface LeaveBalanceItem {
 
 interface LeaveRequestItem {
   id: string;
+  employeeId?: string;
   employee: {
+    id?: string;
     firstName: string;
     lastName: string;
     employeeId: string;
@@ -72,9 +74,10 @@ interface LeavePageClientProps {
   userRole: string;
   employmentType: string;
   isManager?: boolean;
+  currentEmployeeId?: string;
 }
 
-export function LeavePageClient({ initialData, leaveTypes, userRole, employmentType, isManager }: LeavePageClientProps) {
+export function LeavePageClient({ initialData, leaveTypes, userRole, employmentType, isManager, currentEmployeeId }: LeavePageClientProps) {
   const [requests, setRequests] = useState<LeaveRequestItem[]>(initialData.recentRequests);
   const [balances, setBalances] = useState<LeaveBalanceItem[]>(initialData.leaveBalances);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -167,6 +170,32 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
     },
     []
   );
+
+  const handleWithdraw = useCallback(async (id: string) => {
+    if (!window.confirm("Are you sure you want to withdraw this leave request? Your leave balance will be restored.")) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/leave/requests/${id}/withdraw`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        setRequests((current) =>
+          current.map((r) => (r.id === id ? { ...r, status: "WITHDRAWN" } : r))
+        );
+        const freshRes = await fetch("/api/leave");
+        if (freshRes.ok) {
+          const freshData = await freshRes.json();
+          if (freshData.leaveBalances) setBalances(freshData.leaveBalances);
+        }
+      } else {
+        const errData = await response.json();
+        alert(errData.error || "Failed to withdraw leave request.");
+      }
+    } catch (err) {
+      console.error("Failed to withdraw leave request", err);
+    }
+  }, []);
 
   const handleSuccess = useCallback(
     (freshRequests: LeaveRequestItem[], freshBalances: LeaveBalanceItem[]) => {
@@ -274,28 +303,20 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
             <table className="w-full border-collapse text-left text-sm text-zinc-500">
               <thead className="bg-zinc-50/50 border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                 <tr>
-                  {canApprove ? (
-                    <th scope="col" className="px-6 py-4">Employee</th>
-                  ) : (
-                    <th scope="col" className="px-6 py-4">Reason</th>
-                  )}
+                  <th scope="col" className="px-6 py-4">Employee</th>
                   <th scope="col" className="px-6 py-4">Type</th>
                   <th scope="col" className="px-6 py-4">From</th>
                   <th scope="col" className="px-6 py-4">To</th>
                   <th scope="col" className="px-6 py-4">Days</th>
                   <th scope="col" className="px-6 py-4">Status</th>
-                  {canApprove && (
-                    <>
-                      <th scope="col" className="px-6 py-4 text-right w-40">Actions</th>
-                      <th scope="col" className="px-6 py-4 w-10"></th>
-                    </>
-                  )}
+                  <th scope="col" className="px-6 py-4 text-right w-44">Actions</th>
+                  <th scope="col" className="px-6 py-4 w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {displayRequests.map((req) => {
                   if (!req) return null;
-                  const emp = req.employee || { firstName: "", lastName: "", employeeId: "" };
+                  const emp = req.employee || { id: "", firstName: "", lastName: "", employeeId: "" };
                   const name = `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || "Unknown Employee";
                   const initials = `${emp.firstName?.[0] || ""}${emp.lastName?.[0] || ""}`.toUpperCase() || "??";
                   const startDateObj = req.startDate ? new Date(req.startDate) : null;
@@ -304,29 +325,29 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                   const endStr = endDateObj && !isNaN(endDateObj.getTime()) ? format(endDateObj, "MMM dd") : "—";
                   const totalLeavesTaken = emp.employeeId ? (leavesTakenByEmployee[emp.employeeId] || 0) : 0;
 
+                  const isOwnRequest = (req.employeeId && currentEmployeeId && req.employeeId === currentEmployeeId) || (emp.id && currentEmployeeId && emp.id === currentEmployeeId);
+                  const isPending = req.status === "PENDING";
+                  const isApproved = req.status === "APPROVED";
+                  const isRejected = req.status === "REJECTED";
+                  const isWithdrawn = req.status === "WITHDRAWN";
+
                   return (
                     <tr key={req.id} className="hover:bg-zinc-50/50 transition-colors">
-                      {canApprove ? (
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border border-zinc-100">
-                              <AvatarFallback className="bg-zinc-100 text-zinc-800 text-xs font-bold">
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-bold text-zinc-900 leading-tight">{name}</p>
-                              <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
-                                {emp.employeeId || "LV-100"}
-                              </p>
-                            </div>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9 border border-zinc-100">
+                            <AvatarFallback className="bg-zinc-100 text-zinc-800 text-xs font-bold">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-bold text-zinc-900 leading-tight">{name}</p>
+                            <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
+                              {emp.employeeId || "LV-100"}
+                            </p>
                           </div>
-                        </td>
-                      ) : (
-                        <td className="px-6 py-4 text-xs font-semibold text-zinc-900 max-w-[220px] truncate" title={req.reason}>
-                          {req.reason || "No reason provided"}
-                        </td>
-                      )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-xs font-semibold text-zinc-900">
                         {req.leaveType?.name || "Unknown"}
                       </td>
@@ -334,15 +355,20 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                       <td className="px-6 py-4 text-xs font-medium text-zinc-900">{endStr}</td>
                       <td className="px-6 py-4 text-xs font-medium text-zinc-900">{req.days}</td>
                       <td className="px-6 py-4">
-                        {req.status === "APPROVED" ? (
+                        {isApproved ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
                             <span className="h-1 w-1 rounded-full bg-emerald-500" />
                             Approved
                           </span>
-                        ) : req.status === "REJECTED" ? (
+                        ) : isRejected ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200/60 px-2.5 py-0.5 text-[10px] font-bold text-rose-700">
                             <span className="h-1 w-1 rounded-full bg-rose-500" />
                             Rejected
+                          </span>
+                        ) : isWithdrawn ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 border border-zinc-200 px-2.5 py-0.5 text-[10px] font-bold text-zinc-600">
+                            <span className="h-1 w-1 rounded-full bg-zinc-400" />
+                            Withdrawn
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
@@ -351,81 +377,125 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                           </span>
                         )}
                       </td>
-                      {canApprove && (
-                        <>
-                          <td className="px-6 py-4 text-right">
-                            {req.status === "PENDING" ? (
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  onClick={() => handleDecision(req.id, "REJECT")}
-                                  className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
-                                >
-                                  Decline
-                                </button>
+                      <td className="px-6 py-4 text-right">
+                        <div className="inline-flex items-center gap-2 justify-end">
+                          {/* Manager Actions for Subordinates */}
+                          {canApprove && !isOwnRequest && (
+                            <>
+                              {isPending && (
+                                <>
+                                  <button
+                                    onClick={() => handleDecision(req.id, "REJECT")}
+                                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
+                                  >
+                                    Decline
+                                  </button>
+                                  <button
+                                    onClick={() => handleDecision(req.id, "APPROVE")}
+                                    className="rounded-lg bg-zinc-950 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-zinc-800 transition-colors"
+                                  >
+                                    Approve
+                                  </button>
+                                </>
+                              )}
+                              {isRejected && (
                                 <button
                                   onClick={() => handleDecision(req.id, "APPROVE")}
-                                  className="rounded-lg bg-zinc-950 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-zinc-800 transition-colors"
+                                  className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-700 transition-colors"
+                                  title="Senior Manager Override: Approve this declined leave"
                                 >
-                                  Approve
+                                  Override & Approve
                                 </button>
+                              )}
+                              {isApproved && (
+                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                  Granted
+                                </span>
+                              )}
+                            </>
+                          )}
+
+                          {/* Employee Leave Withdrawal Option */}
+                          {isOwnRequest && (isPending || isApproved) && (
+                            <button
+                              onClick={() => handleWithdraw(req.id)}
+                              className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[10px] font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+                              title="Withdraw this leave request and restore balance"
+                            >
+                              Withdraw
+                            </button>
+                          )}
+
+                          {!canApprove && !isOwnRequest && (
+                            <span className="text-xs text-zinc-400 font-medium pr-2">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="text-zinc-400 hover:text-zinc-900 transition-colors p-1 hover:bg-zinc-100 rounded-lg outline-none">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-56 bg-white border border-zinc-100 rounded-xl shadow-lg p-1"
+                          >
+                            <div className="px-3 py-2 border-b border-zinc-100 mb-1">
+                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                Employee Summary
+                              </p>
+                              <p className="text-xs font-bold text-zinc-900 mt-0.5">{name}</p>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-2.5">
+                              <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
+                              <div>
+                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                  Leaves Summary
+                                </p>
+                                <p className="text-xs font-semibold text-zinc-700">
+                                  Taken: <span className="font-extrabold text-zinc-900">{totalLeavesTaken} days</span>
+                                </p>
+                                <p className="text-xs font-semibold text-zinc-700 mt-0.5">
+                                  Paid Left: <span className="font-extrabold text-violet-600">{req.paidLeavesLeft ?? 0} days</span>
+                                </p>
                               </div>
-                            ) : (
-                              <span className="text-xs text-zinc-400 font-medium pr-6">—</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger className="text-zinc-400 hover:text-zinc-900 transition-colors p-1 hover:bg-zinc-100 rounded-lg outline-none">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-56 bg-white border border-zinc-100 rounded-xl shadow-lg p-1"
-                              >
-                                <div className="px-3 py-2 border-b border-zinc-100 mb-1">
-                                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                    Employee Summary
-                                  </p>
-                                  <p className="text-xs font-bold text-zinc-900 mt-0.5">{name}</p>
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-2.5">
-                                  <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
-                                  <div>
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                      Leaves Summary
-                                    </p>
-                                    <p className="text-xs font-semibold text-zinc-700">
-                                      Taken: <span className="font-extrabold text-zinc-900">{totalLeavesTaken} days</span>
-                                    </p>
-                                    <p className="text-xs font-semibold text-zinc-700 mt-0.5">
-                                      Paid Left: <span className="font-extrabold text-violet-600">{req.paidLeavesLeft ?? 0} days</span>
-                                    </p>
-                                  </div>
-                                </div>
-                                {req.status === "PENDING" && (
-                                  <>
-                                    <DropdownMenuSeparator className="bg-zinc-100" />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDecision(req.id, "APPROVE")}
-                                      className="flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50 rounded-lg cursor-pointer font-medium"
-                                    >
-                                      <CheckCircle2 className="h-3.5 w-3.5" />
-                                      Approve leave
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => handleDecision(req.id, "REJECT")}
-                                      className="flex items-center gap-2 px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer font-medium"
-                                    >
-                                      <XCircle className="h-3.5 w-3.5" />
-                                      Decline leave
-                                    </DropdownMenuItem>
-                                  </>
+                            </div>
+                            {canApprove && !isOwnRequest && (isPending || isRejected) && (
+                              <>
+                                <DropdownMenuSeparator className="bg-zinc-100" />
+                                <DropdownMenuItem
+                                  onClick={() => handleDecision(req.id, "APPROVE")}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50 rounded-lg cursor-pointer font-medium"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Approve leave
+                                </DropdownMenuItem>
+                                {isPending && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleDecision(req.id, "REJECT")}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer font-medium"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5" />
+                                    Decline leave
+                                  </DropdownMenuItem>
                                 )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </>
-                      )}
+                              </>
+                            )}
+                            {isOwnRequest && (isPending || isApproved) && (
+                              <>
+                                <DropdownMenuSeparator className="bg-zinc-100" />
+                                <DropdownMenuItem
+                                  onClick={() => handleWithdraw(req.id)}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer font-medium"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Withdraw leave
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
                     </tr>
                   );
                 })}
@@ -452,3 +522,4 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
     </div>
   );
 }
+
