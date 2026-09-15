@@ -1332,28 +1332,73 @@ export async function exportDbToGoogleSheetsOnly() {
       clientRows.push([clientName, count]);
     });
 
-    // Pre-calculate employee balances & LOP stats for Leave Requests tab
-    const empLeaveSummaryMap = new Map<string, { paidLeavesPending: number; lopsTaken: number }>();
+    // Pre-calculate employee balances & LOP stats for Leave Requests tab in BULK (zero connection pool overhead)
     const currentYear = new Date().getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1);
+    const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+
+    const [allLeaveBalancesForYear, allLeaveRequestsForYear] = await Promise.all([
+      prisma.leaveBalance.findMany({
+        where: { year: currentYear },
+        include: { leaveType: true },
+      }),
+      prisma.leaveRequest.findMany({
+        where: {
+          startDate: { gte: startOfYear, lte: endOfYear },
+        },
+        include: { leaveType: true },
+      }),
+    ]);
+
+    const empLeaveSummaryMap = new Map<string, { paidLeavesPending: number; lopsTaken: number }>();
     const employeeMap = new Map(allEmployees.map((e) => [e.id, e]));
 
-    await Promise.all(
-      allEmployees.map(async (emp) => {
-        try {
-          const balances = await getDynamicBalances(emp.id, emp.employmentType, currentYear);
-          const paidLeavesPending = balances
-            .filter((b) => b.leaveType.code !== "LOP" && b.leaveType.code !== "WFH")
-            .reduce((sum, b) => sum + Math.max(0, b.allocated - b.used - b.pending), 0);
+    for (const emp of allEmployees) {
+      const isUnpaidIntern = emp.employmentType === "INTERN" && (!emp.ctc || emp.ctc === 0);
+      let paidLeavesPending = 0;
+      let lopsTaken = 0;
 
-          const lopBalance = balances.find((b) => b.leaveType.code === "LOP");
-          const lopsTaken = lopBalance ? lopBalance.used : 0;
+      if (isUnpaidIntern) {
+        paidLeavesPending = 999;
+      } else {
+        const empRequests = allLeaveRequestsForYear.filter((r) => r.employeeId === emp.id);
 
-          empLeaveSummaryMap.set(emp.id, { paidLeavesPending, lopsTaken });
-        } catch {
-          empLeaveSummaryMap.set(emp.id, { paidLeavesPending: 0, lopsTaken: 0 });
+        if (emp.employmentType === "INTERN") {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const startQuarter = Math.floor(currentMonth / 3) * 3;
+          const monthInQuarter = currentMonth - startQuarter + 1; // 1, 2, or 3
+          const qStartDate = new Date(currentYear, startQuarter, 1, 0, 0, 0, 0);
+          const qEndDate = new Date(currentYear, startQuarter + 3, 0, 23, 59, 59, 999);
+
+          const allocatedPaid = monthInQuarter;
+          const qPaidReqs = empRequests.filter(
+            (r) => r.leaveType.code === "PAID_QUARTER" && r.startDate >= qStartDate && r.startDate <= qEndDate
+          );
+          const usedPaid = qPaidReqs.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+          const pendingPaid = qPaidReqs.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+          paidLeavesPending = Math.max(0, allocatedPaid - usedPaid - pendingPaid);
+        } else {
+          const empBalances = allLeaveBalancesForYear.filter((b) => b.employeeId === emp.id);
+          const paidBalanceRecord = empBalances.find((b) => b.leaveType.code === "EARNED");
+          const allocatedPaid = paidBalanceRecord?.allocated ?? 18;
+          const paidReqs = empRequests.filter((r) => r.leaveType.code === "EARNED");
+          const usedPaid = paidReqs.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+          const pendingPaid = paidReqs.filter((r) => r.status === "PENDING").reduce((sum, r) => sum + r.days, 0);
+          paidLeavesPending = Math.max(0, allocatedPaid - usedPaid - pendingPaid);
         }
-      })
-    );
+
+        const lopReqs = empRequests.filter((r) => r.leaveType.code === "LOP");
+        lopsTaken = lopReqs.filter((r) => r.status === "APPROVED").reduce((sum, r) => sum + r.days, 0);
+
+        const sickLopDays = empRequests
+          .filter((r) => r.leaveType.code === "SICK" && r.status === "APPROVED")
+          .reduce((sum, r) => sum + (r.sickLopDays ?? 0), 0);
+        lopsTaken += sickLopDays;
+      }
+
+      empLeaveSummaryMap.set(emp.id, { paidLeavesPending, lopsTaken });
+    }
 
     // 4. Leave Requests Tab Data
     const leaveRows: unknown[][] = [
@@ -1390,6 +1435,7 @@ export async function exportDbToGoogleSheetsOnly() {
         lopsTaken
       ]);
     });
+
 
 
     // 5. Reimbursement Claims Tab Data

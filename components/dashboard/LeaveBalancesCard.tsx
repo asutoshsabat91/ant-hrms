@@ -73,7 +73,7 @@ export function LeaveBalancesCard({ balances }: Props) {
                   <span className="text-xs font-medium text-zinc-700">{b.leaveType.name}</span>
                   {b.allocated > 0 ? (
                     <span className="text-[10px] font-semibold text-zinc-400">
-                      {remaining} / {b.allocated} left
+                      {remaining} / {b.allocated} left{b.leaveType.code === "PAID_QUARTER" ? " this Q" : ""}
                     </span>
                   ) : (
                     <span className="text-[10px] font-semibold text-zinc-400">

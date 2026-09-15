@@ -41,16 +41,22 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
       allocated = 999; // Unlimited
     } else {
       const accrualMode = lt.accrual || "ANNUAL";
+      const isQuarterly = accrualMode === "QUARTERLY" || lt.code === "PAID_QUARTER";
       const now = new Date();
       if (now.getFullYear() === year) {
-        if (accrualMode === "QUARTERLY") {
+        if (isQuarterly) {
           const startQuarter = Math.floor(now.getMonth() / 3) * 3;
-          const quarterBase = lt.daysPerYear / 4;
           const monthInQuarter = now.getMonth() - startQuarter + 1; // 1, 2, or 3
-          allocated = Math.round((quarterBase / 3) * monthInQuarter * 10) / 10;
+          
+          if (lt.code === "PAID_QUARTER" || employmentType === "INTERN") {
+            allocated = monthInQuarter;
+          } else {
+            const quarterBase = lt.daysPerYear / 4;
+            allocated = Math.round((quarterBase / 3) * monthInQuarter * 10) / 10;
+          }
           
           // Accumulate used/pending only inside the current quarter
-          const qStartDate = new Date(year, startQuarter, 1);
+          const qStartDate = new Date(year, startQuarter, 1, 0, 0, 0, 0);
           const qEndDate = new Date(year, startQuarter + 3, 0, 23, 59, 59, 999);
           
           const qRequests = typeRequests.filter((r) => r.startDate >= qStartDate && r.startDate <= qEndDate);
@@ -80,7 +86,7 @@ export async function getDynamicBalances(employeeId: string, employmentType: str
         }
       } else {
         // Different year logic
-        if (accrualMode === "QUARTERLY" || accrualMode === "MONTHLY") {
+        if (isQuarterly || accrualMode === "MONTHLY") {
           allocated = 0;
           used = 0;
           pending = 0;

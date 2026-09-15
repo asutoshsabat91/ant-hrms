@@ -269,7 +269,9 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                 </p>
                 <p className="text-2xl font-bold text-zinc-950 mt-1.5">
                   {item.remaining}{" "}
-                  <span className="text-xs font-medium text-zinc-400">/ {item.allocated} days</span>
+                  <span className="text-xs font-medium text-zinc-400">
+                    / {item.allocated} {item.code === "PAID_QUARTER" ? "days left this quarter" : "days"}
+                  </span>
                 </p>
               </div>
               <div className="mt-3">
@@ -279,9 +281,12 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                     style={{ width: `${item.percent}%` }}
                   />
                 </div>
-                <p className="text-[9px] font-semibold text-zinc-400 mt-2">
-                  {item.used} days used
-                </p>
+                <div className="flex items-center justify-between mt-2 text-[9px] font-semibold text-zinc-400">
+                  <span>{item.used} days used</span>
+                  {item.code === "PAID_QUARTER" && (
+                    <span className="text-sky-600 font-bold">1 day/mo (Resets each quarter)</span>
+                  )}
+                </div>
               </div>
             </div>
           );
