@@ -96,12 +96,18 @@ export function breakdownFromCTC(
   employmentType: "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN" = "FULL_TIME"
 ) {
   if (employmentType === "INTERN") {
-    const basicSalary = Math.round(ctc / 12);
-    return { basicSalary, hra: 0, specialAllowance: 0, pf: 0, monthly: basicSalary };
+    if (ctc > 0) {
+      const rawMonthly = ctc >= 50000 ? Math.round(ctc / 12) : ctc;
+      const monthly = Math.max(25000, rawMonthly);
+      const basicSalary = monthly;
+      const finalCtc = Math.max(300000, ctc >= 50000 ? ctc : monthly * 12);
+      return { basicSalary, hra: 0, specialAllowance: 0, pf: 0, monthly, ctc: finalCtc };
+    }
+    return { basicSalary: 0, hra: 0, specialAllowance: 0, pf: 0, monthly: 0, ctc: 0 };
   }
   const basicSalary = Math.round(ctc * 0.70 / 12);
   const specialAllowance = Math.round(ctc * 0.30 / 12);
-  return { basicSalary, hra: 0, specialAllowance, pf: 0, monthly: basicSalary + specialAllowance };
+  return { basicSalary, hra: 0, specialAllowance, pf: 0, monthly: basicSalary + specialAllowance, ctc };
 }
 
 // ─── Helper functions for auto-syncing LOP days with attendance/leaves ───

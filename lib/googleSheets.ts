@@ -523,16 +523,36 @@ export async function syncGoogleSheetsWithDb() {
           if (uan && uan !== "—") updatePayload.uan = uan;
 
           const parsedCtc = cleanNumber(ctcVal);
-          if (parsedCtc !== undefined) updatePayload.ctc = parsedCtc;
-
           const parsedBasic = cleanNumber(basicVal);
-          if (parsedBasic !== undefined) updatePayload.basicSalary = parsedBasic;
-
           const parsedHra = cleanNumber(hraVal);
-          if (parsedHra !== undefined) updatePayload.hra = parsedHra;
-
           const parsedSpecial = cleanNumber(specialVal);
-          if (parsedSpecial !== undefined) updatePayload.specialAllowance = parsedSpecial;
+
+          const targetEmpType = (empTypeStr && ["FULL_TIME", "PART_TIME", "INTERN", "CONTRACT"].includes(empTypeStr))
+            ? empTypeStr
+            : existingEmp.employmentType;
+
+          if (targetEmpType === "INTERN") {
+            const hasSalary = (parsedCtc !== undefined && parsedCtc > 0) || (parsedBasic !== undefined && parsedBasic > 0);
+            if (hasSalary) {
+              const rawMonthly = (parsedBasic && parsedBasic > 0)
+                ? parsedBasic
+                : (parsedCtc && parsedCtc >= 50000 ? Math.round(parsedCtc / 12) : (parsedCtc ?? 0));
+              const finalMonthly = Math.max(25000, rawMonthly);
+              const finalCtc = Math.max(300000, (parsedCtc && parsedCtc >= 50000) ? parsedCtc : finalMonthly * 12);
+              updatePayload.ctc = finalCtc;
+              updatePayload.basicSalary = finalMonthly;
+              updatePayload.hra = 0;
+              updatePayload.specialAllowance = 0;
+            } else if (parsedCtc === 0 || parsedBasic === 0) {
+              updatePayload.ctc = 0;
+              updatePayload.basicSalary = 0;
+            }
+          } else {
+            if (parsedCtc !== undefined) updatePayload.ctc = parsedCtc;
+            if (parsedBasic !== undefined) updatePayload.basicSalary = parsedBasic;
+            if (parsedHra !== undefined) updatePayload.hra = parsedHra;
+            if (parsedSpecial !== undefined) updatePayload.specialAllowance = parsedSpecial;
+          }
 
           const parsedPf = cleanNumber(pfVal);
           if (parsedPf !== undefined) updatePayload.pf = parsedPf;

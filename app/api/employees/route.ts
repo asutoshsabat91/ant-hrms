@@ -84,7 +84,7 @@ export async function POST(req: Request) {
     const count = await prisma.employee.count();
     const employeeId = String(count + 1).padStart(2, "0");
     const joiningDate = new Date(data.joiningDate);
-    const compensation = data.ctc ? breakdownFromCTC(data.ctc) : null;
+    const compensation = data.ctc ? breakdownFromCTC(data.ctc, data.employmentType) : null;
     const tempPassword = data.password ?? "AntBox@2025";
     const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -173,8 +173,9 @@ export async function PUT(req: Request) {
     const updatePayload: any = { ...data };
     if (data.ctc !== undefined) {
       if (data.ctc) {
-        const comp = breakdownFromCTC(data.ctc);
-        updatePayload.ctc = data.ctc;
+        const existingEmp = await prisma.employee.findUnique({ where: { id }, select: { employmentType: true } });
+        const comp = breakdownFromCTC(data.ctc, existingEmp?.employmentType || "FULL_TIME");
+        updatePayload.ctc = comp.ctc ?? data.ctc;
         updatePayload.basicSalary = comp.basicSalary;
         updatePayload.hra = comp.hra;
         updatePayload.specialAllowance = comp.specialAllowance;

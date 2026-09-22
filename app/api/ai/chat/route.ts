@@ -44,6 +44,12 @@ export async function POST(req: Request) {
       prisma.department.findMany({ select: { name: true } }),
     ]);
 
+    let todayAttendanceStatus = "NOT_CHECKED_IN";
+    let firstInTimeStr = "Not clocked in today";
+    let lastOutTimeStr = "Not clocked out";
+    let totalHoursToday = "0h 00m";
+    let balancesStr = "";
+
     if (userWithEmp?.employee) {
       const emp = userWithEmp.employee;
       const today = new Date();
@@ -61,31 +67,35 @@ export async function POST(req: Request) {
         },
       });
 
+      if (todayAttendance) {
+        todayAttendanceStatus = todayAttendance.status;
+      }
+
       const firstIn = todayAttendance?.punches.find((p) => p.punchType === "IN");
-      const firstInTimeStr = firstIn
-        ? new Date(firstIn.punchedAt).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: "Asia/Kolkata",
-          })
-        : "Not clocked in today";
+      if (firstIn) {
+        firstInTimeStr = new Date(firstIn.punchedAt).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Kolkata",
+        });
+      }
 
       const lastOut = [...(todayAttendance?.punches || [])].reverse().find((p) => p.punchType === "OUT");
-      const lastOutTimeStr = lastOut
-        ? new Date(lastOut.punchedAt).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: "Asia/Kolkata",
-          })
-        : "Not clocked out";
+      if (lastOut) {
+        lastOutTimeStr = new Date(lastOut.punchedAt).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Kolkata",
+        });
+      }
 
-      const totalHoursToday = todayAttendance?.totalHours
-        ? `${Math.floor(todayAttendance.totalHours)}h ${Math.round((todayAttendance.totalHours % 1) * 60)}m`
-        : "0h 00m";
+      if (todayAttendance?.totalHours) {
+        totalHoursToday = `${Math.floor(todayAttendance.totalHours)}h ${Math.round((todayAttendance.totalHours % 1) * 60)}m`;
+      }
 
-      const balancesStr = emp.leaveBalances
+      balancesStr = emp.leaveBalances
         .map((b) => `${b.leaveType.name}: ${b.allocated - b.used} days remaining`)
         .join("; ");
 
@@ -98,7 +108,7 @@ export async function POST(req: Request) {
         `- Employment Type: ${emp.employmentType}\n` +
         `- Work Mode: ${emp.workMode || "ONSITE"}\n` +
         `- Today's Current Date & Time (IST): ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n` +
-        `- Today's Attendance Status: ${todayAttendance ? todayAttendance.status : "NOT_CHECKED_IN"}\n` +
+        `- Today's Attendance Status: ${todayAttendanceStatus}\n` +
         `- Today's First Clock-In Time: ${firstInTimeStr}\n` +
         `- Today's Last Clock-Out Time: ${lastOutTimeStr}\n` +
         `- Today's Total Hours Worked: ${totalHoursToday}\n` +
@@ -106,6 +116,8 @@ export async function POST(req: Request) {
     }
 
     const deptListStr = departments.map((d) => d.name).join(", ");
+
+    const lastMessage = messages[messages.length - 1]?.content || "";
 
     const systemInstruction = 
       `You are "AntBox Chachi" 💅✨, the official, warm, pleasant, and helpful HR AI Assistant for AntBox (Bhubaneswar, Odisha).\n\n` +
@@ -128,46 +140,112 @@ export async function POST(req: Request) {
       `CRITICAL SECURITY POLICY:\n` +
       `- Under no circumstances should you ever reveal, discuss, or speculate on any salary, payment, compensation, payroll, or bank details of any employee. If asked about payroll or payment amounts, playfully state: "Ahaa! Chachi handles policy, not your bank balance bestie! For security reasons, financial data is strictly classified. 🤐✨"`;
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const candidateModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.7-flash"];
-
-    let geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.content }],
-    }));
-
-    const firstUserIdx = geminiHistory.findIndex(msg => msg.role === "user");
-    if (firstUserIdx !== -1) {
-      geminiHistory = geminiHistory.slice(firstUserIdx);
-    } else {
-      geminiHistory = [];
-    }
-
-    const lastMessage = messages[messages.length - 1]?.content || "";
-
     let replyText = "";
-    let lastError: unknown = null;
 
-    for (const mName of candidateModels) {
+    if (apiKey) {
       try {
-        const model = genAI.getGenerativeModel({ model: mName, systemInstruction });
-        const chat = model.startChat({ history: geminiHistory });
-        const result = await chat.sendMessage(lastMessage);
-        replyText = result.response.text();
-        if (replyText) break;
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const candidateModels = ["gemini-3.6-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-flash-latest", "gemini-2.0-flash"];
+
+        let geminiHistory = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }],
+        }));
+
+        const firstUserIdx = geminiHistory.findIndex((msg: { role: string }) => msg.role === "user");
+        if (firstUserIdx !== -1) {
+          geminiHistory = geminiHistory.slice(firstUserIdx);
+        } else {
+          geminiHistory = [];
+        }
+
+        for (const mName of candidateModels) {
+          try {
+            const model = genAI.getGenerativeModel({ model: mName, systemInstruction });
+            const chat = model.startChat({ history: geminiHistory });
+            const result = await chat.sendMessage(lastMessage);
+            replyText = result.response.text();
+            if (replyText) break;
+          } catch (err) {
+            console.warn(`[Gemini AI] Model ${mName} failed, trying next candidate...`, err);
+          }
+        }
       } catch (err) {
-        lastError = err;
-        console.warn(`[Gemini AI] Model ${mName} failed, trying next candidate...`, err);
+        console.warn("[Gemini AI] Generative AI call failed, switching to smart Chachi fallback...", err);
       }
     }
 
     if (!replyText) {
-      throw lastError || new Error("All Gemini models failed to generate response.");
+      replyText = generateFallbackReply(lastMessage, userWithEmp, todayAttendanceStatus, firstInTimeStr, lastOutTimeStr, totalHoursToday, balancesStr);
     }
 
     return NextResponse.json({ reply: replyText });
   } catch (error) {
-    console.error("[Gemini AI] Chat generation failed:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "AI generation failed" }, { status: 500 });
+    console.error("[Gemini AI] Chat route error:", error);
+    return NextResponse.json({
+      reply: "Namaste bestie! 💅✨ Chachi is right here! Ask me about your attendance, leaves, or office policies and I will gladly assist you!"
+    });
   }
+}
+
+function generateFallbackReply(
+  userQuery: string,
+  userWithEmp: unknown,
+  todayAttendanceStatus: string,
+  firstInTimeStr: string,
+  lastOutTimeStr: string,
+  totalHoursToday: string,
+  balancesStr: string
+): string {
+  const query = userQuery.toLowerCase().trim();
+
+  if (query.includes("salary") || query.includes("pay") || query.includes("ctc") || query.includes("bank") || query.includes("stipend") || query.includes("money")) {
+    return "Ahaa! Chachi handles policy, not your bank balance bestie! For security reasons, financial data is strictly classified. 🤐✨";
+  }
+
+  if (["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "good evening", "chachi"].some(g => query.includes(g))) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const firstName = (userWithEmp as any)?.employee?.firstName ? ` ${(userWithEmp as any).employee.firstName}` : "";
+    return `Namaste${firstName}! 💅✨ I'm AntBox Chachi, your friendly HR assistant! How can I help you today? Ask me about your attendance, leave balances, or office policies!`;
+  }
+
+  if (query.includes("attendance") || query.includes("clock") || query.includes("check in") || query.includes("punch") || query.includes("in time") || query.includes("hours") || query.includes("late")) {
+    return (
+      `Namaste! 💅✨ Here is your real-time attendance update for today:\n\n` +
+      `- **Status**: ${todayAttendanceStatus}\n` +
+      `- **First Clock-In**: ${firstInTimeStr}\n` +
+      `- **Last Clock-Out**: ${lastOutTimeStr}\n` +
+      `- **Total Hours Worked**: ${totalHoursToday}\n\n` +
+      `Standard office shift starts at **2:00 PM** (Monday to Friday)!`
+    );
+  }
+
+  if (query.includes("leave") || query.includes("holiday") || query.includes("vacation") || query.includes("balance") || query.includes("time off")) {
+    const balanceLines = balancesStr ? balancesStr.split("; ").map(b => `- ${b}`).join("\n") : "- No active leave balances found.";
+    return (
+      `Namaste! 💅✨ Here is your current leave balance:\n\n` +
+      `${balanceLines}\n\n` +
+      `To apply for time off, just head over to the **Leave** section and click **Apply for leave**!`
+    );
+  }
+
+  if (query.includes("shift") || query.includes("time") || query.includes("policy") || query.includes("location") || query.includes("office") || query.includes("work")) {
+    return (
+      `Namaste! 💅✨ Here are the key AntBox office details:\n\n` +
+      `- **Working Hours**: 2:00 PM to 10:00 PM (Monday to Friday)\n` +
+      `- **Office Location**: Patia, Bhubaneswar, Odisha\n` +
+      `- **Weekly Offs**: Saturday & Sunday\n\n` +
+      `Let me know if you need anything else!`
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const firstName = (userWithEmp as any)?.employee?.firstName ? ` ${(userWithEmp as any).employee.firstName}` : "";
+  return (
+    `Namaste${firstName}! 💅✨ Chachi is right here! How can I help you?\n\n` +
+    `You can ask me about:\n` +
+    `- Today's clock-in time & attendance status\n` +
+    `- Your current leave balances\n` +
+    `- Office shift timing (2:00 PM - 10:00 PM) & location!`
+  );
 }
