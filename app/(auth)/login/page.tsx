@@ -3,8 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { LoginForm } from "./login-form";
-import { ShieldCheck, Zap } from "lucide-react";
-import { AccordionApp } from "@/components/watermelon/card-split-accordian";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 
 export default function LoginPage() {
@@ -175,20 +173,7 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        {/* Secondary Features (Watermelon Accordion) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 0.8, y: 0 }}
-          whileHover={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-          className="w-full max-w-2xl mt-24 relative z-10"
-        >
-          <h3 className="text-sm font-medium text-zinc-500 text-center mb-6 uppercase tracking-widest">Platform Capabilities</h3>
-          <AccordionApp items={[
-            { id: 1, title: 'Smart Onboarding', icon: <Zap className="size-4" />, content: 'Digital document signing and seamless induction paths for all new hires.' },
-            { id: 2, title: 'Geofenced Attendance', icon: <ShieldCheck className="size-4" />, content: 'Secure and accurate time tracking via GPS fences at your branch locations.' }
-          ]} />
-        </motion.div>
+
       </main>
       
       {/* Footer */}
