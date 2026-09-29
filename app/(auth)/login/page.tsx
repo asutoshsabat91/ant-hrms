@@ -35,7 +35,7 @@ export default function LoginPage() {
     y.set(0);
   };
 
-  const titleText = "The intelligent people platform.";
+  const titleText = "ANTBOX HRMS";
   const words = titleText.split(" ");
 
   if (!mounted) return <div className="min-h-screen bg-[#030303]" />;
@@ -43,28 +43,46 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen w-full bg-[#030303] text-zinc-300 font-sans selection:bg-[#BB62DE]/30 selection:text-white flex flex-col items-center justify-center overflow-hidden">
       
-      {/* 3D Animated Background Orbs */}
-      <div className="absolute inset-0 z-0 perspective-[1000px]">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      {/* 3D Animated Background Aurora / Orbs */}
+      <div className="absolute inset-0 z-0 overflow-hidden perspective-[1000px]">
+        {/* Deep background color */}
+        <div className="absolute inset-0 bg-[#030303]" />
         
+        {/* Animated Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,#000_70%,transparent_100%)]" />
+        
+        {/* Sweeping Aurora Beam 1 */}
         <motion.div 
           animate={{ 
-            rotate: [0, 360],
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.15, 0.1]
+            rotate: [0, 90, 0],
+            scale: [1, 1.5, 1],
+            x: ["-20%", "20%", "-20%"],
+            y: ["-10%", "10%", "-10%"]
           }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[-10%] left-[20%] w-[800px] h-[500px] bg-[#BB62DE] blur-[150px] rounded-full pointer-events-none mix-blend-screen"
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-20%] left-[-10%] w-[60%] h-[70%] bg-gradient-to-r from-[#BB62DE]/40 to-purple-600/30 blur-[120px] rounded-full pointer-events-none mix-blend-screen"
         />
         
+        {/* Sweeping Aurora Beam 2 */}
         <motion.div 
           animate={{ 
-            rotate: [360, 0],
-            scale: [1, 1.5, 1],
-            opacity: [0.08, 0.12, 0.08]
+            rotate: [360, 180, 360],
+            scale: [1.2, 1, 1.2],
+            x: ["20%", "-10%", "20%"],
+            y: ["10%", "-20%", "10%"]
           }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-20%] right-[10%] w-[700px] h-[400px] bg-[#4a1f6a] blur-[120px] rounded-full pointer-events-none mix-blend-screen"
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[60%] bg-gradient-to-l from-indigo-500/30 to-[#4a1f6a]/40 blur-[130px] rounded-[100%] pointer-events-none mix-blend-screen"
+        />
+
+        {/* Center Glowing Core */}
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.25, 0.1]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[20%] right-[20%] bottom-[20%] bg-[#BB62DE] blur-[180px] rounded-full pointer-events-none mix-blend-screen"
         />
       </div>
 
@@ -99,14 +117,14 @@ export default function LoginPage() {
             ✨ Introducing AntBox HRMS 2.0
           </motion.div>
           
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white mb-4 flex flex-wrap justify-center gap-x-3">
+          <h1 className="text-6xl sm:text-7xl md:text-8xl font-extrabold tracking-tighter text-white mb-6 flex flex-wrap justify-center gap-x-4 drop-shadow-2xl">
             {words.map((word, i) => (
               <motion.span
                 key={i}
-                initial={{ opacity: 0, y: 20, rotateX: 90 }}
+                initial={{ opacity: 0, y: 30, rotateX: 90 }}
                 animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 * i, ease: [0.2, 0.65, 0.3, 0.9] }}
-                className={word === "people" ? "text-[#eab6ff] italic pr-2" : ""}
+                transition={{ duration: 0.8, delay: 0.15 * i, ease: [0.2, 0.65, 0.3, 0.9] }}
+                className={word === "HRMS" ? "text-transparent bg-clip-text bg-gradient-to-br from-[#BB62DE] to-purple-400" : ""}
               >
                 {word}
               </motion.span>
