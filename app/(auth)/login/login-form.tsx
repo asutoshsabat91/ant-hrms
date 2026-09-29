@@ -266,15 +266,15 @@ export function LoginForm() {
   if (registered && registered.pending) {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 space-y-4">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-md p-6 space-y-4">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
-            <p className="font-extrabold text-zinc-900 text-lg">Registration Submitted!</p>
+            <p className="font-extrabold text-zinc-400 text-lg">Registration Submitted!</p>
           </div>
           <p className="text-sm text-zinc-600 leading-relaxed font-medium">
             Your details have been submitted to the Superadmin for approval.
           </p>
-          <div className="rounded-xl bg-white border border-zinc-200 p-4 space-y-3">
+          <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-4 space-y-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Email</p>
               <p className="text-sm font-semibold text-[#BB62DE] mt-0.5 select-all">{registered.personalEmail}</p>
@@ -310,13 +310,13 @@ export function LoginForm() {
             setError(null);
             setSuccessMsg(null);
           }}
-          className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 transition-colors"
+          className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back to Sign In
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Create Account</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
             New to AntBox? Provide your details to request your corporate account.
           </p>
@@ -327,7 +327,7 @@ export function LoginForm() {
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">First Name</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Riya"
                 {...registerForm.register("firstName")}
               />
@@ -338,7 +338,7 @@ export function LoginForm() {
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Last Name</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Sharma"
                 {...registerForm.register("lastName")}
               />
@@ -351,13 +351,13 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Gender</Label>
             <select
-              className="mt-1 w-full h-11 px-3.5 rounded-xl border border-zinc-200 bg-white text-sm text-zinc-900 outline-none focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20"
+              className="mt-1 w-full h-11 px-3.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-sm text-zinc-400 outline-none focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20"
               {...registerForm.register("gender")}
             >
               <option value="" className="text-zinc-400">Select gender…</option>
-              <option value="MALE" className="text-zinc-900">Male</option>
-              <option value="FEMALE" className="text-zinc-900">Female</option>
-              <option value="OTHER" className="text-zinc-900">Other</option>
+              <option value="MALE" className="text-zinc-400">Male</option>
+              <option value="FEMALE" className="text-zinc-400">Female</option>
+              <option value="OTHER" className="text-zinc-400">Other</option>
             </select>
             {registerForm.formState.errors.gender && (
               <p className="mt-1 text-[10px] font-bold text-red-600">{registerForm.formState.errors.gender.message}</p>
@@ -370,7 +370,7 @@ export function LoginForm() {
               <div className="relative flex-1">
                 <input
                   type="email"
-                  className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
+                  className="w-full h-11 pl-10 pr-4 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                   placeholder="you@gmail.com"
                   {...registerForm.register("personalEmail")}
                 />
@@ -380,7 +380,7 @@ export function LoginForm() {
                 type="button"
                 onClick={sendRegisterOtp}
                 disabled={sendingRegisterOtp}
-                className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold px-4 rounded-xl text-xs flex items-center gap-1.5 h-11 shadow-sm"
+                className="bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white font-bold px-4 rounded-xl text-xs flex items-center gap-1.5 h-11 shadow-sm"
               >
                 {sendingRegisterOtp ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-[#BB62DE]" />
@@ -407,7 +407,7 @@ export function LoginForm() {
                 type="text"
                 required
                 maxLength={6}
-                className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all text-center"
+                className="mt-1 w-full h-11 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all text-center"
                 placeholder="123456"
                 value={registerOtp}
                 onChange={(e) => setRegisterOtp(e.target.value)}
@@ -419,7 +419,7 @@ export function LoginForm() {
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Phone (optional)</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 placeholder="+91 98765..."
                 {...registerForm.register("phone")}
               />
@@ -428,7 +428,7 @@ export function LoginForm() {
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Date of Birth</Label>
               <input
                 type="date"
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-950 focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white/[0.03] border border-white/[0.08] text-white focus:border-[#BB62DE]/50 focus:ring-1 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 {...registerForm.register("dateOfBirth")}
               />
               {registerForm.formState.errors.dateOfBirth && (
@@ -465,13 +465,13 @@ export function LoginForm() {
             setError(null);
             setSuccessMsg(null);
           }}
-          className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 transition-colors"
+          className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back to Sign In
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Forgot Password</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Forgot Password</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
             Enter your corporate email address or name. We will verify and help you change your password.
           </p>
@@ -484,7 +484,7 @@ export function LoginForm() {
               <input
                 type="text"
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-10 pr-4 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="you@theantbox.com or name"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
@@ -521,13 +521,13 @@ export function LoginForm() {
             setError(null);
             setSuccessMsg(null);
           }}
-          className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 transition-colors"
+          className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Change Password</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Change Password</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
             Please verify using the temporary OTP/code sent to <span className="text-[#BB62DE] font-semibold">{forgotEmail}</span>.
           </p>
@@ -546,7 +546,7 @@ export function LoginForm() {
               type="text"
               required
               maxLength={6}
-              className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all"
+              className="mt-1 w-full h-11 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all"
               placeholder="123456"
               value={resetOtp}
               onChange={(e) => setResetOtp(e.target.value)}
@@ -559,7 +559,7 @@ export function LoginForm() {
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-10 pr-10 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="At least 6 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -581,7 +581,7 @@ export function LoginForm() {
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-10 pr-4 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -612,7 +612,7 @@ export function LoginForm() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Sign in</h2>
+        <h2 className="text-2xl font-bold text-white tracking-tight">Sign in</h2>
         <p className="mt-1.5 text-xs text-zinc-500 font-medium">Welcome back to AntBox People Platform</p>
       </div>
 
@@ -630,7 +630,7 @@ export function LoginForm() {
             <input
               id="email"
               type="email"
-              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
+              className="w-full h-11 pl-10 pr-4 bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
               placeholder="you@theantbox.com"
               {...loginForm.register("email")}
             />
@@ -660,14 +660,14 @@ export function LoginForm() {
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
+              className="w-full h-11 pl-10 pr-10 bg-white/[0.03] border border-white/[0.08] text-white rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
               {...loginForm.register("password")}
             />
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-950 transition-colors z-20"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors z-20"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -694,17 +694,17 @@ export function LoginForm() {
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-200" />
+            <span className="w-full border-t border-white/[0.1]" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-zinc-400 font-extrabold tracking-wider text-[8px]">Or</span>
+            <span className="bg-[#0c0c0c] px-3 py-1 text-zinc-500 font-extrabold tracking-wider text-[10px] rounded-full border border-white/[0.05]">OR</span>
           </div>
         </div>
 
         <Button
           type="button"
           onClick={() => signIn("google", { callbackUrl })}
-          className="w-full bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold h-11 rounded-xl transition-all flex items-center justify-center gap-2"
+          className="w-full bg-white hover:bg-zinc-200 border border-transparent text-zinc-900 font-bold h-11 rounded-xl transition-all flex items-center justify-center gap-2"
         >
           <svg className="h-4 w-4 animate-none" viewBox="0 0 24 24">
             <path
