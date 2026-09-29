@@ -204,8 +204,8 @@ export default async function DashboardPage() {
       <ScrollReveal className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">TODAY · {todayStr}</p>
-          <h2 className="text-3xl font-extrabold text-zinc-950 mt-1">
-            Your <span className="italic-serif text-4xl font-light text-[var(--purple)]">people</span>
+          <h2 className="text-3xl font-extrabold text-zinc-950 mt-1 tracking-tight">
+            Your <span className="font-bold text-[#BB62DE]">people</span>
           </h2>
           <p className="text-xs text-zinc-400 font-medium mt-1">
             Live headcount, attendance, and operations across AntBox.

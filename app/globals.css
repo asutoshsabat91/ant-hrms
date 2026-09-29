@@ -92,12 +92,12 @@
     
     --sidebar: #09090b;
     --sidebar-foreground: #a1a1aa;
-    --sidebar-primary: #7c3aed;
+    --sidebar-primary: #BB62DE;
     --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: #27272a;
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #27272a;
-    --sidebar-ring: #7c3aed;
+    --sidebar-ring: #BB62DE;
   }
   .dark {
     --background: #09090b;

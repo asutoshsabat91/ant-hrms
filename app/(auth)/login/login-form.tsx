@@ -277,7 +277,7 @@ export function LoginForm() {
           <div className="rounded-xl bg-white border border-zinc-200 p-4 space-y-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Personal Email</p>
-              <p className="text-sm font-semibold text-[#8e43ac] mt-0.5 select-all">{registered.personalEmail}</p>
+              <p className="text-sm font-semibold text-[#BB62DE] mt-0.5 select-all">{registered.personalEmail}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Status</p>
@@ -289,7 +289,7 @@ export function LoginForm() {
           </p>
         </div>
         <Button
-          className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+          className="w-full bg-[#BB62DE] hover:bg-[#9448b2] text-white font-bold h-11 rounded-xl transition-all"
           onClick={() => {
             setMode("login");
             setRegistered(null);
@@ -327,7 +327,7 @@ export function LoginForm() {
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">First Name</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Riya"
                 {...registerForm.register("firstName")}
               />
@@ -338,7 +338,7 @@ export function LoginForm() {
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Last Name</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 placeholder="Sharma"
                 {...registerForm.register("lastName")}
               />
@@ -351,7 +351,7 @@ export function LoginForm() {
           <div>
             <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Gender</Label>
             <select
-              className="mt-1 w-full h-11 px-3.5 rounded-xl border border-zinc-200 bg-white text-sm text-zinc-900 outline-none focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20"
+              className="mt-1 w-full h-11 px-3.5 rounded-xl border border-zinc-200 bg-white text-sm text-zinc-900 outline-none focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20"
               {...registerForm.register("gender")}
             >
               <option value="" className="text-zinc-400">Select gender…</option>
@@ -370,7 +370,7 @@ export function LoginForm() {
               <div className="relative flex-1">
                 <input
                   type="email"
-                  className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                  className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                   placeholder="you@gmail.com"
                   {...registerForm.register("personalEmail")}
                 />
@@ -383,7 +383,7 @@ export function LoginForm() {
                 className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-bold px-4 rounded-xl text-xs flex items-center gap-1.5 h-11 shadow-sm"
               >
                 {sendingRegisterOtp ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#8e43ac]" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#BB62DE]" />
                 ) : (
                   "Verify Gmail"
                 )}
@@ -395,7 +395,7 @@ export function LoginForm() {
           </div>
 
           {registerSuccessMsg && (
-            <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac] leading-relaxed">
+            <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#BB62DE] leading-relaxed">
               {registerSuccessMsg}
             </div>
           )}
@@ -407,7 +407,7 @@ export function LoginForm() {
                 type="text"
                 required
                 maxLength={6}
-                className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all text-center"
+                className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all text-center"
                 placeholder="123456"
                 value={registerOtp}
                 onChange={(e) => setRegisterOtp(e.target.value)}
@@ -419,7 +419,7 @@ export function LoginForm() {
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Phone (optional)</Label>
               <input
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 placeholder="+91 98765..."
                 {...registerForm.register("phone")}
               />
@@ -428,7 +428,7 @@ export function LoginForm() {
               <Label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Date of Birth</Label>
               <input
                 type="date"
-                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-950 focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all"
+                className="mt-1 w-full h-11 px-3.5 bg-white border border-zinc-200 text-zinc-950 focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all"
                 {...registerForm.register("dateOfBirth")}
               />
               {registerForm.formState.errors.dateOfBirth && (
@@ -446,7 +446,7 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all mt-2"
+            className="w-full bg-[#BB62DE] hover:bg-[#9448b2] text-white font-bold h-11 rounded-xl transition-all mt-2"
             disabled={loading}
           >
             {loading ? "Creating account…" : "Submit Details for Approval"}
@@ -484,7 +484,7 @@ export function LoginForm() {
               <input
                 type="text"
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="you@theantbox.com or name"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
@@ -502,7 +502,7 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+            className="w-full bg-[#BB62DE] hover:bg-[#9448b2] text-white font-bold h-11 rounded-xl transition-all"
             disabled={loading}
           >
             {loading ? "Verifying Account..." : "Send Verification Code"}
@@ -529,12 +529,12 @@ export function LoginForm() {
         <div>
           <h2 className="text-2xl font-bold text-zinc-950 tracking-tight">Change Password</h2>
           <p className="mt-1.5 text-xs text-zinc-500 font-medium leading-relaxed">
-            Please verify using the temporary OTP/code sent to <span className="text-[#8e43ac] font-semibold">{forgotEmail}</span>.
+            Please verify using the temporary OTP/code sent to <span className="text-[#BB62DE] font-semibold">{forgotEmail}</span>.
           </p>
         </div>
 
         {successMsg && (
-          <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#8e43ac] leading-relaxed">
+          <div className="rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs font-bold text-[#BB62DE] leading-relaxed">
             {successMsg}
           </div>
         )}
@@ -546,7 +546,7 @@ export function LoginForm() {
               type="text"
               required
               maxLength={6}
-              className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all"
+              className="mt-1 w-full h-11 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-mono tracking-widest text-center font-bold transition-all"
               placeholder="123456"
               value={resetOtp}
               onChange={(e) => setResetOtp(e.target.value)}
@@ -559,7 +559,7 @@ export function LoginForm() {
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="At least 6 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -568,7 +568,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#8e43ac] transition-colors z-20"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#BB62DE] transition-colors z-20"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -581,7 +581,7 @@ export function LoginForm() {
               <input
                 type={showNewPassword ? "text" : "password"}
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -599,7 +599,7 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+            className="w-full bg-[#BB62DE] hover:bg-[#9448b2] text-white font-bold h-11 rounded-xl transition-all"
             disabled={loading}
           >
             {loading ? "Changing Password..." : "Change Password"}
@@ -630,7 +630,7 @@ export function LoginForm() {
             <input
               id="email"
               type="email"
-              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+              className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
               placeholder="you@theantbox.com"
               {...loginForm.register("email")}
             />
@@ -651,7 +651,7 @@ export function LoginForm() {
                 setError(null);
                 setSuccessMsg(null);
               }}
-              className="text-[10px] font-bold text-[#8e43ac] hover:text-[#703387] transition-colors uppercase tracking-wider"
+              className="text-[10px] font-bold text-[#BB62DE] hover:text-[#9448b2] transition-colors uppercase tracking-wider"
             >
               Forgot?
             </button>
@@ -660,7 +660,7 @@ export function LoginForm() {
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#8e43ac] focus:ring-2 focus:ring-[#8e43ac]/20 outline-none text-sm font-medium transition-all relative z-0"
+              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 text-zinc-900 rounded-xl focus:border-[#BB62DE] focus:ring-2 focus:ring-[#BB62DE]/20 outline-none text-sm font-medium transition-all relative z-0"
               {...loginForm.register("password")}
             />
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none z-10" />
@@ -686,7 +686,7 @@ export function LoginForm() {
 
         <Button
           type="submit"
-          className="w-full bg-[#8e43ac] hover:bg-[#703387] text-white font-bold h-11 rounded-xl transition-all"
+          className="w-full bg-[#BB62DE] hover:bg-[#9448b2] text-white font-bold h-11 rounded-xl transition-all"
           disabled={loading}
         >
           {loading ? "Signing in..." : "Sign in"}

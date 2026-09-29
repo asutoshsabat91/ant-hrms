@@ -268,10 +268,21 @@ export function LeavePageClient({ initialData, leaveTypes, userRole, employmentT
                   {item.label}
                 </p>
                 <p className="text-2xl font-bold text-zinc-950 mt-1.5">
-                  {item.remaining}{" "}
-                  <span className="text-xs font-medium text-zinc-400">
-                    / {item.allocated} {item.code === "PAID_QUARTER" ? "days left this quarter" : "days"}
-                  </span>
+                  {item.code === "PAID_QUARTER" ? (
+                    <>
+                      {item.remaining}{" "}
+                      <span className="text-xs font-medium text-zinc-400">
+                        available this month
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {item.remaining}{" "}
+                      <span className="text-xs font-medium text-zinc-400">
+                        / {item.allocated} days
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
               <div className="mt-3">
