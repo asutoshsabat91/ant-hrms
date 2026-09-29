@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import { LoginForm } from "./login-form";
-import { Sparkles, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { ShieldCheck, Zap } from "lucide-react";
+import { AccordionApp } from "@/components/watermelon/card-split-accordian";
 
 export default function LoginPage() {
   return (
@@ -67,6 +68,13 @@ export default function LoginPage() {
               <h3 className="text-sm font-semibold text-white mb-2 group-hover:text-[#eab6ff] transition-colors">Instant Telemetry</h3>
               <p className="text-xs text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">Real-time attendance tracking, geofenced clock-ins, and dynamic payroll integration.</p>
             </div>
+          </div>
+
+          <div className="pt-6">
+            <AccordionApp items={[
+              { id: 1, title: 'Smart Onboarding', icon: <Zap className="size-4" />, content: 'Digital document signing and seamless induction paths for all new hires.' },
+              { id: 2, title: 'Geofenced Attendance', icon: <ShieldCheck className="size-4" />, content: 'Secure and accurate time tracking via GPS fences at your branch locations.' }
+            ]} />
           </div>
         </div>
 

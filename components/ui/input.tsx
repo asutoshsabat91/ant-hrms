@@ -1,12 +1,10 @@
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
+import { cn } from "cn"
 
-import { cn } from "@/lib/utils"
-
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => (
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
     <InputPrimitive
-      ref={ref}
       type={type}
       data-slot="input"
       className={cn(
@@ -16,7 +14,6 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       {...props}
     />
   )
-)
-Input.displayName = "Input"
+}
 
 export { Input }
