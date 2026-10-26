@@ -52,9 +52,9 @@ export async function GET(req: Request) {
     // Only fix records where last punch was IN (punch-out missing)
     if (!lastPunch || lastPunch.punchType !== "IN") continue;
 
-    // Assume 6:00 PM IST = 12:30 UTC
+    // Assume 10:00 PM IST (official shift end) = 16:30 UTC
     const assumedOut = new Date(yesterday);
-    assumedOut.setUTCHours(12, 30, 0, 0);
+    assumedOut.setUTCHours(16, 30, 0, 0);
 
     const effectiveOut = assumedOut > lastPunch.punchedAt
       ? assumedOut
@@ -68,7 +68,7 @@ export async function GET(req: Request) {
           punchType: "OUT",
           punchedAt: effectiveOut,
           isAssumed: true,
-          assumedReason: "AUTO: No punch-out found. Defaulted to 6:00 PM.",
+          assumedReason: "AUTO: No punch-out found. Defaulted to 10:00 PM.",
         },
       });
 
@@ -95,7 +95,7 @@ export async function GET(req: Request) {
           userId: record.employee.userId,
           type: "ATTENDANCE_ALERT",
           title: "Punch-out assumed for yesterday",
-          body: `You forgot to punch out on ${format(yesterday, "dd MMM")}. Your end time was set to 6:00 PM. Contact HR if incorrect.`,
+          body: `You forgot to punch out on ${format(yesterday, "dd MMM")}. Your end time was set to 10:00 PM. Contact HR if incorrect.`,
           link: "/attendance",
         },
       });
