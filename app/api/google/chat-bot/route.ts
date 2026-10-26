@@ -2,8 +2,19 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { sendGoogleChatNotification } from "@/lib/googleChat";
+import { auth } from "@/auth";
+import { verifyGoogleChatRequest } from "@/lib/googleChatAuth";
 
 export async function POST(req: Request) {
+  // Auth: verified Google Chat request OR signed-in ADMIN. Fails closed.
+  const fromGoogleChat = await verifyGoogleChatRequest(req);
+  if (!fromGoogleChat) {
+    const session = await auth();
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const userMessage = body?.message?.text || body?.text || body?.query || "";

@@ -5,6 +5,19 @@ import type { Role } from "@prisma/client";
 
 const publicPaths = ["/login", "/register", "/api/auth"];
 
+// Machine-to-machine routes. These have no browser session and MUST enforce
+// their own auth inside the handler (Bearer token / secret). Never add a route
+// here unless its handler rejects unauthenticated requests on its own.
+const machineAuthPrefixes = [
+  "/api/gas/",   // Google Apps Script — Bearer HRMS_API_TOKEN
+  "/api/cron/",  // Scheduled jobs — Bearer CRON_SECRET
+];
+const machinePublicExact = [
+  "/api/google/chat-bot", // Google Chat — handler verifies Google-signed JWT or ADMIN session
+  "/api/health/live",     // Liveness probe — returns no sensitive data
+  "/api/health/ready",    // Readiness probe — DB ping, returns no sensitive data
+];
+
 const superAdminOnlyRoutes = [
   "/onboarding", "/offboarding", "/payroll",
   "/api/payroll", "/api/onboarding", "/api/offboarding",
@@ -20,6 +33,15 @@ export async function middleware(req: NextRequest) {
 
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
+  }
+
+  if (
+    machineAuthPrefixes.some((p) => pathname.startsWith(p)) ||
+    machinePublicExact.includes(pathname)
+  ) {
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 
   const isSecure = req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https";

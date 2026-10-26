@@ -24,8 +24,9 @@ function sumWorkedHours(punches: { punchType: string; punchedAt: Date }[]) {
 }
 
 export async function GET(req: Request) {
-  const secret = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (secret !== process.env.CRON_SECRET) {
+  const expected = process.env.CRON_SECRET;
+  const auth = req.headers.get("authorization") ?? "";
+  if (!expected || auth !== `Bearer ${expected}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

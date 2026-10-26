@@ -15,11 +15,11 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
+    console.error("[health/ready] Database ping failed:", error?.message);
     return NextResponse.json(
       {
         status: "unready",
         database: "disconnected",
-        error: error?.message || "Database ping failed",
         timestamp: new Date().toISOString(),
       },
       { status: 503 }
